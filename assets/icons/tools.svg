@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg-tool-big" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172554" />
+      <stop offset="100%" stop-color="#0b1120" />
+    </linearGradient>
+    <linearGradient id="cyan-tool-big" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+
+  
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bg-tool-big)" stroke="url(#cyan-tool-big)" stroke-width="2.5" />
+
+  
+  <path d="M42.8 13.2a10.5 10.5 0 0 0-9.6 14.5L15.6 45.3a4.3 4.3 0 0 0 6.1 6.1l17.6-17.6a10.5 10.5 0 0 0 14.5-9.6c0-1.4-.3-2.7-.8-3.9l-6 6-5.3-1.4-1.4-5.3 6-6c-1.2-.5-2.5-.8-3.8-.8z" fill="none" stroke="url(#cyan-tool-big)" stroke-width="3.6" stroke-linejoin="round" />
+  <circle cx="18.6" cy="48.4" r="2" fill="#f8fafc" />
+</svg>
