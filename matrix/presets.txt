@@ -1,0 +1,22 @@
+[25x43 Матрица 20 (23:37)]
+inputMode=auto
+labelWidthMm=25
+labelHeightMm=43
+matrixSizeMm=20
+offsetXMm=0
+offsetYMm=0
+defaultBoxNum=1
+matrixDxMm=0
+matrixDyMm=-1
+markerDxMm=0
+markerDyMm=-0.4
+serialDxMm=0
+serialDyMm=3.2
+bottomDxMm=0
+bottomDyMm=2
+skipEmptyCheck=true
+showMarkersCheck=true
+numberingModeSelect=box_group
+showProductNameCheck=true
+showRawCodeCheck=true
+gtinSourceSelect=both
