@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg-trk" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#bg-trk)" stroke="#a855f7" stroke-opacity="0.4" stroke-width="2" />
+
+  
+  <rect x="16" y="15" width="32" height="38" rx="4" fill="#7e22ce" fill-opacity="0.25" stroke="#c084fc" stroke-width="3" />
+  
+  <rect x="25" y="11" width="14" height="7" rx="2" fill="#0f172a" stroke="#e879f9" stroke-width="2.5" />
+
+  
+  <line x1="22" y1="26" x2="36" y2="26" stroke="#e9d5ff" stroke-width="3" stroke-linecap="round" />
+  <line x1="22" y1="34" x2="32" y2="34" stroke="#e9d5ff" stroke-width="3" stroke-linecap="round" />
+
+  
+  <polyline points="33,42 38,47 47,36" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
