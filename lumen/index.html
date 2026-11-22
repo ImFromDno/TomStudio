@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Tom Studio — Project Lumen</title>
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --card-2: #fafafa;
+      --text: #333333;
+      --muted: #666666;
+      --border: #dddddd;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --accent: #1a73e8;
+      --accent-hover: #1557b0;
+      --success: #137333;
+      --success-bg: #e6f4ea;
+      --success-border: #ceead6;
+      --warn-text: #9a6700;
+      --warn-bg: #fef7e0;
+      --warn-border: #fde293;
+      --info-text: #174ea6;
+      --info-bg: #e8f0fe;
+      --info-border: #d2e3fc;
+      --ip-bg: #e0f2fe;
+      --ip-text: #0369a1;
+      --ip-border: #bae6fd;
+      --bar-bg: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+      --bar-border: rgba(147, 197, 253, 0.28);
+      --bar-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-2: #0b1220;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #86efac;
+        --success-bg: rgba(34, 197, 94, 0.14);
+        --success-border: rgba(34, 197, 94, 0.35);
+        --warn-text: #fde68a;
+        --warn-bg: rgba(245, 158, 11, 0.14);
+        --warn-border: rgba(245, 158, 11, 0.35);
+        --info-text: #bfdbfe;
+        --info-bg: rgba(59, 130, 246, 0.14);
+        --info-border: rgba(59, 130, 246, 0.35);
+        --ip-bg: rgba(14, 165, 233, 0.15);
+        --ip-text: #7dd3fc;
+        --ip-border: rgba(14, 165, 233, 0.35);
+        --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        --bar-border: rgba(96, 165, 250, 0.32);
+        --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #86efac;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-border: rgba(34, 197, 94, 0.35);
+      --warn-text: #fde68a;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --warn-border: rgba(245, 158, 11, 0.35);
+      --info-text: #bfdbfe;
+      --info-bg: rgba(59, 130, 246, 0.14);
+      --info-border: rgba(59, 130, 246, 0.35);
+      --ip-bg: rgba(14, 165, 233, 0.15);
+      --ip-text: #7dd3fc;
+      --ip-border: rgba(14, 165, 233, 0.35);
+      --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      --bar-border: rgba(96, 165, 250, 0.32);
+      --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 8px auto 24px;
+      padding: 0 15px 15px;
+      max-width: 540px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: var(--bar-bg);
+      border: 1px solid var(--bar-border);
+      box-shadow: var(--bar-shadow);
+      color: #ffffff;
+    }
+
+    .ts-brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .ts-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.26);
+      flex-shrink: 0;
+    }
+
+    .page-header .ts-divider {
+      margin-left: auto;
+    }
+
+    .ts-project {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bulb-btn {
+      appearance: none;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .bulb-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.05);
+    }
+
+    .bulb-btn.is-lit {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: rgba(253, 224, 71, 0.65);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      opacity: 1;
+    }
+
+    .bulb-btn.is-off {
+      opacity: 0.45;
+      filter: grayscale(0.85);
+      box-shadow: none;
+    }
+
+    .page-header {
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      margin: 16px 0 10px;
+      text-align: center;
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    label.field-label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    label.field-label:first-child {
+      margin-top: 0;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 5px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 15px;
+      background: var(--card-2);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s ease, background-color 0.2s ease;
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .checkbox-row {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-text {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .checkbox-sub {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .hint {
+      margin-top: 5px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .catalog-status {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      border: 1px solid var(--info-border);
+      background: var(--info-bg);
+      color: var(--info-text);
+    }
+
+    .catalog-status.warn {
+      border-color: var(--warn-border);
+      background: var(--warn-bg);
+      color: var(--warn-text);
+    }
+
+    .summary-card {
+      background: var(--card);
+      border-radius: 10px;
+      border-left: 4px solid var(--accent);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .stat-box {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      margin-top: 3px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-value.accent {
+      color: var(--accent);
+    }
+
+    .result-disclaimer {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .result-disclaimer strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .rec-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .rec-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .rec-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .rec-title {
+      font-weight: 700;
+      font-size: 0.98rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .ip-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--ip-bg);
+      color: var(--ip-text);
+      border: 1px solid var(--ip-border);
+    }
+
+    .rec-specs {
+      margin-top: 3px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .qty-badge {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success-border);
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .rec-bottom {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .rec-bottom strong {
+      color: var(--text);
+    }
+
+    .rec-note {
+      margin-top: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      background: var(--card-2);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .empty-state {
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    .page-footer {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 440px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ts-bar {
+        padding: 11px 15px;
+        gap: 8px;
+      }
+
+      .ts-brand {
+        font-size: 18px;
+      }
+
+      .ts-divider {
+        height: 19px;
+      }
+
+      .ts-project {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ts-bar" aria-label="Tom Studio — Project Lumen">
+      <span class="ts-brand">Tom Studio</span>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Lumen</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="row-2">
+      <div>
+        <label class="field-label" for="lengthM">Длина, м</label>
+        <input type="number" id="lengthM" min="0.1" step="0.1" placeholder="Напр. 5" onclick="this.select()">
+      </div>
+      <div>
+        <label class="field-label" for="widthM">Ширина, м</label>
+        <input type="number" id="widthM" min="0.1" step="0.1" placeholder="Напр. 4" onclick="this.select()">
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div>
+        <label class="field-label" for="areaM2">Площадь, м²</label>
+        <input type="number" id="areaM2" min="0.1" step="0.1" value="20" onclick="this.select()">
+      </div>
+      <div>
+        <label class="field-label" for="heightM">Высота потолка, м</label>
+        <input type="number" id="heightM" min="1.5" max="15" step="0.1" value="2.7" onclick="this.select()">
+      </div>
+    </div>
+
+    <label class="field-label" for="roomType">Назначение помещения (ориентир по нормам)</label>
+    <select id="roomType">
+      <option value="living" data-lux="150" data-uf="0.48" data-mf="1.25" data-wet="0">Жилая комната / зал (норма ~150 лк)</option>
+      <option value="kitchen" data-lux="250" data-uf="0.50" data-mf="1.30" data-wet="0">Кухня / рабочая зона (норма ~250 лк)</option>
+      <option value="office" data-lux="300" data-uf="0.52" data-mf="1.25" data-wet="0">Кабинет / офис (норма ~300 лк)</option>
+      <option value="bath" data-lux="150" data-uf="0.45" data-mf="1.35" data-wet="1">Санузел / влажная зона (норма ~150 лк)</option>
+      <option value="carwash" data-lux="400" data-uf="0.46" data-mf="1.45" data-wet="1">Автомойка (норма ~400 лк)</option>
+      <option value="warehouse" data-lux="200" data-uf="0.46" data-mf="1.40" data-wet="0">Склад / подсобка / гараж (норма ~200 лк)</option>
+      <option value="hall" data-lux="100" data-uf="0.45" data-mf="1.30" data-wet="0">Коридор / прихожая / лестница (норма ~100 лк)</option>
+    </select>
+
+    <label class="checkbox-row" for="onlyIp65">
+      <input type="checkbox" id="onlyIp65">
+      <div>
+        <span class="checkbox-text">Только влагозащищённые (IP65)</span>
+        <span class="checkbox-sub">Исключает светильники IP20 (включается сам для влажных зон)</span>
+      </div>
+    </label>
+
+    <div id="catalogStatus" class="catalog-status">Загружаем каталог светильников из luminaires.txt...</div>
+  </div>
+
+  <div class="summary-card">
+    <div class="hint" style="margin-top:0">Ориентировочный поток с учётом обстановки (×1,5), площади, высоты и запаса</div>
+    <div class="summary-grid">
+      <div class="stat-box">
+        <div class="stat-label">Нужно светового потока</div>
+        <div class="stat-value accent" id="reqLumens">— лм</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Итоговая площадь</div>
+        <div class="stat-value" id="calcArea">— м²</div>
+      </div>
+    </div>
+    <div class="result-disclaimer">
+      <strong>Расчёт примерный:</strong> значения приведены как ориентир с поправкой на реальную обстановку (мебель, потери света и запас) — по факту света может быть меньше или больше, поэтому финальный выбор остаётся за задачей и расстановкой, без гарантии точной освещённости.
+    </div>
+  </div>
+
+  <h3>Ближайшие варианты по светильникам</h3>
+  <div class="rec-list" id="recommendationsBox"></div>
+
+  <footer class="page-footer">
+    <div class="ts-bar" aria-label="Tom Studio — Project Lumen">
+      <span class="ts-brand">Tom Studio</span>
+      <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Lumen</span>
+    </div>
+  </footer>
+
+  <script>
+    const CATALOG_FILE = "luminaires.txt";
+    const REAL_ROOM_FACTOR = 1.5;
+
+    const DEFAULT_LUMINAIRES = [
+      { name: "НБП 12-60-001 (влагозащищённый)", watts: 12, lumens: 1080, price: 650, ip: "IP65" },
+      { name: "Линейный герметичный 36Вт", watts: 36, lumens: 3400, price: 890, ip: "IP65" },
+      { name: "СПО 36Вт", watts: 36, lumens: 3200, price: 250, ip: "IP20" },
+      { name: "СПО 45Вт", watts: 45, lumens: 3800, price: 300, ip: "IP20" }
+    ];
+
+    let luminaires = [...DEFAULT_LUMINAIRES];
+
+    const lengthEl = document.getElementById("lengthM");
+    const widthEl = document.getElementById("widthM");
+    const areaEl = document.getElementById("areaM2");
+    const heightEl = document.getElementById("heightM");
+    const roomTypeEl = document.getElementById("roomType");
+    const onlyIp65El = document.getElementById("onlyIp65");
+    const catalogStatusEl = document.getElementById("catalogStatus");
+    const reqLumensEl = document.getElementById("reqLumens");
+    const calcAreaEl = document.getElementById("calcArea");
+    const recBoxEl = document.getElementById("recommendationsBox");
+    const bulbToggleEl = document.getElementById("bulbToggle");
+
+    function isEffectiveDarkTheme() {
+      const explicit = document.documentElement.getAttribute("data-theme");
+      if (explicit === "dark") return true;
+      if (explicit === "light") return false;
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+
+    function syncBulbButton() {
+      const dark = isEffectiveDarkTheme();
+      bulbToggleEl.classList.toggle("is-lit", !dark);
+      bulbToggleEl.classList.toggle("is-off", dark);
+      bulbToggleEl.title = dark ? "Тёмная тема (лампочка потухла) — включить свет" : "Светлая тема (лампочка горит) — выключить свет";
+    }
+
+    bulbToggleEl.addEventListener("click", () => {
+      const nextDark = !isEffectiveDarkTheme();
+      document.documentElement.setAttribute("data-theme", nextDark ? "dark" : "light");
+      syncBulbButton();
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        if (!document.documentElement.getAttribute("data-theme")) {
+          syncBulbButton();
+        }
+      });
+    }
+
+    syncBulbButton();
+
+    function normalizeIp(rawIp, name) {
+      const source = `${rawIp || ""} ${name || ""}`.toUpperCase();
+      const match = source.match(/IP\s*(\d{2})/);
+      if (match) {
+        return `IP${match[1]}`;
+      }
+      return "IP20";
+    }
+
+    function isWetProtected(ip) {
+      const num = parseInt(ip.replace(/\D/g, ""), 10) || 20;
+      return num >= 54;
+    }
+
+    function parseCatalogText(text) {
+      const parsed = [];
+      const lines = text.split(/\r?\n/);
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith("#") || line.startsWith("//")) continue;
+
+        const sep = line.includes("\\") ? "\\" : "|";
+        const parts = line.split(sep).map(p => p.trim());
+        if (parts.length < 3) continue;
+
+        const name = parts[0];
+        const watts = parseFloat(parts[1].replace(",", ".")) || 0;
+        const lumens = parseFloat(parts[2].replace(",", ".")) || 0;
+        const price = parts.length > 3 ? (parseFloat(parts[3].replace(",", ".")) || 0) : 0;
+        const rawIp = parts.length > 4 ? parts[4] : "";
+        const ip = normalizeIp(rawIp, name);
+
+        if (name && lumens > 0) {
+          parsed.push({ name, watts, lumens, price, ip });
+        }
+      }
+      return parsed;
+    }
+
+    async function loadCatalog() {
+      try {
+        const res = await fetch(CATALOG_FILE, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const items = parseCatalogText(text);
+
+        if (items.length > 0) {
+          luminaires = items;
+          const ip65Count = items.filter(i => isWetProtected(i.ip)).length;
+          catalogStatusEl.className = "catalog-status";
+          catalogStatusEl.textContent = `Каталог загружен из ${CATALOG_FILE}: всего — ${items.length} (влагозащищённых IP65 — ${ip65Count})`;
+        } else {
+          catalogStatusEl.className = "catalog-status warn";
+          catalogStatusEl.textContent = `${CATALOG_FILE} пуст или не содержит корректных строк — показаны базовые примеры.`;
+        }
+      } catch (e) {
+        catalogStatusEl.className = "catalog-status warn";
+        catalogStatusEl.textContent = `Файл ${CATALOG_FILE} не найден — используются базовые примеры светильников.`;
+      }
+      recalculate();
+    }
+
+    function getEffectiveUf(baseUf, l, w, area, h) {
+      let uf = baseUf;
+      if (area > 25) {
+        const extraArea = Math.min(area - 25, 175);
+        uf -= (extraArea / 175) * 0.11;
+      }
+      if (h > 2.8) {
+        const extraH = Math.min(h - 2.8, 6.0);
+        uf -= (extraH / 6.0) * 0.08;
+      }
+      if (l > 0 && w > 0) {
+        const aspect = Math.max(l, w) / Math.max(0.1, Math.min(l, w));
+        if (aspect > 1.8) {
+          uf *= 0.94;
+        }
+      }
+      return Math.max(0.28, uf);
+    }
+
+    // Округление до чётного числа в большую сторону
+    function ceilToEven(value) {
+      const n = Math.max(2, Math.ceil(value));
+      return n % 2 === 0 ? n : n + 1;
+    }
+
+    function getDesiredMinCount(area) {
+      if (area >= 60) return 6;
+      if (area >= 25) return 4;
+      return 2;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function getShortComment(count, totalFlux, targetFlux) {
+      const ratio = totalFlux / Math.max(1, targetFlux);
+      if (ratio < 0.9) {
+        return `${count} шт. — яркость ниже расчётной, лучше взять модель помощнее или добавить точек.`;
+      }
+      if (ratio > 1.45) {
+        return `${count} шт. — с хорошим запасом света, но выше мощность и сумма.`;
+      }
+      return `${count} шт. — ровная засветка и нормальный запас по свету.`;
+    }
+
+    function recalculate() {
+      const l = parseFloat(lengthEl.value) || 0;
+      const w = parseFloat(widthEl.value) || 0;
+      const area = Math.max(0.1, parseFloat(areaEl.value) || 0);
+      const height = Math.max(1.5, parseFloat(heightEl.value) || 2.7);
+
+      const opt = roomTypeEl.options[roomTypeEl.selectedIndex];
+      const lux = parseFloat(opt?.dataset?.lux) || 150;
+      const baseUf = parseFloat(opt?.dataset?.uf) || 0.48;
+      const mf = parseFloat(opt?.dataset?.mf) || 1.25;
+      const requireIp65 = onlyIp65El.checked;
+
+      const effUf = getEffectiveUf(baseUf, l, w, area, height);
+      const totalLumens = Math.ceil(((area * lux * mf) / effUf) * REAL_ROOM_FACTOR);
+
+      calcAreaEl.textContent = `${area.toFixed(1).replace(".", ",")} м²`;
+      reqLumensEl.textContent = `${totalLumens.toLocaleString("ru-RU")} лм`;
+
+      const availableLuminaires = requireIp65
+        ? luminaires.filter(item => isWetProtected(item.ip))
+        : luminaires;
+
+      recBoxEl.innerHTML = "";
+
+      if (availableLuminaires.length === 0) {
+        recBoxEl.innerHTML = `
+          <div class="empty-state">
+            В каталоге пока не найдено влагозащищённых светильников (IP65).<br>
+            Добавь в <strong>luminaires.txt</strong> модели с пометкой <strong>IP65</strong> или сними галочку выше.
+          </div>
+        `;
+        return;
+      }
+
+      const maxReasonableWatts = Math.max(60, area * 28);
+
+      const candidates = [];
+      availableLuminaires.forEach(item => {
+        const minEvenCount = getDesiredMinCount(area);
+        const exactCount = ceilToEven(totalLumens / item.lumens);
+        const primaryCount = Math.max(minEvenCount, exactCount);
+
+        const evenOptions = new Set([primaryCount]);
+        if (primaryCount > minEvenCount) {
+          evenOptions.add(primaryCount - 2);
+        }
+
+        evenOptions.forEach(count => {
+          const flux = count * item.lumens;
+          const totalWatt = count * item.watts;
+
+          if (item.watts > 0 && totalWatt > maxReasonableWatts && area <= 12) {
+            return;
+          }
+
+          const diff = Math.abs(flux - totalLumens);
+          const ratio = flux / Math.max(1, totalLumens);
+          const coverageWeight = flux >= totalLumens ? 0.88 : 1.15;
+
+          candidates.push({
+            item,
+            count,
+            flux,
+            totalWatt,
+            diff,
+            ratio,
+            score: diff * coverageWeight
+          });
+        });
+      });
+
+      let filtered = candidates.filter(c => c.ratio >= 0.55 && c.ratio <= 2.1);
+      if (filtered.length === 0) {
+        filtered = [...candidates].sort((a, b) => a.score - b.score).slice(0, 3);
+      } else {
+        filtered.sort((a, b) => a.score - b.score);
+      }
+
+      const topList = filtered.slice(0, 5);
+
+      topList.forEach(({ item, count, flux }) => {
+        const totalWatt = item.watts > 0 ? `${(count * item.watts).toLocaleString("ru-RU")} Вт` : "—";
+        const totalFluxText = `${flux.toLocaleString("ru-RU")} лм`;
+        const totalPrice = item.price > 0 ? `${(count * item.price).toLocaleString("ru-RU")} ₽` : "цена не указана";
+        const unitPriceText = item.price > 0 ? `${item.price.toLocaleString("ru-RU")} ₽/шт` : "без цены";
+        const unitWattText = item.watts > 0 ? `${item.watts} Вт · ` : "";
+        const comment = getShortComment(count, flux, totalLumens);
+
+        const card = document.createElement("div");
+        card.className = "rec-card";
+        card.innerHTML = `
+          <div class="rec-top">
+            <div>
+              <div class="rec-title">
+                <span>${escapeHtml(item.name)}</span>
+                <span class="ip-badge">${escapeHtml(item.ip)}</span>
+              </div>
+              <div class="rec-specs">${unitWattText}${item.lumens.toLocaleString("ru-RU")} лм · ${unitPriceText}</div>
+            </div>
+            <span class="qty-badge">${count} шт.</span>
+          </div>
+          <div class="rec-bottom">
+            <span>Мощность: <strong>${totalWatt}</strong></span>
+            <span>Поток: <strong>${totalFluxText}</strong></span>
+            <span>Сумма: <strong>${totalPrice}</strong></span>
+          </div>
+          <div class="rec-note">${escapeHtml(comment)}</div>
+        `;
+        recBoxEl.appendChild(card);
+      });
+    }
+
+    function syncAreaFromDimensions() {
+      const l = parseFloat(lengthEl.value);
+      const w = parseFloat(widthEl.value);
+      if (l > 0 && w > 0) {
+        areaEl.value = (Math.round(l * w * 100) / 100).toString();
+        recalculate();
+      }
+    }
+
+    lengthEl.addEventListener("input", syncAreaFromDimensions);
+    widthEl.addEventListener("input", syncAreaFromDimensions);
+
+    areaEl.addEventListener("input", () => {
+      lengthEl.value = "";
+      widthEl.value = "";
+      recalculate();
+    });
+
+    roomTypeEl.addEventListener("change", () => {
+      const opt = roomTypeEl.options[roomTypeEl.selectedIndex];
+      onlyIp65El.checked = opt?.dataset?.wet === "1";
+      recalculate();
+    });
+
+    onlyIp65El.addEventListener("change", recalculate);
+    heightEl.addEventListener("input", recalculate);
+
+    loadCatalog();
+  </script>
+</body>
+</html>
