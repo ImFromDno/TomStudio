@@ -892,14 +892,14 @@
       .print-raw {
         display: block !important;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: calc(var(--print-font-size, 6.5pt) * 0.82);
-        line-height: 1.08;
+        font-size: calc(var(--print-font-size, 6.5pt) * 0.78);
+        line-height: 1.12;
         color: #000000;
         margin-top: 0.35mm;
         max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-all;
         transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm));
       }
     }
@@ -914,10 +914,10 @@
 </head>
 <body>
   <header class="page-header">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v10">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.6">
       <span class="ts-brand">Tom Studio</span>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v10</span>
+      <span class="ts-project">Project Matrix · v11.6</span>
     </div>
   </header>
 
@@ -1055,7 +1055,7 @@
         </div>
 
         <div class="fine-offset-row">
-          <span class="fine-offset-cap-label">Серийник SN</span>
+          <span class="fine-offset-cap-label">Код (01)...(21)...</span>
           <div class="mini-field">
             <span>dx (влево/вправо)</span>
             <input type="number" id="serialDxMm" value="0" min="-15" max="15" step="0.2" />
@@ -1111,19 +1111,11 @@
         </div>
       </label>
 
-      <label class="checkbox-row" for="showSerialCheck">
-        <input type="checkbox" id="showSerialCheck" />
-        <div>
-          <span class="checkbox-text">Показывать серийный номер (AI 21)</span>
-          <span class="checkbox-sub">Извлекается из кода маркировки и выводится под матрицей</span>
-        </div>
-      </label>
-
       <label class="checkbox-row" for="showRawCodeCheck">
         <input type="checkbox" id="showRawCodeCheck" />
         <div>
-          <span class="checkbox-text">Печатать текстовую строку кода под матрицей</span>
-          <span class="checkbox-sub">По умолчанию выключено для чистоты термопечати 25×43 мм</span>
+          <span class="checkbox-text">Печатать GTIN и серийный номер (01)...(21)...</span>
+          <span class="checkbox-sub">Формат в скобках до 3 строк под матрицей (работает независимо от названия)</span>
         </div>
       </label>
     </div>
@@ -1171,11 +1163,11 @@
   <div class="grid" id="outputGrid"></div>
 
   <footer class="page-footer">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v10">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.6">
       <span class="ts-brand">Tom Studio</span>
       <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v10</span>
+      <span class="ts-project">Project Matrix · v11.6</span>
     </div>
   </footer>
 
@@ -1716,6 +1708,47 @@
       };
     }
 
+    function formatFactoryCodeDisplay(rawLine, bytes, label, gtin, serial, isBox) {
+      if (isBox) return '';
+      const cleanLine = String(rawLine || '').trim();
+      const parenMatch = cleanLine.match(/^\(01\)(\d{14})\(21\)([^\(\x1d<]+)/);
+      if (parenMatch) {
+        const cleanSerial = parenMatch[3].replace(/<GS>/gi, '').trim();
+        if (cleanSerial) {
+          return `(01)${parenMatch[2]}(21)${cleanSerial}`;
+        }
+      }
+
+      const cleanGtin = String(gtin || '').replace(/\D+/g, '');
+      const cleanSerial = String(serial || '').replace(/<GS>/gi, '').trim();
+      if (cleanGtin.length === 14 && cleanSerial) {
+        return `(01)${cleanGtin}(21)${cleanSerial}`;
+      }
+
+      if (bytes && bytes.length >= 18 && bytes[0] === 48 && bytes[1] === 49) {
+        const ascii = bytesToAscii(bytes);
+        const g14 = ascii.slice(2, 16);
+        if (/^\d{14}$/.test(g14) && ascii.slice(16, 18) === '21') {
+          const rest = ascii.slice(18);
+          const gsIdx = rest.indexOf('\x1d');
+          const sVal = gsIdx >= 0 ? rest.slice(0, gsIdx) : rest;
+          if (sVal) {
+            return `(01)${g14}(21)${sVal}`;
+          }
+        }
+      }
+
+      const plainMatch = cleanLine.match(/^01(\d{14})21([^\x1d<]+)/);
+      if (plainMatch) {
+        const sVal = plainMatch[2].replace(/<GS>/gi, '').trim();
+        if (sVal) {
+          return `(01)${plainMatch[1]}(21)${sVal}`;
+        }
+      }
+
+      return String(label || cleanLine).replace(/<GS>/gi, '').trim();
+    }
+
     function generateMatrixForLine(rawLine, mode) {
       const prepared = prepareBytes(rawLine, mode);
       const rawCw = encodeAsciiCodewords(prepared.bytes, prepared.isGs1);
@@ -1734,6 +1767,14 @@
       return {
         ...assembled,
         label: prepared.label,
+        factoryCode: formatFactoryCodeDisplay(
+          rawLine,
+          prepared.bytes,
+          prepared.label,
+          prepared.gtin,
+          prepared.serial,
+          prepared.isBox
+        ),
         isBox: prepared.isBox,
         gtin: prepared.gtin,
         serial: prepared.serial
@@ -1962,16 +2003,17 @@
       };
     }
 
-    function computeSafeLabelLayout(wMm, hMm, requestedMatrixMm, hasTop, hasSerial, hasBottom) {
+    function computeSafeLabelLayout(wMm, hMm, requestedMatrixMm, hasTop, hasCodeBlock, hasNameBlock) {
       const edgePadMm = 0.55;
       const topBandMm = hasTop ? 2.2 : 0;
-      const serialBandMm = hasSerial ? 2.4 : 0;
-      const bottomBandMm = hasBottom ? 5.2 : 0;
+      const codeBandMm = hasCodeBlock ? 5.8 : 0;
+      const nameBandMm = hasNameBlock ? 6.2 : 0;
       const topGapMm = hasTop ? 0.35 : 0;
-      const bottomGapMm = (hasSerial || hasBottom) ? 0.45 : 0;
+      const betweenBlocksGapMm = (hasCodeBlock && hasNameBlock) ? 0.35 : 0;
+      const bottomGapMm = (hasCodeBlock || hasNameBlock) ? 0.45 : 0;
 
       const topReserve = edgePadMm + topBandMm + topGapMm;
-      const bottomReserve = edgePadMm + serialBandMm + bottomBandMm + bottomGapMm;
+      const bottomReserve = edgePadMm + codeBandMm + nameBandMm + betweenBlocksGapMm + bottomGapMm;
 
       const maxByHeight = Math.max(5.5, hMm - topReserve - bottomReserve);
       const maxByWidth = Math.max(5.5, wMm - edgePadMm * 2);
@@ -1980,8 +2022,9 @@
       return {
         edgePadMm,
         topBandMm,
-        serialBandMm,
-        bottomBandMm,
+        codeBandMm,
+        nameBandMm,
+        betweenBlocksGapMm,
         topGapMm,
         bottomGapMm,
         topReserve,
@@ -2000,11 +2043,10 @@
       const h = Math.max(10, Number(document.getElementById('labelHeightMm').value) || 43);
       const reqM = Math.max(6, Number(document.getElementById('matrixSizeMm').value) || 15);
       const showMarkers = document.getElementById('showMarkersCheck').checked;
-      const showSerial = document.getElementById('showSerialCheck').checked;
       const showName = document.getElementById('showProductNameCheck').checked;
       const showRaw = document.getElementById('showRawCodeCheck').checked;
 
-      const layout = computeSafeLabelLayout(w, h, reqM, showMarkers, showSerial, showName || showRaw);
+      const layout = computeSafeLabelLayout(w, h, reqM, showMarkers, showRaw, showName);
       const ox = Number(document.getElementById('offsetXMm').value) || 0;
       const oy = Number(document.getElementById('offsetYMm').value) || 0;
       const capOff = getCaptionOffsetsMm();
@@ -2047,10 +2089,9 @@
       const capOff = getCaptionOffsetsMm();
 
       const showMarkers = document.getElementById('showMarkersCheck').checked;
-      const showSerial = document.getElementById('showSerialCheck').checked;
       const showName = document.getElementById('showProductNameCheck').checked;
       const showRaw = document.getElementById('showRawCodeCheck').checked;
-      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showSerial, showName || showRaw);
+      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showRaw, showName);
 
       const stageW = Math.max(160, stageEl.clientWidth - 24);
       const stageH = Math.max(180, stageEl.clientHeight - 24);
@@ -2097,26 +2138,29 @@
       const topBandTopPx = layout.edgePadMm * pxPerMm;
       const topBandHeightPx = layout.topBandMm * pxPerMm;
 
-      const bottomBandHeightPx = layout.bottomBandMm * pxPerMm;
-      const bottomBandTopPx = (hMm - layout.edgePadMm - layout.bottomBandMm) * pxPerMm;
+      const hasCodeBlock = Boolean(item.rawText);
+      const hasNameBlock = Boolean(item.productTitle);
+      const gapBetweenPx = (hasCodeBlock && hasNameBlock) ? layout.betweenBlocksGapMm * pxPerMm : 0;
 
-      const hasBottomMain = Boolean(item.productTitle || item.rawText);
-      const serialBandHeightPx = layout.serialBandMm * pxPerMm;
-      const serialBandTopPx = (
+      const nameBandHeightPx = layout.nameBandMm * pxPerMm;
+      const nameBandTopPx = (hMm - layout.edgePadMm - layout.nameBandMm) * pxPerMm;
+
+      const codeBandHeightPx = layout.codeBandMm * pxPerMm;
+      const codeBandTopPx = (
         hMm -
         layout.edgePadMm -
-        (hasBottomMain ? layout.bottomBandMm + 0.35 : 0) -
-        layout.serialBandMm
-      ) * pxPerMm;
+        (hasNameBlock ? layout.nameBandMm : 0) -
+        layout.codeBandMm
+      ) * pxPerMm - gapBetweenPx;
 
       const middleTopPx = (showMarkers ? layout.edgePadMm + layout.topBandMm + layout.topGapMm : layout.edgePadMm) * pxPerMm;
       const middleBottomPx = (
         hMm -
         layout.edgePadMm -
-        (hasBottomMain ? layout.bottomBandMm : 0) -
-        (showSerial ? layout.serialBandMm : 0) -
+        (hasNameBlock ? layout.nameBandMm : 0) -
+        (hasCodeBlock ? layout.codeBandMm : 0) -
         layout.bottomGapMm
-      ) * pxPerMm;
+      ) * pxPerMm - gapBetweenPx;
 
       const matrixPx = layout.safeMatrixMm * pxPerMm;
       const matrixTopPx = Math.max(
@@ -2159,11 +2203,10 @@
         }
       }
 
-      function drawPreviewCaption(text, bandTopPx, bandHeightPx, dxMm, dyMm, fontPt, bold, mono = false) {
+      function drawPreviewCaption(text, bandTopPx, bandHeightPx, dxMm, dyMm, fontPt, bold, mono = false, maxLines = 1) {
         if (!text) return;
         const maxW = Math.max(16, (wMm - layout.edgePadMm * 2) * pxPerMm);
         const maxH = Math.max(8, bandHeightPx);
-        const baseFontPx = Math.max(7.5, (fontPt * (pxPerMm * 25.4)) / 72);
         const fontFamily = mono
           ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
           : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
@@ -2173,22 +2216,50 @@
         ctx.rect(0, 0, cssW, cssH);
         ctx.clip();
 
-        ctx.font = `${bold ? '700' : '600'} ${baseFontPx.toFixed(2)}px ${fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
         const baseCx = cssW / 2 + shiftXPx;
         const baseCy = bandTopPx + maxH / 2 + shiftYPx;
         const cx = baseCx + dxMm * pxPerMm;
         const cy = baseCy - dyMm * pxPerMm;
 
-        let displayText = String(text).trim();
-        if (ctx.measureText(displayText).width > maxW) {
-          while (displayText.length > 1 && ctx.measureText(displayText + '…').width > maxW) {
-            displayText = displayText.slice(0, -1);
+        let chosenFontPx = Math.max(7.0, (fontPt * (pxPerMm * 25.4)) / 72);
+        let lines = [];
+
+        if (maxLines > 1) {
+          const minPt = 3.2;
+          let bestFits = null;
+          for (let pt = fontPt; pt >= minPt; pt -= 0.25) {
+            const px = Math.max(6.0, (pt * (pxPerMm * 25.4)) / 72);
+            ctx.font = `${bold ? '700' : '600'} ${px.toFixed(2)}px ${fontFamily}`;
+            const cand = wrapTextToLines(ctx, String(text).trim(), maxW, maxLines);
+            const lh = px * 1.14;
+            chosenFontPx = px;
+            lines = cand;
+            if (cand.length * lh <= maxH) {
+              bestFits = { px, cand };
+              if (!cand.some(l => l.endsWith('…'))) {
+                break;
+              }
+            }
           }
-          displayText += '…';
+          if (bestFits) {
+            chosenFontPx = bestFits.px;
+            lines = bestFits.cand;
+          }
+        } else {
+          ctx.font = `${bold ? '700' : '600'} ${chosenFontPx.toFixed(2)}px ${fontFamily}`;
+          let displayText = String(text).trim();
+          if (ctx.measureText(displayText).width > maxW) {
+            while (displayText.length > 1 && ctx.measureText(displayText + '…').width > maxW) {
+              displayText = displayText.slice(0, -1);
+            }
+            displayText += '…';
+          }
+          lines = [displayText];
         }
+
+        ctx.font = `${bold ? '700' : '600'} ${chosenFontPx.toFixed(2)}px ${fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
         if (Math.abs(dxMm) > 0.01 || Math.abs(dyMm) > 0.01) {
           ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
@@ -2203,8 +2274,14 @@
           ctx.setLineDash([]);
         }
 
+        const lineHeightPx = chosenFontPx * 1.14;
+        const blockHeight = lines.length * lineHeightPx;
+        const startY = cy - blockHeight / 2 + lineHeightPx / 2;
+
         ctx.fillStyle = '#000000';
-        ctx.fillText(displayText, cx, cy);
+        for (let i = 0; i < lines.length; i++) {
+          ctx.fillText(lines[i], cx, startY + i * lineHeightPx);
+        }
         ctx.restore();
       }
 
@@ -2217,34 +2294,36 @@
           capOff.markerDy,
           6.4,
           true,
-          false
+          false,
+          1
         );
       }
 
-      if (item.serialText) {
+      if (item.rawText) {
         drawPreviewCaption(
-          item.serialText,
-          serialBandTopPx,
-          serialBandHeightPx,
+          item.rawText,
+          codeBandTopPx,
+          codeBandHeightPx,
           capOff.serialDx,
           capOff.serialDy,
-          4.9,
+          4.6,
           true,
-          true
+          true,
+          3
         );
       }
 
-      const bottomCaption = item.productTitle || item.rawText || '';
-      if (bottomCaption) {
+      if (item.productTitle) {
         drawPreviewCaption(
-          bottomCaption,
-          bottomBandTopPx,
-          bottomBandHeightPx,
+          item.productTitle,
+          nameBandTopPx,
+          nameBandHeightPx,
           capOff.bottomDx,
           capOff.bottomDy,
-          item.productTitle ? 5.8 : 5.0,
-          Boolean(item.productTitle),
-          !item.productTitle
+          5.6,
+          true,
+          false,
+          3
         );
       }
 
@@ -2279,7 +2358,6 @@
       const modeEl = document.getElementById('inputMode');
       const skipEmptyEl = document.getElementById('skipEmptyCheck');
       const showMarkersEl = document.getElementById('showMarkersCheck');
-      const showSerialEl = document.getElementById('showSerialCheck');
       const showProductNameEl = document.getElementById('showProductNameCheck');
       const showRawCodeEl = document.getElementById('showRawCodeCheck');
       const defaultBoxNum = Number(document.getElementById('defaultBoxNum').value) || 1;
@@ -2323,8 +2401,8 @@
           const productTitle = showProductNameEl.checked
             ? (res.isBox ? '' : lookupProductNameByGtin(res.gtin))
             : '';
-          const serialText = showSerialEl.checked && !res.isBox && res.serial
-            ? `SN: ${res.serial}`
+          const factoryCodeText = showRawCodeEl.checked && !res.isBox
+            ? (res.factoryCode || res.label || '')
             : '';
 
           const card = document.createElement('div');
@@ -2340,33 +2418,27 @@
             <div class="label-sheet-inner">
               <div class="matrix-box">${matrixToSvg(res.matrix, res.totalRows, res.totalCols)}</div>
               <div class="print-marker">${showMarkersEl.checked ? (ann.markerText || '') : ''}</div>
-              <div class="serial-line print-serial"></div>
-              <div class="gtin-product-name print-name"></div>
               <div class="raw-code print-raw"></div>
+              <div class="gtin-product-name print-name"></div>
             </div>
           `;
 
-          card.querySelector('.serial-line').textContent = serialText;
+          card.querySelector('.raw-code').textContent = factoryCodeText;
           card.querySelector('.gtin-product-name').textContent = productTitle;
-          card.querySelector('.raw-code').textContent = showRawCodeEl.checked ? res.label : '';
 
-          if (!serialText) {
-            card.querySelector('.serial-line').style.display = 'none';
+          if (!factoryCodeText) {
+            card.querySelector('.raw-code').style.display = 'none';
           }
           if (!productTitle) {
             card.querySelector('.gtin-product-name').style.display = 'none';
-          }
-          if (!showRawCodeEl.checked) {
-            card.querySelector('.raw-code').style.display = 'none';
           }
 
           gridEl.appendChild(card);
           lastRenderedCardsData.push({
             res,
             markerText: showMarkersEl.checked ? (ann.markerText || '') : '',
-            serialText,
             productTitle,
-            rawText: showRawCodeEl.checked ? res.label : ''
+            rawText: factoryCodeText
           });
           ok++;
         } else {
@@ -2455,37 +2527,56 @@
         return [clean];
       }
 
-      const words = clean.split(' ');
       const lines = [];
-      let current = '';
+      let rem = clean;
 
-      for (let i = 0; i < words.length; i++) {
-        const candidate = current ? `${current} ${words[i]}` : words[i];
-        if (ctx.measureText(candidate).width <= maxPx) {
-          current = candidate;
-        } else {
-          if (current) {
-            lines.push(current);
-            current = words[i];
+      while (rem.length > 0 && lines.length < maxLines) {
+        if (ctx.measureText(rem).width <= maxPx) {
+          lines.push(rem);
+          rem = '';
+          break;
+        }
+
+        const isLastLine = lines.length === maxLines - 1;
+        let cutIdx = 0;
+        for (let i = 1; i <= rem.length; i++) {
+          const piece = rem.slice(0, i);
+          const testStr = isLastLine ? (piece + '…') : piece;
+          if (ctx.measureText(testStr).width <= maxPx) {
+            cutIdx = i;
           } else {
-            lines.push(words[i]);
-            current = '';
+            break;
           }
-          if (lines.length === maxLines) break;
         }
-      }
-      if (current && lines.length < maxLines) {
-        lines.push(current);
-      }
 
-      const joinedCount = lines.join(' ').length;
-      const hasOverflow = joinedCount < clean.length || (current && lines.length === maxLines && !lines.join(' ').endsWith(current));
-      if (hasOverflow && lines.length > 0) {
-        let last = lines[lines.length - 1];
-        while (last.length > 1 && ctx.measureText(last + '…').width > maxPx) {
-          last = last.slice(0, -1);
+        if (cutIdx <= 0) {
+          cutIdx = 1;
         }
-        lines[lines.length - 1] = last + '…';
+
+        if (!isLastLine && cutIdx < rem.length) {
+          const windowStart = Math.max(1, cutIdx - 10);
+          const spaceIdx = rem.lastIndexOf(' ', cutIdx);
+          if (spaceIdx >= windowStart) {
+            cutIdx = spaceIdx;
+          }
+        }
+
+        let linePart = rem.slice(0, cutIdx).trim();
+        if (!linePart) {
+          linePart = rem.slice(0, Math.max(1, cutIdx));
+        }
+
+        rem = rem.slice(cutIdx).trimStart();
+
+        if (isLastLine && rem.length > 0) {
+          while (linePart.length > 1 && ctx.measureText(linePart + '…').width > maxPx) {
+            linePart = linePart.slice(0, -1);
+          }
+          linePart = linePart + '…';
+          rem = '';
+        }
+
+        lines.push(linePart);
       }
 
       return lines;
@@ -2589,11 +2680,10 @@
       const capOff = getCaptionOffsetsMm();
 
       const showMarkers = document.getElementById('showMarkersCheck').checked;
-      const showSerial = document.getElementById('showSerialCheck').checked;
       const showName = document.getElementById('showProductNameCheck').checked;
       const showRaw = document.getElementById('showRawCodeCheck').checked;
 
-      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showSerial, showName || showRaw);
+      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showRaw, showName);
 
       const mmToPt = (mm) => (mm * 72) / 25.4;
       const pageW = mmToPt(wMm);
@@ -2647,21 +2737,22 @@
       const topBandBottomPt = pageH - mmToPt(layout.edgePadMm + layout.topBandMm);
       const topBandHeightPt = mmToPt(layout.topBandMm);
 
-      const bottomBandBottomPt = mmToPt(layout.edgePadMm);
-      const bottomBandHeightPt = mmToPt(layout.bottomBandMm);
+      const gapBetweenPt = (showRaw && showName) ? mmToPt(layout.betweenBlocksGapMm) : 0;
+      const nameBandBottomPt = mmToPt(layout.edgePadMm);
+      const nameBandHeightPt = mmToPt(layout.nameBandMm);
 
-      const serialBandBottomPt = mmToPt(layout.edgePadMm + (showName || showRaw ? layout.bottomBandMm + 0.35 : 0));
-      const serialBandHeightPt = mmToPt(layout.serialBandMm);
+      const codeBandBottomPt = mmToPt(layout.edgePadMm + (showName ? layout.nameBandMm : 0)) + gapBetweenPt;
+      const codeBandHeightPt = mmToPt(layout.codeBandMm);
 
       const middleTopPt = showMarkers
         ? pageH - mmToPt(layout.edgePadMm + layout.topBandMm + layout.topGapMm)
         : pageH - mmToPt(layout.edgePadMm);
       const middleBottomPt = mmToPt(
         layout.edgePadMm +
-        (showName || showRaw ? layout.bottomBandMm : 0) +
-        (showSerial ? layout.serialBandMm : 0) +
+        (showName ? layout.nameBandMm : 0) +
+        (showRaw ? layout.codeBandMm : 0) +
         layout.bottomGapMm
-      );
+      ) + gapBetweenPt;
       const matrixTopPt = middleTopPt - mmToPt(0.25);
       const matrixCenterYPt = Math.max(
         middleBottomPt + matrixPt / 2,
@@ -2669,7 +2760,7 @@
       );
 
       for (const item of lastRenderedCardsData) {
-        const { res, markerText, serialText, productTitle, rawText } = item;
+        const { res, markerText, productTitle, rawText } = item;
         const cols = res.totalCols;
         const rows = res.totalRows;
         const cellSize = matrixPt / Math.max(cols, rows);
@@ -2705,30 +2796,29 @@
           streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
         }
 
-        if (serialText) {
-          const cap = getOrCreateCaptionXObject(serialText, maxCaptionWidthMm, layout.serialBandMm, 4.9, true, 1, true);
-          const xName = `ImS${cap.xobjId}`;
+        if (rawText) {
+          const cap = getOrCreateCaptionXObject(rawText, maxCaptionWidthMm, layout.codeBandMm, 4.6, true, 3, true);
+          const xName = `ImC${cap.xobjId}`;
           pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
           const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.serialDx)).toFixed(3);
-          const iy = (serialBandBottomPt + (serialBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.serialDy)).toFixed(3);
+          const iy = (codeBandBottomPt + (codeBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.serialDy)).toFixed(3);
           streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
         }
 
-        const bottomCaption = productTitle || rawText || '';
-        if (bottomCaption) {
+        if (productTitle) {
           const cap = getOrCreateCaptionXObject(
-            bottomCaption,
+            productTitle,
             maxCaptionWidthMm,
-            layout.bottomBandMm,
-            productTitle ? 5.8 : 5.0,
-            Boolean(productTitle),
-            2,
-            !productTitle
+            layout.nameBandMm,
+            5.6,
+            true,
+            3,
+            false
           );
           const xName = `ImB${cap.xobjId}`;
           pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
           const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.bottomDx)).toFixed(3);
-          const iy = (bottomBandBottomPt + (bottomBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.bottomDy)).toFixed(3);
+          const iy = (nameBandBottomPt + (nameBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.bottomDy)).toFixed(3);
           streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
         }
 
@@ -2790,7 +2880,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `matrix_labels_${wMm}x${hMm}mm_v10.pdf`;
+      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.6.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3143,7 +3233,7 @@
     document.getElementById('previewScaleSelect').addEventListener('change', () => renderLivePreview());
     window.addEventListener('resize', () => renderLivePreview());
 
-    ['inputMode', 'numberingModeSelect', 'skipEmptyCheck', 'showMarkersCheck', 'showSerialCheck', 'showProductNameCheck', 'showRawCodeCheck', 'gtinSourceSelect'].forEach((id) => {
+    ['inputMode', 'numberingModeSelect', 'skipEmptyCheck', 'showMarkersCheck', 'showProductNameCheck', 'showRawCodeCheck', 'gtinSourceSelect'].forEach((id) => {
       document.getElementById(id).addEventListener('change', () => renderAll());
     });
 
