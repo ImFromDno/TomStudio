@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light dark" />
-  <title>Tom Studio — Project Matrix</title>
+  <title>Tom Studio — Project Matrix · v11.8</title>
 
-  <!-- Библиотеки для локальной распаковки ZIP и чтения таблиц (.xlsx, .xls, .csv) как в Project Agregator -->
+  <!-- Библиотеки для локальной распаковки ZIP и чтения таблиц (.xlsx, .xls, .csv) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -372,6 +372,52 @@
       font-size: 13px;
     }
 
+    .preset-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .preset-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .preset-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .preset-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) auto auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    @media (max-width: 560px) {
+      .preset-controls {
+        grid-template-columns: 1fr 1fr;
+      }
+      .preset-controls select {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .preset-controls select {
+      margin-top: 0;
+      padding: 6px 8px;
+      font-size: 12.5px;
+    }
+
     .fine-offset-box {
       margin-top: 8px;
       padding: 10px 12px;
@@ -621,6 +667,7 @@
     button.action-btn.small {
       padding: 5px 10px;
       font-size: 12px;
+      white-space: nowrap;
     }
 
     button.action-btn:hover:not(:disabled) {
@@ -845,9 +892,10 @@
         background: #ffffff !important;
         padding: 0 !important;
         border-radius: 0 !important;
-        width: var(--print-matrix-size, 15mm) !important;
-        height: var(--print-matrix-size, 15mm) !important;
+        width: var(--print-matrix-size, 20mm) !important;
+        height: var(--print-matrix-size, 20mm) !important;
         flex-shrink: 0;
+        transform: translate(var(--print-matrix-dx, 0mm), var(--print-matrix-dy, 0mm));
       }
 
       .print-marker {
@@ -914,10 +962,10 @@
 </head>
 <body>
   <header class="page-header">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.6">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.8">
       <span class="ts-brand">Tom Studio</span>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v11.6</span>
+      <span class="ts-project">Project Matrix · v11.8</span>
     </div>
   </header>
 
@@ -989,8 +1037,22 @@
         </div>
 
         <div class="compact-preview-foot">
-          <span id="previewDimsInfo">25×43 мм · матрица 15.0 мм</span>
+          <span id="previewDimsInfo">25×43 мм · матрица 20.0 мм</span>
           <span id="previewOffsetsInfo">dx/dy: 0</span>
+        </div>
+      </div>
+
+      <div class="preset-box" aria-label="Пресеты из TXT-файла">
+        <div class="preset-top">
+          <span class="preset-title" id="presetStatusLabel">Пресеты (.txt) · встроенный №1</span>
+          <input type="file" id="presetsTxtInput" accept=".txt,text/plain" hidden />
+        </div>
+        <div class="preset-controls">
+          <select id="presetSelect" title="Выбор пресета из загруженного TXT">
+            <option value="0">25x43 Матрица 20 (dy DM -1, код +3.2, название +2)</option>
+          </select>
+          <button type="button" class="action-btn small" id="loadPresetsBtn">Загрузить .txt</button>
+          <button type="button" class="action-btn small" id="exportPresetBtn">Сохранить .txt</button>
         </div>
       </div>
     </div>
@@ -1017,7 +1079,7 @@
         </div>
         <div class="mini-field">
           <span>Размер матрицы (мм)</span>
-          <input type="number" id="matrixSizeMm" value="15" min="6" max="120" step="0.5" />
+          <input type="number" id="matrixSizeMm" value="20" min="6" max="200" step="0.5" />
         </div>
       </div>
 
@@ -1040,6 +1102,18 @@
         <div class="fine-offset-header">
           <span class="fine-offset-title">Тонкое смещение надписей (мм)</span>
           <button type="button" class="action-btn small" id="resetCaptionOffsetsBtn">Сбросить (0)</button>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Матрица (DM)</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="matrixDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="matrixDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
         </div>
 
         <div class="fine-offset-row">
@@ -1163,11 +1237,11 @@
   <div class="grid" id="outputGrid"></div>
 
   <footer class="page-footer">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.6">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.8">
       <span class="ts-brand">Tom Studio</span>
       <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v11.6</span>
+      <span class="ts-project">Project Matrix · v11.8</span>
     </div>
   </footer>
 
@@ -1178,6 +1252,196 @@
     };
 
     const GTIN_CACHE_KEY = 'tom_studio_matrix_gtin_cache_v1';
+
+    const DEFAULT_PRESETS_TXT = `[25x43 Матрица 20 (dy DM -1, код +3.2, название +2)]
+inputMode=auto
+labelWidthMm=25
+labelHeightMm=43
+matrixSizeMm=20
+offsetXMm=0
+offsetYMm=0
+defaultBoxNum=1
+
+matrixDxMm=0
+matrixDyMm=-1
+markerDxMm=0
+markerDyMm=-0.4
+serialDxMm=0
+serialDyMm=3.2
+bottomDxMm=0
+bottomDyMm=2
+
+skipEmptyCheck=true
+showMarkersCheck=true
+numberingModeSelect=box_group
+showProductNameCheck=true
+showRawCodeCheck=true
+`;
+
+    const PRESET_FIELD_META = [
+      { id: 'inputMode', type: 'select' },
+      { id: 'labelWidthMm', type: 'number' },
+      { id: 'labelHeightMm', type: 'number' },
+      { id: 'matrixSizeMm', type: 'number' },
+      { id: 'offsetXMm', type: 'number' },
+      { id: 'offsetYMm', type: 'number' },
+      { id: 'defaultBoxNum', type: 'number' },
+      { id: 'matrixDxMm', type: 'number' },
+      { id: 'matrixDyMm', type: 'number' },
+      { id: 'markerDxMm', type: 'number' },
+      { id: 'markerDyMm', type: 'number' },
+      { id: 'serialDxMm', type: 'number' },
+      { id: 'serialDyMm', type: 'number' },
+      { id: 'bottomDxMm', type: 'number' },
+      { id: 'bottomDyMm', type: 'number' },
+      { id: 'skipEmptyCheck', type: 'checkbox' },
+      { id: 'showMarkersCheck', type: 'checkbox' },
+      { id: 'numberingModeSelect', type: 'select' },
+      { id: 'showProductNameCheck', type: 'checkbox' },
+      { id: 'showRawCodeCheck', type: 'checkbox' },
+      { id: 'gtinSourceSelect', type: 'select' }
+    ];
+
+    let loadedPresets = [];
+    let isApplyingPreset = false;
+
+    function parsePresetsTxt(text) {
+      const cleanText = String(text || '').replace(/^\uFEFF/, '');
+      const lines = cleanText.split(/\r?\n/);
+      const presets = [];
+      let current = null;
+
+      for (const rawLine of lines) {
+        const trimmed = rawLine.trim();
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith(';')) continue;
+
+        const secMatch = trimmed.match(/^\[([^\]]+)\]$/);
+        if (secMatch) {
+          current = {
+            name: secMatch[1].trim(),
+            values: {}
+          };
+          presets.push(current);
+          continue;
+        }
+
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          if (!current) {
+            current = {
+              name: 'Пресет 1',
+              values: {}
+            };
+            presets.push(current);
+          }
+          const key = trimmed.slice(0, eqIdx).trim();
+          const val = trimmed.slice(eqIdx + 1).trim();
+          if (key) {
+            current.values[key] = val;
+          }
+        }
+      }
+
+      return presets;
+    }
+
+    function applyPresetObject(preset) {
+      if (!preset || !preset.values) return;
+      isApplyingPreset = true;
+      try {
+        for (const [key, rawVal] of Object.entries(preset.values)) {
+          const el = document.getElementById(key);
+          if (!el) continue;
+
+          if (el.type === 'checkbox') {
+            const lower = String(rawVal).toLowerCase();
+            el.checked = (lower === 'true' || lower === '1' || lower === 'yes' || lower === 'on' || lower === 'да');
+          } else if (el.tagName === 'SELECT') {
+            const hasOpt = Array.from(el.options).some(o => o.value === rawVal);
+            if (hasOpt) {
+              el.value = rawVal;
+            }
+          } else {
+            const numVal = Number(String(rawVal).replace(',', '.'));
+            if (el.type === 'number') {
+              if (Number.isFinite(numVal)) {
+                el.value = String(numVal);
+              }
+            } else {
+              el.value = rawVal;
+            }
+          }
+        }
+      } finally {
+        isApplyingPreset = false;
+      }
+      renderAll();
+    }
+
+    function populatePresetSelect(presets, selectIndex = 0) {
+      const selEl = document.getElementById('presetSelect');
+      if (!Array.isArray(presets) || presets.length === 0) {
+        selEl.innerHTML = '<option value="">Нет пресетов</option>';
+        selEl.value = '';
+        return;
+      }
+      selEl.innerHTML = presets.map((p, idx) => {
+        const safeName = p.name || `Пресет ${idx + 1}`;
+        return `<option value="${idx}">${safeName}</option>`;
+      }).join('');
+      const clamped = Math.max(0, Math.min(presets.length - 1, selectIndex));
+      selEl.value = String(clamped);
+    }
+
+    function serializeCurrentSettingsToTxt(presetName = '') {
+      const now = new Date();
+      const stamp = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const w = document.getElementById('labelWidthMm').value;
+      const h = document.getElementById('labelHeightMm').value;
+      const m = document.getElementById('matrixSizeMm').value;
+      const title = (presetName || `${w}x${h} Матрица ${m} (${stamp})`).replace(/[\[\]\r\n]+/g, ' ').trim();
+
+      const lines = [`[${title}]`];
+      for (const meta of PRESET_FIELD_META) {
+        const el = document.getElementById(meta.id);
+        if (!el) continue;
+        if (meta.type === 'checkbox') {
+          lines.push(`${meta.id}=${el.checked ? 'true' : 'false'}`);
+        } else {
+          lines.push(`${meta.id}=${el.value}`);
+        }
+      }
+      return lines.join('\n') + '\n';
+    }
+
+    function downloadCurrentPresetTxt() {
+      const txt = serializeCurrentSettingsToTxt();
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'matrix_preset_v11.8.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setBanner('Сохранён файл пресета matrix_preset_v11.8.txt — можете скопировать секцию [...] в общий файл.', 'success');
+    }
+
+    async function handlePresetsTxtFile(file) {
+      if (!file) return;
+      const text = await file.text();
+      const parsed = parsePresetsTxt(text);
+      if (!parsed.length) {
+        setBanner(`В файле «${file.name}» не найдено ни одного пресета.`, 'warn');
+        return;
+      }
+      loadedPresets = parsed;
+      populatePresetSelect(loadedPresets, 0);
+      document.getElementById('presetStatusLabel').textContent = `Пресеты из «${file.name}» (${loadedPresets.length})`;
+      applyPresetObject(loadedPresets[0]);
+      setBanner(`Загружено пресетов из «${file.name}»: ${loadedPresets.length}. Выбран: «${loadedPresets[0].name}».`, 'success');
+    }
 
     let gtinMaps = {
       belsvet: new Map(),
@@ -1713,9 +1977,9 @@
       const cleanLine = String(rawLine || '').trim();
       const parenMatch = cleanLine.match(/^\(01\)(\d{14})\(21\)([^\(\x1d<]+)/);
       if (parenMatch) {
-        const cleanSerial = parenMatch[3].replace(/<GS>/gi, '').trim();
+        const cleanSerial = parenMatch[2].replace(/<GS>/gi, '').trim();
         if (cleanSerial) {
-          return `(01)${parenMatch[2]}(21)${cleanSerial}`;
+          return `(01)${parenMatch[1]}(21)${cleanSerial}`;
         }
       }
 
@@ -1994,6 +2258,8 @@
         return Number.isFinite(v) ? v : 0;
       };
       return {
+        matrixDx: num('matrixDxMm'),
+        matrixDy: num('matrixDyMm'),
         markerDx: num('markerDxMm'),
         markerDy: num('markerDyMm'),
         serialDx: num('serialDxMm'),
@@ -2015,9 +2281,7 @@
       const topReserve = edgePadMm + topBandMm + topGapMm;
       const bottomReserve = edgePadMm + codeBandMm + nameBandMm + betweenBlocksGapMm + bottomGapMm;
 
-      const maxByHeight = Math.max(5.5, hMm - topReserve - bottomReserve);
-      const maxByWidth = Math.max(5.5, wMm - edgePadMm * 2);
-      const safeMatrixMm = Math.max(5.5, Math.min(requestedMatrixMm, maxByHeight, maxByWidth));
+      const safeMatrixMm = Math.max(5.5, requestedMatrixMm);
 
       return {
         edgePadMm,
@@ -2057,6 +2321,8 @@
       rootStyle.setProperty('--print-matrix-size', `${layout.safeMatrixMm.toFixed(2)}mm`);
       rootStyle.setProperty('--print-offset-x', `${ox}mm`);
       rootStyle.setProperty('--print-offset-y', `${oy}mm`);
+      rootStyle.setProperty('--print-matrix-dx', formatMmVal(capOff.matrixDx));
+      rootStyle.setProperty('--print-matrix-dy', formatMmVal(-capOff.matrixDy));
       rootStyle.setProperty('--print-marker-dx', formatMmVal(capOff.markerDx));
       rootStyle.setProperty('--print-marker-dy', formatMmVal(-capOff.markerDy));
       rootStyle.setProperty('--print-serial-dx', formatMmVal(capOff.serialDx));
@@ -2167,8 +2433,10 @@
         middleTopPx + 0.25 * pxPerMm,
         Math.min(middleTopPx + 0.25 * pxPerMm, middleBottomPx - matrixPx)
       );
-      const matrixLeftPx = (wMm * pxPerMm - matrixPx) / 2 + shiftXPx;
-      const matrixFinalTopPx = matrixTopPx + shiftYPx;
+      const matrixShiftXPx = capOff.matrixDx * pxPerMm;
+      const matrixShiftYPx = -capOff.matrixDy * pxPerMm;
+      const matrixLeftPx = (wMm * pxPerMm - matrixPx) / 2 + shiftXPx + matrixShiftXPx;
+      const matrixFinalTopPx = matrixTopPx + shiftYPx + matrixShiftYPx;
 
       const cols = item.res.totalCols;
       const rows = item.res.totalRows;
@@ -2330,7 +2598,7 @@
       ctx.restore();
 
       dimsInfoEl.textContent = `${wMm}×${hMm} мм · матр. ${layout.safeMatrixMm.toFixed(1)} мм · #${idx + 1}`;
-      offsetsInfoEl.textContent = `лист (${oxMm},${oyMm}) · М(${capOff.markerDx},${capOff.markerDy}) SN(${capOff.serialDx},${capOff.serialDy}) Н(${capOff.bottomDx},${capOff.bottomDy})`;
+      offsetsInfoEl.textContent = `лист (${oxMm},${oyMm}) · DM(${capOff.matrixDx},${capOff.matrixDy}) М(${capOff.markerDx},${capOff.markerDy}) SN(${capOff.serialDx},${capOff.serialDy}) Н(${capOff.bottomDx},${capOff.bottomDy})`;
     }
 
     function syncPreviewSelector() {
@@ -2767,8 +3035,8 @@
         const matrixW = cols * cellSize;
         const matrixH = rows * cellSize;
 
-        const startX = (pageW - matrixW) / 2 + shiftXPt;
-        const startYBottom = matrixCenterYPt - matrixH / 2 + shiftYPt;
+        const startX = (pageW - matrixW) / 2 + shiftXPt + mmToPt(capOff.matrixDx);
+        const startYBottom = matrixCenterYPt - matrixH / 2 + shiftYPt + mmToPt(capOff.matrixDy);
 
         const streamCmds = [];
         streamCmds.push('0 0 0 rg');
@@ -2880,7 +3148,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.6.pdf`;
+      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.8.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3200,6 +3468,24 @@
       }
     });
 
+    const presetsTxtInputEl = document.getElementById('presetsTxtInput');
+    const presetSelectEl = document.getElementById('presetSelect');
+    document.getElementById('loadPresetsBtn').addEventListener('click', () => presetsTxtInputEl.click());
+    presetsTxtInputEl.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handlePresetsTxtFile(e.target.files[0]);
+        presetsTxtInputEl.value = '';
+      }
+    });
+    presetSelectEl.addEventListener('change', () => {
+      const idx = Number(presetSelectEl.value);
+      if (Number.isInteger(idx) && loadedPresets[idx]) {
+        applyPresetObject(loadedPresets[idx]);
+        setBanner(`Применён пресет: «${loadedPresets[idx].name}».`, 'success');
+      }
+    });
+    document.getElementById('exportPresetBtn').addEventListener('click', () => downloadCurrentPresetTxt());
+
     document.getElementById('renderBtn').addEventListener('click', () => renderAll());
     document.getElementById('pdfBtn').addEventListener('click', () => downloadLabelsPdf43x25());
     document.getElementById('printBtn').addEventListener('click', () => {
@@ -3222,7 +3508,7 @@
     });
 
     document.getElementById('resetCaptionOffsetsBtn').addEventListener('click', () => {
-      ['markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
+      ['matrixDxMm', 'matrixDyMm', 'markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
         document.getElementById(id).value = '0';
       });
       syncPrintCssVars();
@@ -3234,17 +3520,26 @@
     window.addEventListener('resize', () => renderLivePreview());
 
     ['inputMode', 'numberingModeSelect', 'skipEmptyCheck', 'showMarkersCheck', 'showProductNameCheck', 'showRawCodeCheck', 'gtinSourceSelect'].forEach((id) => {
-      document.getElementById(id).addEventListener('change', () => renderAll());
+      document.getElementById(id).addEventListener('change', () => {
+        if (!isApplyingPreset) renderAll();
+      });
     });
 
-    ['labelWidthMm', 'labelHeightMm', 'matrixSizeMm', 'offsetXMm', 'offsetYMm', 'defaultBoxNum', 'markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
+    ['labelWidthMm', 'labelHeightMm', 'matrixSizeMm', 'offsetXMm', 'offsetYMm', 'defaultBoxNum', 'matrixDxMm', 'matrixDyMm', 'markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
       document.getElementById(id).addEventListener('input', () => {
+        if (isApplyingPreset) return;
         syncPrintCssVars();
         renderLivePreview();
       });
     });
 
     document.getElementById('refreshGtinBtn').addEventListener('click', () => fetchGtinDatabases(true));
+
+    loadedPresets = parsePresetsTxt(DEFAULT_PRESETS_TXT);
+    populatePresetSelect(loadedPresets, 0);
+    if (loadedPresets[0]) {
+      applyPresetObject(loadedPresets[0]);
+    }
 
     loadGtinCache();
     fetchGtinDatabases(false);
