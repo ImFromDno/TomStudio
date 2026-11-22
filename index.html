@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Tom Studio — Project Tools</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/agregator.svg">
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --card-2: #fafafa;
+      --card-hover: #f8fafc;
+      --text: #333333;
+      --muted: #666666;
+      --border: #dddddd;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.1);
+      --accent: #1a73e8;
+      --accent-soft: #1d4ed8;
+      --badge-bg: #e8f0fe;
+      --badge-text: #174ea6;
+      --badge-border: #d2e3fc;
+      --warn-text: #9a6700;
+      --warn-bg: #fef7e0;
+      --warn-border: #fde293;
+      --bar-bg: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+      --bar-border: rgba(147, 197, 253, 0.28);
+      --bar-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-2: #0b1220;
+        --card-hover: #243247;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+        --shadow-hover: 0 10px 22px rgba(0, 0, 0, 0.45);
+        --accent: #3b82f6;
+        --accent-soft: #93c5fd;
+        --badge-bg: rgba(59, 130, 246, 0.16);
+        --badge-text: #bfdbfe;
+        --badge-border: rgba(96, 165, 250, 0.35);
+        --warn-text: #fde68a;
+        --warn-bg: rgba(245, 158, 11, 0.14);
+        --warn-border: rgba(245, 158, 11, 0.35);
+        --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        --bar-border: rgba(96, 165, 250, 0.32);
+        --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --card-hover: #243247;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      --shadow-hover: 0 10px 22px rgba(0, 0, 0, 0.45);
+      --accent: #3b82f6;
+      --accent-soft: #93c5fd;
+      --badge-bg: rgba(59, 130, 246, 0.16);
+      --badge-text: #bfdbfe;
+      --badge-border: rgba(96, 165, 250, 0.35);
+      --warn-text: #fde68a;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --warn-border: rgba(245, 158, 11, 0.35);
+      --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      --bar-border: rgba(96, 165, 250, 0.32);
+      --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 8px auto 24px;
+      padding: 0 15px 15px;
+      max-width: 540px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: var(--bar-bg);
+      border: 1px solid var(--bar-border);
+      box-shadow: var(--bar-shadow);
+      color: #ffffff;
+    }
+
+    .ts-brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .ts-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.26);
+      flex-shrink: 0;
+    }
+
+    .page-header .ts-divider {
+      margin-left: auto;
+    }
+
+    .ts-project {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bulb-btn {
+      appearance: none;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .bulb-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.05);
+    }
+
+    .bulb-btn.is-lit {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: rgba(253, 224, 71, 0.65);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      opacity: 1;
+    }
+
+    .bulb-btn.is-off {
+      opacity: 0.45;
+      filter: grayscale(0.85);
+      box-shadow: none;
+    }
+
+    .page-header {
+      margin-bottom: 14px;
+    }
+
+    .tools-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tool-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      background: var(--card-hover);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .tool-icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tool-icon-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .tool-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tool-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tool-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+    }
+
+    .tool-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      border: 1px solid var(--badge-border);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tool-desc {
+      margin-top: 5px;
+      font-size: 13.5px;
+      line-height: 1.42;
+      color: var(--muted);
+    }
+
+    .status-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+
+    .status-box.warn {
+      border-color: var(--warn-border);
+      background: var(--warn-bg);
+      color: var(--warn-text);
+    }
+
+    .page-footer {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 440px) {
+      .ts-bar {
+        padding: 11px 15px;
+        gap: 8px;
+      }
+
+      .ts-brand {
+        font-size: 18px;
+      }
+
+      .ts-divider {
+        height: 19px;
+      }
+
+      .ts-project {
+        font-size: 14px;
+      }
+
+      .tool-icon-wrap {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ts-bar" aria-label="Tom Studio — Project Tools">
+      <span class="ts-brand">Tom Studio</span>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Tools</span>
+    </div>
+  </header>
+
+  <main class="tools-list" id="toolsList">
+    <div class="status-box">Загрузка списка инструментов...</div>
+  </main>
+
+  <footer class="page-footer">
+    <div class="ts-bar" aria-label="Tom Studio — Project Tools">
+      <span class="ts-brand">Tom Studio</span>
+      <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Tools</span>
+    </div>
+  </footer>
+
+  <script>
+    // Вставь сюда опубликованную CSV-ссылку из Google Таблиц
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJuaQqGRy__7EW7EH5zNEsG_bm_2kWgRZ75V8V0dXNWVwIoEzkV61LEYaAtQvYIp5_nR5eUfbggpwC/pub?output=csv";
+
+    const FALLBACK_TOOLS = [
+      {
+        active: "TRUE",
+        title: "Agregator",
+        badge: "",
+        description: "Обработка агрегации, сборка и работа с кодами",
+        url: "./agregator/",
+        icon: "./assets/icons/agregator.svg"
+      }
+    ];
+
+    const toolsListEl = document.getElementById("toolsList");
+    const bulbToggleEl = document.getElementById("bulbToggle");
+
+    function isEffectiveDarkTheme() {
+      const explicit = document.documentElement.getAttribute("data-theme");
+      if (explicit === "dark") return true;
+      if (explicit === "light") return false;
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+
+    function syncBulbButton() {
+      const dark = isEffectiveDarkTheme();
+      bulbToggleEl.classList.toggle("is-lit", !dark);
+      bulbToggleEl.classList.toggle("is-off", dark);
+      bulbToggleEl.title = dark
+        ? "Тёмная тема (лампочка потухла) — включить свет"
+        : "Светлая тема (лампочка горит) — выключить свет";
+    }
+
+    bulbToggleEl.addEventListener("click", () => {
+      const nextDark = !isEffectiveDarkTheme();
+      document.documentElement.setAttribute("data-theme", nextDark ? "dark" : "light");
+      syncBulbButton();
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        if (!document.documentElement.getAttribute("data-theme")) {
+          syncBulbButton();
+        }
+      });
+    }
+
+    syncBulbButton();
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let cur = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (ch === '"' && inQuotes && next === '"') {
+          cur += '"';
+          i++;
+        } else if (ch === '"') {
+          inQuotes = !inQuotes;
+        } else if (ch === "," && !inQuotes) {
+          row.push(cur.trim());
+          cur = "";
+        } else if ((ch === "\n" || (ch === "\r" && next === "\n")) && !inQuotes) {
+          if (ch === "\r") i++;
+          row.push(cur.trim());
+          if (row.some(cell => cell !== "")) rows.push(row);
+          row = [];
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+
+      if (cur.length > 0 || row.length > 0) {
+        row.push(cur.trim());
+        if (row.some(cell => cell !== "")) rows.push(row);
+      }
+
+      if (rows.length < 2) return [];
+
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      return rows.slice(1).map(cells => {
+        const item = {};
+        headers.forEach((h, idx) => {
+          item[h] = cells[idx] ?? "";
+        });
+        return item;
+      });
+    }
+
+    function isActiveRow(value) {
+      const v = String(value ?? "").trim().toLowerCase();
+      return ["true", "1", "да", "yes", "on", "+"].includes(v);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderTools(items) {
+      const visibleItems = items.filter(item => isActiveRow(item.active) && String(item.title || "").trim() !== "");
+      toolsListEl.innerHTML = "";
+
+      if (!visibleItems.length) {
+        toolsListEl.innerHTML = '<div class="status-box">Нет активных инструментов для отображения.</div>';
+        return;
+      }
+
+      visibleItems.forEach(item => {
+        const title = String(item.title || "").trim();
+        const badge = String(item.badge || "").trim();
+        const description = String(item.description || "").trim();
+        const url = String(item.url || "#").trim() || "#";
+        const icon = String(item.icon || "./assets/icons/agregator.svg").trim() || "./assets/icons/agregator.svg";
+
+        const card = document.createElement("a");
+        card.className = "tool-card";
+        card.href = url;
+
+        if (/^https?:\/\//i.test(url)) {
+          card.target = "_blank";
+          card.rel = "noopener noreferrer";
+        }
+
+        const badgeHtml = badge
+          ? `<span class="tool-badge">${escapeHtml(badge)}</span>`
+          : "";
+
+        card.innerHTML = `
+          <div class="tool-icon-wrap">
+            <img src="${escapeHtml(icon)}" alt="${escapeHtml(title)}" loading="lazy">
+          </div>
+          <div class="tool-body">
+            <div class="tool-top">
+              <div class="tool-title">${escapeHtml(title)}</div>
+              ${badgeHtml}
+            </div>
+            ${description ? `<div class="tool-desc">${escapeHtml(description)}</div>` : ""}
+          </div>
+        `;
+
+        toolsListEl.appendChild(card);
+      });
+    }
+
+    async function loadTools() {
+      const cleanUrl = String(SHEET_CSV_URL || "").trim();
+      if (!cleanUrl) {
+        renderTools(FALLBACK_TOOLS);
+        return;
+      }
+
+      try {
+        const sep = cleanUrl.includes("?") ? "&" : "?";
+        const res = await fetch(`${cleanUrl}${sep}_t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const csvText = await res.text();
+        const parsed = parseCSV(csvText);
+        renderTools(parsed);
+      } catch (err) {
+        console.warn("Ошибка загрузки таблицы:", err);
+        toolsListEl.innerHTML = '<div class="status-box warn">Не удалось загрузить список из Google Таблицы. Проверь публикацию CSV и ссылку.</div>';
+      }
+    }
+
+    loadTools();
+  </script>
+</body>
+</html>
