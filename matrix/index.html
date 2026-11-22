@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light dark" />
-  <link rel="icon" type="image/svg+xml" href="../assets/icons/matrix.svg">
   <title>Tom Studio — Project Matrix</title>
 
   <!-- Библиотеки для локальной распаковки ZIP и чтения таблиц (.xlsx, .xls, .csv) как в Project Agregator -->
@@ -189,6 +188,7 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 14px;
+      align-items: stretch;
     }
 
     @media (max-width: 820px) {
@@ -206,6 +206,7 @@
 
     .two-col .card {
       margin-bottom: 0;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -221,11 +222,11 @@
       border: 2px dashed var(--border);
       border-radius: 10px;
       background: var(--card-2);
-      padding: 18px 14px;
+      padding: 12px 12px;
       text-align: center;
       cursor: pointer;
-      flex: 1;
-      min-height: 120px;
+      min-height: 78px;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -242,19 +243,19 @@
     }
 
     .dropzone-main {
-      font-size: 14.5px;
+      font-size: 13.5px;
       font-weight: 700;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
       color: var(--text);
     }
 
     .dropzone-sub {
-      font-size: 12.5px;
+      font-size: 11.5px;
       color: var(--muted);
     }
 
     .dropzone-actions {
-      margin-top: 8px;
+      margin-top: 5px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
@@ -268,7 +269,7 @@
       padding: 2px 4px;
       color: var(--accent);
       text-decoration: underline;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
@@ -278,11 +279,12 @@
     }
 
     .info-banner {
-      margin-top: 10px;
-      padding: 9px 12px;
+      margin-top: 8px;
+      padding: 7px 10px;
       border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.4;
+      font-size: 12px;
+      line-height: 1.35;
+      flex-shrink: 0;
       border: 1px solid var(--info-border);
       background: var(--info-bg);
       color: var(--info-text);
@@ -363,10 +365,56 @@
       margin-bottom: 2px;
     }
 
-    .mini-field input {
+    .mini-field input,
+    .mini-field select {
       margin-top: 0;
       padding: 6px 8px;
       font-size: 13px;
+    }
+
+    .fine-offset-box {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+    }
+
+    .fine-offset-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .fine-offset-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .fine-offset-row {
+      display: grid;
+      grid-template-columns: minmax(96px, 1.2fr) repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 520px) {
+      .fine-offset-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .fine-offset-cap-label {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .fine-offset-cap-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
     }
 
     .checkbox-row {
@@ -405,14 +453,97 @@
     }
 
     .db-status-row {
-      margin-top: 8px;
+      margin-top: 6px;
+      flex-shrink: 0;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--muted);
+    }
+
+    .compact-preview-box {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compact-preview-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .compact-preview-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .compact-preview-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compact-preview-controls select {
+      margin-top: 0;
+      padding: 4px 8px;
+      font-size: 12px;
+      width: auto;
+      min-width: 88px;
+    }
+
+    .compact-preview-stage {
+      flex: 1 1 auto;
+      min-height: 200px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .live-label-sheet {
+      position: relative;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #94a3b8;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .live-label-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .compact-preview-foot {
+      margin-top: 8px;
+      flex-shrink: 0;
+      font-size: 11.5px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 6px;
     }
 
     .summary-card {
@@ -726,6 +857,7 @@
         line-height: 1.1;
         color: #000000;
         margin-top: 0.2mm;
+        transform: translate(var(--print-marker-dx, 0mm), var(--print-marker-dy, 0mm));
       }
 
       .print-serial {
@@ -740,6 +872,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transform: translate(var(--print-serial-dx, 0mm), var(--print-serial-dy, 0mm));
       }
 
       .print-name {
@@ -753,6 +886,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm));
       }
 
       .print-raw {
@@ -766,6 +900,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm));
       }
     }
 
@@ -806,7 +941,7 @@
         </div>
       </div>
 
-      <label class="field-label" style="margin-top: 12px;">Справочник названий по GTIN (из таблиц ЧЗ)</label>
+      <label class="field-label" style="margin-top: 8px;">Справочник названий по GTIN (из таблиц ЧЗ)</label>
       <div class="settings-grid-2">
         <div class="mini-field">
           <span>Источник базы</span>
@@ -830,6 +965,33 @@
 
       <div class="info-banner" id="bannerInfo">
         Поддерживаются ZIP-архивы с таблицами, таблицы Excel (.xlsx / .xls) и CSV/TXT. Шапки пропускаются автоматически.
+      </div>
+
+      <div class="compact-preview-box" aria-label="Предпросмотр этикетки">
+        <div class="compact-preview-head">
+          <span class="compact-preview-title">Предпросмотр этикетки</span>
+          <div class="compact-preview-controls">
+            <select id="previewIndexSelect" disabled title="Выбор этикетки">
+              <option value="0">—</option>
+            </select>
+            <select id="previewScaleSelect" title="Масштаб предпросмотра">
+              <option value="fit" selected>Авто (крупно)</option>
+              <option value="4.5">450%</option>
+              <option value="6">600%</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="compact-preview-stage" id="previewStage">
+          <div class="live-label-sheet" id="liveLabelSheet">
+            <canvas id="livePreviewCanvas" class="live-label-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="compact-preview-foot">
+          <span id="previewDimsInfo">25×43 мм · матрица 15.0 мм</span>
+          <span id="previewOffsetsInfo">dx/dy: 0</span>
+        </div>
       </div>
     </div>
 
@@ -871,6 +1033,49 @@
         <div class="mini-field">
           <span>Номер коробки (если файл без SSCC)</span>
           <input type="number" id="defaultBoxNum" value="1" min="1" max="99999" step="1" />
+        </div>
+      </div>
+
+      <div class="fine-offset-box" aria-label="Тонкое смещение надписей относительно текущей позиции">
+        <div class="fine-offset-header">
+          <span class="fine-offset-title">Тонкое смещение надписей (мм)</span>
+          <button type="button" class="action-btn small" id="resetCaptionOffsetsBtn">Сбросить (0)</button>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Нумерация</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="markerDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="markerDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Серийник SN</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="serialDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="serialDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Название / код</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="bottomDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="bottomDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
         </div>
       </div>
 
@@ -988,7 +1193,6 @@
       updatedAt: null
     };
 
-    // Таблица квадратных символов DataMatrix ECC200 (ISO/IEC 16022)
     const ECC200_SIZES = [
       { rows: 10, cols: 10, rReg: 1, cReg: 1, dataCw: 3,   ecCw: 5,   blocks: 1 },
       { rows: 12, cols: 12, rReg: 1, cReg: 1, dataCw: 5,   ecCw: 7,   blocks: 1 },
@@ -1016,7 +1220,6 @@
       { rows: 144, cols: 144, rReg: 6, cReg: 6, dataCw: 1558, ecCw: 620, blocks: 10 }
     ];
 
-    // Поле Галуа GF(256) с полиномом 0x12D (301) для DataMatrix ECC200
     const GF_EXP = new Uint8Array(512);
     const GF_LOG = new Uint8Array(256);
     (function initGF() {
@@ -1555,8 +1758,6 @@
       bannerEl.textContent = text;
     }
 
-    /* ================= Справочник GTIN из Google Таблиц ================= */
-
     function parseSimpleCsvLine(line) {
       const result = [];
       let cur = '';
@@ -1696,8 +1897,6 @@
       }
     }
 
-    /* ================= Нумерация коробок и вложений ================= */
-
     function buildLabelAnnotations(preparedItems, defaultBoxNumber, numberingMode = 'box_group') {
       const annotations = new Array(preparedItems.length);
       let boxCounter = 0;
@@ -1748,6 +1947,21 @@
       return annotations;
     }
 
+    function getCaptionOffsetsMm() {
+      const num = (id) => {
+        const v = Number(document.getElementById(id)?.value);
+        return Number.isFinite(v) ? v : 0;
+      };
+      return {
+        markerDx: num('markerDxMm'),
+        markerDy: num('markerDyMm'),
+        serialDx: num('serialDxMm'),
+        serialDy: num('serialDyMm'),
+        bottomDx: num('bottomDxMm'),
+        bottomDy: num('bottomDyMm')
+      };
+    }
+
     function computeSafeLabelLayout(wMm, hMm, requestedMatrixMm, hasTop, hasSerial, hasBottom) {
       const edgePadMm = 0.55;
       const topBandMm = hasTop ? 2.2 : 0;
@@ -1776,6 +1990,11 @@
       };
     }
 
+    function formatMmVal(val) {
+      const rounded = Math.round(val * 100) / 100;
+      return `${rounded}mm`;
+    }
+
     function syncPrintCssVars() {
       const w = Math.max(15, Number(document.getElementById('labelWidthMm').value) || 25);
       const h = Math.max(10, Number(document.getElementById('labelHeightMm').value) || 43);
@@ -1788,6 +2007,7 @@
       const layout = computeSafeLabelLayout(w, h, reqM, showMarkers, showSerial, showName || showRaw);
       const ox = Number(document.getElementById('offsetXMm').value) || 0;
       const oy = Number(document.getElementById('offsetYMm').value) || 0;
+      const capOff = getCaptionOffsetsMm();
 
       const rootStyle = document.documentElement.style;
       rootStyle.setProperty('--print-page-w', `${w}mm`);
@@ -1795,6 +2015,259 @@
       rootStyle.setProperty('--print-matrix-size', `${layout.safeMatrixMm.toFixed(2)}mm`);
       rootStyle.setProperty('--print-offset-x', `${ox}mm`);
       rootStyle.setProperty('--print-offset-y', `${oy}mm`);
+      rootStyle.setProperty('--print-marker-dx', formatMmVal(capOff.markerDx));
+      rootStyle.setProperty('--print-marker-dy', formatMmVal(-capOff.markerDy));
+      rootStyle.setProperty('--print-serial-dx', formatMmVal(capOff.serialDx));
+      rootStyle.setProperty('--print-serial-dy', formatMmVal(-capOff.serialDy));
+      rootStyle.setProperty('--print-bottom-dx', formatMmVal(capOff.bottomDx));
+      rootStyle.setProperty('--print-bottom-dy', formatMmVal(-capOff.bottomDy));
+
+      const pdfBtnEl = document.getElementById('pdfBtn');
+      if (pdfBtnEl) {
+        const wStr = Number.isInteger(w) ? String(w) : String(Math.round(w * 10) / 10);
+        const hStr = Number.isInteger(h) ? String(h) : String(Math.round(h * 10) / 10);
+        pdfBtnEl.textContent = `Скачать PDF ${wStr}×${hStr} мм`;
+      }
+    }
+
+    function renderLivePreview() {
+      const selectEl = document.getElementById('previewIndexSelect');
+      const scaleEl = document.getElementById('previewScaleSelect');
+      const stageEl = document.getElementById('previewStage');
+      const sheetEl = document.getElementById('liveLabelSheet');
+      const canvasEl = document.getElementById('livePreviewCanvas');
+      const dimsInfoEl = document.getElementById('previewDimsInfo');
+      const offsetsInfoEl = document.getElementById('previewOffsetsInfo');
+
+      const wMm = Math.max(15, Number(document.getElementById('labelWidthMm').value) || 25);
+      const hMm = Math.max(10, Number(document.getElementById('labelHeightMm').value) || 43);
+      const reqMatrixMm = Math.max(6, Number(document.getElementById('matrixSizeMm').value) || 15);
+      const oxMm = Number(document.getElementById('offsetXMm').value) || 0;
+      const oyMm = Number(document.getElementById('offsetYMm').value) || 0;
+      const capOff = getCaptionOffsetsMm();
+
+      const showMarkers = document.getElementById('showMarkersCheck').checked;
+      const showSerial = document.getElementById('showSerialCheck').checked;
+      const showName = document.getElementById('showProductNameCheck').checked;
+      const showRaw = document.getElementById('showRawCodeCheck').checked;
+      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showSerial, showName || showRaw);
+
+      const stageW = Math.max(160, stageEl.clientWidth - 24);
+      const stageH = Math.max(180, stageEl.clientHeight - 24);
+      const rawScaleOpt = scaleEl.value;
+      const fitScale = Math.min(stageW / wMm, stageH / hMm);
+      const pxPerMm = rawScaleOpt === 'fit'
+        ? Math.max(2.5, Math.min(8.0, fitScale))
+        : Math.max(2.0, Math.min(9.0, Number(rawScaleOpt) || fitScale));
+
+      const cssW = Math.max(48, Math.round(wMm * pxPerMm));
+      const cssH = Math.max(64, Math.round(hMm * pxPerMm));
+      sheetEl.style.width = `${cssW}px`;
+      sheetEl.style.height = `${cssH}px`;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvasEl.width = Math.max(1, Math.round(cssW * dpr));
+      canvasEl.height = Math.max(1, Math.round(cssH * dpr));
+
+      const ctx = canvasEl.getContext('2d');
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cssW, cssH);
+
+      const idx = Math.max(0, Math.min(lastRenderedCardsData.length - 1, Number(selectEl.value) || 0));
+      const item = lastRenderedCardsData[idx];
+
+      if (!item) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Нет кодов', cssW / 2, cssH / 2);
+        ctx.restore();
+        dimsInfoEl.textContent = `${wMm}×${hMm} мм · матр. ${layout.safeMatrixMm.toFixed(1)} мм`;
+        offsetsInfoEl.textContent = `лист (${oxMm}, ${oyMm})`;
+        return;
+      }
+
+      const shiftXPx = oxMm * pxPerMm;
+      const shiftYPx = -oyMm * pxPerMm;
+
+      const topBandTopPx = layout.edgePadMm * pxPerMm;
+      const topBandHeightPx = layout.topBandMm * pxPerMm;
+
+      const bottomBandHeightPx = layout.bottomBandMm * pxPerMm;
+      const bottomBandTopPx = (hMm - layout.edgePadMm - layout.bottomBandMm) * pxPerMm;
+
+      const hasBottomMain = Boolean(item.productTitle || item.rawText);
+      const serialBandHeightPx = layout.serialBandMm * pxPerMm;
+      const serialBandTopPx = (
+        hMm -
+        layout.edgePadMm -
+        (hasBottomMain ? layout.bottomBandMm + 0.35 : 0) -
+        layout.serialBandMm
+      ) * pxPerMm;
+
+      const middleTopPx = (showMarkers ? layout.edgePadMm + layout.topBandMm + layout.topGapMm : layout.edgePadMm) * pxPerMm;
+      const middleBottomPx = (
+        hMm -
+        layout.edgePadMm -
+        (hasBottomMain ? layout.bottomBandMm : 0) -
+        (showSerial ? layout.serialBandMm : 0) -
+        layout.bottomGapMm
+      ) * pxPerMm;
+
+      const matrixPx = layout.safeMatrixMm * pxPerMm;
+      const matrixTopPx = Math.max(
+        middleTopPx + 0.25 * pxPerMm,
+        Math.min(middleTopPx + 0.25 * pxPerMm, middleBottomPx - matrixPx)
+      );
+      const matrixLeftPx = (wMm * pxPerMm - matrixPx) / 2 + shiftXPx;
+      const matrixFinalTopPx = matrixTopPx + shiftYPx;
+
+      const cols = item.res.totalCols;
+      const rows = item.res.totalRows;
+      const cellPx = matrixPx / Math.max(cols, rows);
+      const matDrawW = cols * cellPx;
+      const matDrawH = rows * cellPx;
+      const matDrawX = matrixLeftPx + (matrixPx - matDrawW) / 2;
+      const matDrawY = matrixFinalTopPx + (matrixPx - matDrawH) / 2;
+
+      if (Math.abs(oxMm) > 0.01 || Math.abs(oyMm) > 0.01) {
+        const baseX = (wMm * pxPerMm - matDrawW) / 2;
+        const baseY = matrixTopPx + (matrixPx - matDrawH) / 2;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(29, 78, 216, 0.35)';
+        ctx.setLineDash([2, 2]);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(baseX, baseY, matDrawW, matDrawH);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (item.res.matrix[r][c] === 1) {
+            ctx.fillRect(
+              matDrawX + c * cellPx,
+              matDrawY + r * cellPx,
+              Math.ceil(cellPx * 100) / 100,
+              Math.ceil(cellPx * 100) / 100
+            );
+          }
+        }
+      }
+
+      function drawPreviewCaption(text, bandTopPx, bandHeightPx, dxMm, dyMm, fontPt, bold, mono = false) {
+        if (!text) return;
+        const maxW = Math.max(16, (wMm - layout.edgePadMm * 2) * pxPerMm);
+        const maxH = Math.max(8, bandHeightPx);
+        const baseFontPx = Math.max(7.5, (fontPt * (pxPerMm * 25.4)) / 72);
+        const fontFamily = mono
+          ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+          : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, cssW, cssH);
+        ctx.clip();
+
+        ctx.font = `${bold ? '700' : '600'} ${baseFontPx.toFixed(2)}px ${fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const baseCx = cssW / 2 + shiftXPx;
+        const baseCy = bandTopPx + maxH / 2 + shiftYPx;
+        const cx = baseCx + dxMm * pxPerMm;
+        const cy = baseCy - dyMm * pxPerMm;
+
+        let displayText = String(text).trim();
+        if (ctx.measureText(displayText).width > maxW) {
+          while (displayText.length > 1 && ctx.measureText(displayText + '…').width > maxW) {
+            displayText = displayText.slice(0, -1);
+          }
+          displayText += '…';
+        }
+
+        if (Math.abs(dxMm) > 0.01 || Math.abs(dyMm) > 0.01) {
+          ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
+          ctx.setLineDash([2, 2]);
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(baseCx - 3, baseCy);
+          ctx.lineTo(baseCx + 3, baseCy);
+          ctx.moveTo(baseCx, baseCy - 3);
+          ctx.lineTo(baseCx, baseCy + 3);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        ctx.fillStyle = '#000000';
+        ctx.fillText(displayText, cx, cy);
+        ctx.restore();
+      }
+
+      if (item.markerText) {
+        drawPreviewCaption(
+          item.markerText,
+          topBandTopPx,
+          topBandHeightPx,
+          capOff.markerDx,
+          capOff.markerDy,
+          6.4,
+          true,
+          false
+        );
+      }
+
+      if (item.serialText) {
+        drawPreviewCaption(
+          item.serialText,
+          serialBandTopPx,
+          serialBandHeightPx,
+          capOff.serialDx,
+          capOff.serialDy,
+          4.9,
+          true,
+          true
+        );
+      }
+
+      const bottomCaption = item.productTitle || item.rawText || '';
+      if (bottomCaption) {
+        drawPreviewCaption(
+          bottomCaption,
+          bottomBandTopPx,
+          bottomBandHeightPx,
+          capOff.bottomDx,
+          capOff.bottomDy,
+          item.productTitle ? 5.8 : 5.0,
+          Boolean(item.productTitle),
+          !item.productTitle
+        );
+      }
+
+      ctx.restore();
+
+      dimsInfoEl.textContent = `${wMm}×${hMm} мм · матр. ${layout.safeMatrixMm.toFixed(1)} мм · #${idx + 1}`;
+      offsetsInfoEl.textContent = `лист (${oxMm},${oyMm}) · М(${capOff.markerDx},${capOff.markerDy}) SN(${capOff.serialDx},${capOff.serialDy}) Н(${capOff.bottomDx},${capOff.bottomDy})`;
+    }
+
+    function syncPreviewSelector() {
+      const selectEl = document.getElementById('previewIndexSelect');
+      const prevVal = Number(selectEl.value) || 0;
+      if (!lastRenderedCardsData.length) {
+        selectEl.innerHTML = '<option value="0">—</option>';
+        selectEl.disabled = true;
+        return;
+      }
+      selectEl.disabled = false;
+      selectEl.innerHTML = lastRenderedCardsData.map((it, i) => {
+        const tag = it.markerText ? ` · ${it.markerText}` : '';
+        return `<option value="${i}">#${i + 1}${tag}</option>`;
+      }).join('');
+      selectEl.value = String(Math.max(0, Math.min(lastRenderedCardsData.length - 1, prevVal)));
     }
 
     let lastRenderedCardsData = [];
@@ -1917,14 +2390,15 @@
       document.getElementById('statBoxesItems').textContent = `${boxCount} / ${itemCount}`;
       document.getElementById('statSize').textContent = sizesSet.size ? Array.from(sizesSet).join(', ') : '—';
 
+      syncPreviewSelector();
+      renderLivePreview();
+
       if (customBannerText) {
         setBanner(customBannerText, ok > 0 ? 'success' : 'warn');
       } else if (nonEmptyLines.length > 0) {
         setBanner(`Обработано строк: ${nonEmptyLines.length} · Успешно: ${ok} (коробов: ${boxCount}, шт.: ${itemCount}) · Пропущено/ошибок: ${skippedOrErr}.`);
       }
     }
-
-    /* ================= DEFLATE (FlateDecode) + 360 DPI кириллица в PDF ================= */
 
     function adler32(bytes) {
       let a = 1, b = 0;
@@ -2112,6 +2586,7 @@
       const reqMatrixMm = Math.max(6, Number(document.getElementById('matrixSizeMm').value) || 15);
       const oxMm = Number(document.getElementById('offsetXMm').value) || 0;
       const oyMm = Number(document.getElementById('offsetYMm').value) || 0;
+      const capOff = getCaptionOffsetsMm();
 
       const showMarkers = document.getElementById('showMarkersCheck').checked;
       const showSerial = document.getElementById('showSerialCheck').checked;
@@ -2169,7 +2644,6 @@
       const pageIds = [];
       const maxCaptionWidthMm = Math.max(12, wMm - layout.edgePadMm * 2);
 
-      // Координаты Y в PDF идут снизу вверх; матрицу размещаем ближе к верхнему маркеру
       const topBandBottomPt = pageH - mmToPt(layout.edgePadMm + layout.topBandMm);
       const topBandHeightPt = mmToPt(layout.topBandMm);
 
@@ -2203,7 +2677,7 @@
         const matrixH = rows * cellSize;
 
         const startX = (pageW - matrixW) / 2 + shiftXPt;
-        const startYBottom = matrixCenterYPt - matrixH / 2 - shiftYPt;
+        const startYBottom = matrixCenterYPt - matrixH / 2 + shiftYPt;
 
         const streamCmds = [];
         streamCmds.push('0 0 0 rg');
@@ -2226,8 +2700,8 @@
           const cap = getOrCreateCaptionXObject(markerText, maxCaptionWidthMm, layout.topBandMm, 6.4, true, 1, false);
           const xName = `ImM${cap.xobjId}`;
           pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
-          const ix = ((pageW - cap.wPt) / 2 + shiftXPt).toFixed(3);
-          const iy = (topBandBottomPt + (topBandHeightPt - cap.hPt) / 2 - shiftYPt).toFixed(3);
+          const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.markerDx)).toFixed(3);
+          const iy = (topBandBottomPt + (topBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.markerDy)).toFixed(3);
           streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
         }
 
@@ -2235,8 +2709,8 @@
           const cap = getOrCreateCaptionXObject(serialText, maxCaptionWidthMm, layout.serialBandMm, 4.9, true, 1, true);
           const xName = `ImS${cap.xobjId}`;
           pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
-          const ix = ((pageW - cap.wPt) / 2 + shiftXPt).toFixed(3);
-          const iy = (serialBandBottomPt + (serialBandHeightPt - cap.hPt) / 2 - shiftYPt).toFixed(3);
+          const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.serialDx)).toFixed(3);
+          const iy = (serialBandBottomPt + (serialBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.serialDy)).toFixed(3);
           streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
         }
 
@@ -2253,8 +2727,8 @@
           );
           const xName = `ImB${cap.xobjId}`;
           pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
-          const ix = ((pageW - cap.wPt) / 2 + shiftXPt).toFixed(3);
-          const iy = (bottomBandBottomPt + (bottomBandHeightPt - cap.hPt) / 2 - shiftYPt).toFixed(3);
+          const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.bottomDx)).toFixed(3);
+          const iy = (bottomBandBottomPt + (bottomBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.bottomDy)).toFixed(3);
           streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
         }
 
@@ -2323,8 +2797,6 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setBanner(`Сформирован PDF-файл (${wMm}×${hMm} мм, матрица ${layout.safeMatrixMm.toFixed(1)} мм, страниц: ${pageIds.length}, подписей в кэше: ${captionCache.size}).`, 'success');
     }
-
-    /* ================= Загрузка ZIP и таблиц как в Project Agregator ================= */
 
     const TABLE_EXTENSIONS = ['.xlsx', '.xls', '.csv', '.txt', '.tsv'];
 
@@ -2654,15 +3126,32 @@
       document.getElementById('statBoxesItems').textContent = '0 / 0';
       document.getElementById('statSize').textContent = '—';
       lastRenderedCardsData = [];
+      syncPreviewSelector();
+      renderLivePreview();
       setBanner('Очищено.');
     });
+
+    document.getElementById('resetCaptionOffsetsBtn').addEventListener('click', () => {
+      ['markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
+        document.getElementById(id).value = '0';
+      });
+      syncPrintCssVars();
+      renderLivePreview();
+    });
+
+    document.getElementById('previewIndexSelect').addEventListener('change', () => renderLivePreview());
+    document.getElementById('previewScaleSelect').addEventListener('change', () => renderLivePreview());
+    window.addEventListener('resize', () => renderLivePreview());
 
     ['inputMode', 'numberingModeSelect', 'skipEmptyCheck', 'showMarkersCheck', 'showSerialCheck', 'showProductNameCheck', 'showRawCodeCheck', 'gtinSourceSelect'].forEach((id) => {
       document.getElementById(id).addEventListener('change', () => renderAll());
     });
 
-    ['labelWidthMm', 'labelHeightMm', 'matrixSizeMm', 'offsetXMm', 'offsetYMm', 'defaultBoxNum'].forEach((id) => {
-      document.getElementById(id).addEventListener('input', () => renderAll());
+    ['labelWidthMm', 'labelHeightMm', 'matrixSizeMm', 'offsetXMm', 'offsetYMm', 'defaultBoxNum', 'markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => {
+        syncPrintCssVars();
+        renderLivePreview();
+      });
     });
 
     document.getElementById('refreshGtinBtn').addEventListener('click', () => fetchGtinDatabases(true));
