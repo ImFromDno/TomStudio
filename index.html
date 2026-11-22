@@ -22,6 +22,12 @@
       --badge-bg: #e8f0fe;
       --badge-text: #174ea6;
       --badge-border: #d2e3fc;
+      --badge-new-bg: #e6f4ea;
+      --badge-new-text: #137333;
+      --badge-new-border: #ceead6;
+      --badge-beta-bg: #fef7e0;
+      --badge-beta-text: #b06000;
+      --badge-beta-border: #fde293;
       --warn-text: #9a6700;
       --warn-bg: #fef7e0;
       --warn-border: #fde293;
@@ -46,6 +52,12 @@
         --badge-bg: rgba(59, 130, 246, 0.16);
         --badge-text: #bfdbfe;
         --badge-border: rgba(96, 165, 250, 0.35);
+        --badge-new-bg: rgba(34, 197, 94, 0.16);
+        --badge-new-text: #86efac;
+        --badge-new-border: rgba(74, 222, 128, 0.35);
+        --badge-beta-bg: rgba(245, 158, 11, 0.16);
+        --badge-beta-text: #fcd34d;
+        --badge-beta-border: rgba(251, 191, 36, 0.35);
         --warn-text: #fde68a;
         --warn-bg: rgba(245, 158, 11, 0.14);
         --warn-border: rgba(245, 158, 11, 0.35);
@@ -70,6 +82,12 @@
       --badge-bg: rgba(59, 130, 246, 0.16);
       --badge-text: #bfdbfe;
       --badge-border: rgba(96, 165, 250, 0.35);
+      --badge-new-bg: rgba(34, 197, 94, 0.16);
+      --badge-new-text: #86efac;
+      --badge-new-border: rgba(74, 222, 128, 0.35);
+      --badge-beta-bg: rgba(245, 158, 11, 0.16);
+      --badge-beta-text: #fcd34d;
+      --badge-beta-border: rgba(251, 191, 36, 0.35);
       --warn-text: #fde68a;
       --warn-bg: rgba(245, 158, 11, 0.14);
       --warn-border: rgba(245, 158, 11, 0.35);
@@ -254,6 +272,18 @@
       flex-shrink: 0;
     }
 
+    .tool-badge--new {
+      background: var(--badge-new-bg);
+      color: var(--badge-new-text);
+      border-color: var(--badge-new-border);
+    }
+
+    .tool-badge--beta {
+      background: var(--badge-beta-bg);
+      color: var(--badge-beta-text);
+      border-color: var(--badge-beta-border);
+    }
+
     .tool-desc {
       margin-top: 5px;
       font-size: 13.5px;
@@ -332,13 +362,13 @@
 
   <script>
     // Вставь сюда опубликованную CSV-ссылку из Google Таблиц
-    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJuaQqGRy__7EW7EH5zNEsG_bm_2kWgRZ75V8V0dXNWVwIoEzkV61LEYaAtQvYIp5_nR5eUfbggpwC/pub?output=csv";
+    const SHEET_CSV_URL = "";
 
     const FALLBACK_TOOLS = [
       {
         active: "TRUE",
         title: "Agregator",
-        badge: "",
+        badge: "BETA",
         description: "Обработка агрегации, сборка и работа с кодами",
         url: "./agregator/",
         icon: "./assets/icons/agregator.svg"
@@ -431,6 +461,13 @@
       return ["true", "1", "да", "yes", "on", "+"].includes(v);
     }
 
+    function getBadgeClass(badge) {
+      const normalized = String(badge || "").trim().toLowerCase();
+      if (normalized === "new") return "tool-badge--new";
+      if (normalized === "beta") return "tool-badge--beta";
+      return "";
+    }
+
     function escapeHtml(value) {
       return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -464,8 +501,9 @@
           card.rel = "noopener noreferrer";
         }
 
+        const badgeClass = getBadgeClass(badge);
         const badgeHtml = badge
-          ? `<span class="tool-badge">${escapeHtml(badge)}</span>`
+          ? `<span class="tool-badge ${badgeClass}">${escapeHtml(badge)}</span>`
           : "";
 
         card.innerHTML = `
