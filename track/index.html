@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Tom Studio — Project Track</title>
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --field-bg: #fafafa;
+      --text: #333333;
+      --label-text: #555555;
+      --border: #dddddd;
+      --divider: #f4f4f9;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --row-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      --dropdown-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --accent: #1a73e8;
+      --accent-hover: #1557b0;
+      --hover-bg: #e8f0fe;
+      --success: #137333;
+      --success-bg: #e6f4ea;
+      --success-border: #ceead6;
+      --add-border: #34a853;
+      --danger: #c5221f;
+      --danger-bg: #fce8e6;
+      --disabled-bg: #cccccc;
+      --disabled-text: #666666;
+      --st-info-bg: #e2e3e5;
+      --st-info-text: #383d41;
+      --st-ok-bg: #d4edda;
+      --st-ok-text: #155724;
+      --st-err-bg: #f8d7da;
+      --st-err-text: #721c24;
+      --bar-bg: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+      --bar-border: rgba(147, 197, 253, 0.28);
+      --bar-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --field-bg: #0b1220;
+        --text: #f8fafc;
+        --label-text: #94a3b8;
+        --border: #334155;
+        --divider: #1e293b;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+        --row-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+        --dropdown-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --hover-bg: rgba(59, 130, 246, 0.16);
+        --success: #86efac;
+        --success-bg: rgba(34, 197, 94, 0.14);
+        --success-border: rgba(34, 197, 94, 0.35);
+        --add-border: #22c55e;
+        --danger: #fca5a5;
+        --danger-bg: rgba(239, 68, 68, 0.16);
+        --disabled-bg: #334155;
+        --disabled-text: #94a3b8;
+        --st-info-bg: rgba(148, 163, 184, 0.18);
+        --st-info-text: #e2e8f0;
+        --st-ok-bg: rgba(34, 197, 94, 0.16);
+        --st-ok-text: #86efac;
+        --st-err-bg: rgba(239, 68, 68, 0.16);
+        --st-err-text: #fecaca;
+        --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        --bar-border: rgba(96, 165, 250, 0.32);
+        --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --field-bg: #0b1220;
+      --text: #f8fafc;
+      --label-text: #94a3b8;
+      --border: #334155;
+      --divider: #1e293b;
+      --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      --row-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+      --dropdown-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --hover-bg: rgba(59, 130, 246, 0.16);
+      --success: #86efac;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-border: rgba(34, 197, 94, 0.35);
+      --add-border: #22c55e;
+      --danger: #fca5a5;
+      --danger-bg: rgba(239, 68, 68, 0.16);
+      --disabled-bg: #334155;
+      --disabled-text: #94a3b8;
+      --st-info-bg: rgba(148, 163, 184, 0.18);
+      --st-info-text: #e2e8f0;
+      --st-ok-bg: rgba(34, 197, 94, 0.16);
+      --st-ok-text: #86efac;
+      --st-err-bg: rgba(239, 68, 68, 0.16);
+      --st-err-text: #fecaca;
+      --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      --bar-border: rgba(96, 165, 250, 0.32);
+      --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 500px;
+      margin: 8px auto 20px;
+      padding: 0 15px 15px;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: var(--bar-bg);
+      border: 1px solid var(--bar-border);
+      box-shadow: var(--bar-shadow);
+      color: #ffffff;
+    }
+
+    .ts-brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .ts-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.26);
+      flex-shrink: 0;
+    }
+
+    .page-header .ts-divider {
+      margin-left: auto;
+    }
+
+    .ts-project {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bulb-btn {
+      appearance: none;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .bulb-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.05);
+    }
+
+    .bulb-btn.is-lit {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: rgba(253, 224, 71, 0.65);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      opacity: 1;
+    }
+
+    .bulb-btn.is-off {
+      opacity: 0.45;
+      filter: grayscale(0.85);
+      box-shadow: none;
+    }
+
+    .page-header {
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      margin: 14px 0 10px;
+      text-align: center;
+      color: var(--accent);
+    }
+
+    .form-group {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--label-text);
+      text-transform: uppercase;
+    }
+
+    select,
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 5px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 15px;
+      background: var(--field-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s ease, background-color 0.2s ease;
+    }
+
+    select:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    input[type="password"]:focus {
+      border-color: var(--accent);
+    }
+
+    /* Сдвоенная строка для склада и даты в один ряд */
+    .warehouse-date-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .warehouse-date-field {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .warehouse-date-field label {
+      margin-top: 0;
+    }
+
+    .warehouse-date-field select,
+    .warehouse-date-field input {
+      margin-top: 5px;
+    }
+
+    /* Строка для трек-номера и чекбокса в один ряд */
+    .track-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 5px;
+    }
+
+    .track-row input[type="text"] {
+      margin-top: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 0;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--success);
+      background: var(--success-bg);
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--success-border);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+      accent-color: #16a34a;
+    }
+
+    .item-row {
+      background: var(--card);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      box-shadow: var(--row-shadow);
+      border-left: 4px solid var(--accent);
+      position: relative;
+    }
+
+    /* Сдвоенная строка для количества и цены */
+    .qty-price-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .qty-price-field {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .qty-price-field label {
+      margin-top: 0;
+    }
+
+    .qty-price-field input {
+      margin-top: 5px;
+    }
+
+    .autocomplete-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .autocomplete-items {
+      position: absolute;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+      z-index: 99;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      color: var(--text);
+      max-height: 150px;
+      overflow-y: auto;
+      box-shadow: var(--dropdown-shadow);
+    }
+
+    .autocomplete-items div {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 15px;
+      border-bottom: 1px solid var(--divider);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .autocomplete-items div:hover {
+      background: var(--hover-bg);
+      color: var(--accent);
+    }
+
+    .autocomplete-price {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--success);
+      background: var(--success-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn-add {
+      background: var(--success-bg);
+      color: var(--success);
+      width: 100%;
+      margin-bottom: 15px;
+      border: 1px dashed var(--add-border);
+    }
+
+    .btn-remove {
+      background: var(--danger-bg);
+      color: var(--danger);
+      padding: 5px 10px;
+      float: right;
+    }
+
+    .btn-submit {
+      background: var(--accent);
+      color: #ffffff;
+      width: 100%;
+      font-size: 16px;
+      padding: 14px;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    button:disabled {
+      background: var(--disabled-bg);
+      color: var(--disabled-text);
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 500;
+      display: none;
+    }
+
+    #status.status-info {
+      background: var(--st-info-bg);
+      color: var(--st-info-text);
+    }
+
+    #status.status-ok {
+      background: var(--st-ok-bg);
+      color: var(--st-ok-text);
+    }
+
+    #status.status-err {
+      background: var(--st-err-bg);
+      color: var(--st-err-text);
+    }
+
+    .page-footer {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 440px) {
+      .ts-bar {
+        padding: 11px 15px;
+        gap: 8px;
+      }
+
+      .ts-brand {
+        font-size: 18px;
+      }
+
+      .ts-divider {
+        height: 19px;
+      }
+
+      .ts-project {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="ts-bar" aria-label="Tom Studio — Project Track">
+      <span class="ts-brand">Tom Studio</span>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Track</span>
+    </div>
+  </header>
+
+  <form id="orderForm">
+    <div class="form-group">
+      <label for="pinCode">PIN-код для подтверждения</label>
+      <input type="password" id="pinCode" inputmode="numeric" pattern="[0-9]*" placeholder="Введите PIN-код" required>
+
+      <!-- Склад и Дата на одной строке -->
+      <div class="warehouse-date-row">
+        <div class="warehouse-date-field">
+          <label for="warehouse">Склад</label>
+          <select id="warehouse" required>
+            <option value="Краснодар">Краснодар</option>
+            <option value="Краснодар Россия">Краснодар Россия</option>
+            <option value="Воронеж">Воронеж</option>
+            <option value="Ростов">Ростов</option>
+          </select>
+        </div>
+        <div class="warehouse-date-field">
+          <label for="date">Дата</label>
+          <input type="date" id="date" required>
+        </div>
+      </div>
+
+      <label for="totalSum">Общая сумма заказа</label>
+      <input type="number" id="totalSum" placeholder="Итоговая сумма" step="any" required oninput="userManuallyEditedTotal = true;" onclick="this.select();">
+
+      <label for="track">Трек-номер и оплата</label>
+      <div class="track-row">
+        <input type="text" id="track" placeholder="Трек или статус" required>
+        <label class="checkbox-label" title="Отметить как получено в столбце G">
+          <input type="checkbox" id="isReceived">
+          <span>Получены</span>
+        </label>
+      </div>
+    </div>
+
+    <h3>Товары</h3>
+    <div id="itemsContainer">
+      <div class="item-row">
+        <label>Товар</label>
+        <div class="autocomplete-container">
+          <input type="text" class="item-name" placeholder="Начните ввод..." autocomplete="off" required>
+        </div>
+        <div class="qty-price-row">
+          <div class="qty-price-field">
+            <label>Количество</label>
+            <input type="number" class="item-qty" value="1" min="1" required oninput="calculateTotal()" onclick="this.select();">
+          </div>
+          <div class="qty-price-field">
+            <label>Цена за шт.</label>
+            <input type="number" class="item-price" placeholder="0" min="0" step="any" required oninput="calculateTotal()" onclick="this.select();">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-add" onclick="addItem()">+ Добавить еще товар</button>
+    <button type="submit" id="submitBtn" class="btn-submit">Отправить в таблицу</button>
+  </form>
+
+  <div id="status"></div>
+
+  <footer class="page-footer">
+    <div class="ts-bar" aria-label="Tom Studio — Project Track">
+      <span class="ts-brand">Tom Studio</span>
+      <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Track</span>
+    </div>
+  </footer>
+
+  <script>
+    const bulbToggleEl = document.getElementById("bulbToggle");
+
+    function isEffectiveDarkTheme() {
+      const explicit = document.documentElement.getAttribute("data-theme");
+      if (explicit === "dark") return true;
+      if (explicit === "light") return false;
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+
+    function syncBulbButton() {
+      const dark = isEffectiveDarkTheme();
+      bulbToggleEl.classList.toggle("is-lit", !dark);
+      bulbToggleEl.classList.toggle("is-off", dark);
+      bulbToggleEl.title = dark ? "Тёмная тема (лампочка потухла) — включить свет" : "Светлая тема (лампочка горит) — выключить свет";
+    }
+
+    bulbToggleEl.addEventListener("click", () => {
+      const nextDark = !isEffectiveDarkTheme();
+      document.documentElement.setAttribute("data-theme", nextDark ? "dark" : "light");
+      syncBulbButton();
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        if (!document.documentElement.getAttribute("data-theme")) {
+          syncBulbButton();
+        }
+      });
+    }
+
+    syncBulbButton();
+
+    document.getElementById('date').valueAsDate = new Date();
+
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_0bjBQcBtn2XpO5UtVHcC10TBdfrQJ93aRGbdDaq8ObvTN9sfRtrEJoOulJ91LntK/exec';
+    const CORRECT_PIN = '2326';
+
+    let globalProducts = [];
+    let userManuallyEditedTotal = false;
+
+    function setStatus(type, text) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.style.display = 'block';
+      statusDiv.className = `status-${type}`;
+      statusDiv.innerText = text;
+    }
+
+    // Загрузка и парсинг products.txt (формат: Название \ Цена)
+    window.onload = function() {
+      fetch('products.txt')
+        .then(response => {
+          if (response.ok) return response.text();
+          throw new Error();
+        })
+        .then(text => {
+          globalProducts = text.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => {
+              const parts = line.split('\\');
+              const name = parts[0].trim();
+              const price = parts.length > 1 ? parts[1].trim() : '';
+              return { name, price };
+            });
+        })
+        .catch(() => console.log("products.txt не найден, доступен свободный ввод."));
+    };
+
+    function calculateTotal() {
+      if (userManuallyEditedTotal) return;
+
+      const qtys = document.getElementsByClassName('item-qty');
+      const prices = document.getElementsByClassName('item-price');
+      let total = 0;
+
+      for (let i = 0; i < qtys.length; i++) {
+        const qty = parseFloat(qtys[i].value) || 0;
+        const price = parseFloat(prices[i].value) || 0;
+        total += qty * price;
+      }
+
+      total = Math.round(total * 100) / 100;
+      document.getElementById('totalSum').value = total > 0 ? total : '';
+    }
+
+    document.addEventListener('input', function(e) {
+      if (!e.target.classList.contains('item-name')) return;
+
+      const input = e.target;
+      const val = input.value;
+
+      closeAllLists();
+      if (!val) return;
+
+      const container = document.createElement('div');
+      container.setAttribute('class', 'autocomplete-items');
+      input.parentNode.appendChild(container);
+
+      globalProducts.forEach(product => {
+        if (product.name.toLowerCase().includes(val.toLowerCase())) {
+          const itemDiv = document.createElement('div');
+
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = product.name;
+          itemDiv.appendChild(nameSpan);
+
+          if (product.price) {
+            const priceSpan = document.createElement('span');
+            priceSpan.className = 'autocomplete-price';
+            priceSpan.textContent = product.price + ' ₽';
+            itemDiv.appendChild(priceSpan);
+          }
+
+          itemDiv.addEventListener('click', function() {
+            input.value = product.name;
+
+            const row = input.closest('.item-row');
+            const priceInput = row.querySelector('.item-price');
+            if (priceInput && product.price) {
+              priceInput.value = product.price;
+            }
+
+            calculateTotal();
+            closeAllLists();
+          });
+          container.appendChild(itemDiv);
+        }
+      });
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.classList.contains('item-name')) {
+        closeAllLists();
+      }
+    });
+
+    function closeAllLists(elmnt) {
+      const items = document.getElementsByClassName('autocomplete-items');
+      for (let i = 0; i < items.length; i++) {
+        if (elmnt != items[i] && elmnt != items[i].parentNode.querySelector('.item-name')) {
+          items[i].parentNode.removeChild(items[i]);
+        }
+      }
+    }
+
+    function addItem() {
+      const container = document.getElementById('itemsContainer');
+      const div = document.createElement('div');
+      div.className = 'item-row';
+      div.innerHTML = `
+        <button type="button" class="btn-remove" onclick="removeItem(this)">Удалить</button>
+        <label>Товар</label>
+        <div class="autocomplete-container">
+          <input type="text" class="item-name" placeholder="Начните ввод..." autocomplete="off" required>
+        </div>
+        <div class="qty-price-row">
+          <div class="qty-price-field">
+            <label>Количество</label>
+            <input type="number" class="item-qty" value="1" min="1" required oninput="calculateTotal()" onclick="this.select();">
+          </div>
+          <div class="qty-price-field">
+            <label>Цена за шт.</label>
+            <input type="number" class="item-price" placeholder="0" min="0" step="any" required oninput="calculateTotal()" onclick="this.select();">
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+      calculateTotal();
+    }
+
+    function removeItem(btn) {
+      btn.parentElement.remove();
+      calculateTotal();
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const enteredPin = document.getElementById('pinCode').value;
+      if (enteredPin !== CORRECT_PIN) {
+        alert("❌ Неверный PIN-код!");
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      setStatus('info', "⏳ Отправка данных в таблицу...");
+
+      const itemNames = document.getElementsByClassName('item-name');
+      const itemQtys = document.getElementsByClassName('item-qty');
+      const items = [];
+      for (let i = 0; i < itemNames.length; i++) {
+        items.push({ name: itemNames[i].value, qty: itemQtys[i].value });
+      }
+
+      const isReceivedChecked = document.getElementById('isReceived').checked;
+
+      const payload = {
+        warehouse: document.getElementById('warehouse').value,
+        date: document.getElementById('date').value,
+        status: "доки",
+        totalSum: document.getElementById('totalSum').value,
+        track: document.getElementById('track').value,
+        receivedStatus: isReceivedChecked ? "получены" : "",
+        items: items
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        setStatus('ok', "✅ Заказ успешно отправлен!");
+
+        document.getElementById('orderForm').reset();
+        document.getElementById('pinCode').value = '';
+        document.getElementById('date').valueAsDate = new Date();
+        userManuallyEditedTotal = false;
+        document.getElementById('itemsContainer').innerHTML = `
+          <div class="item-row">
+            <label>Товар</label>
+            <div class="autocomplete-container">
+              <input type="text" class="item-name" placeholder="Начните ввод..." autocomplete="off" required>
+            </div>
+            <div class="qty-price-row">
+              <div class="qty-price-field">
+                <label>Количество</label>
+                <input type="number" class="item-qty" value="1" min="1" required oninput="calculateTotal()" onclick="this.select();">
+              </div>
+              <div class="qty-price-field">
+                <label>Цена за шт.</label>
+                <input type="number" class="item-price" placeholder="0" min="0" step="any" required oninput="calculateTotal()" onclick="this.select();">
+              </div>
+            </div>
+          </div>
+        `;
+        calculateTotal();
+      })
+      .catch(error => {
+        setStatus('err', "❌ Ошибка отправки: " + error.message);
+      })
+      .finally(() => {
+        btn.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>
