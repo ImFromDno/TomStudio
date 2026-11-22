@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Tom Studio — Project Pay</title>
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --card-2: #fafafa;
+      --text: #333333;
+      --muted: #666666;
+      --border: #dddddd;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --accent: #1a73e8;
+      --accent-hover: #1557b0;
+      --success: #137333;
+      --success-bg: #e6f4ea;
+      --success-border: #ceead6;
+      --success-btn: #1e8e3e;
+      --success-btn-hover: #187632;
+      --warn-text: #9a6700;
+      --warn-bg: #fef7e0;
+      --warn-border: #fde293;
+      --err-text: #c5221f;
+      --err-bg: #fce8e6;
+      --err-border: #fad2cf;
+      --info-text: #174ea6;
+      --info-bg: #e8f0fe;
+      --info-border: #d2e3fc;
+      --disabled-bg: #cccccc;
+      --disabled-text: #666666;
+      --bar-bg: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+      --bar-border: rgba(147, 197, 253, 0.28);
+      --bar-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-2: #0b1220;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #86efac;
+        --success-bg: rgba(34, 197, 94, 0.14);
+        --success-border: rgba(34, 197, 94, 0.35);
+        --success-btn: #16a34a;
+        --success-btn-hover: #15803d;
+        --warn-text: #fde68a;
+        --warn-bg: rgba(245, 158, 11, 0.14);
+        --warn-border: rgba(245, 158, 11, 0.35);
+        --err-text: #fecaca;
+        --err-bg: rgba(239, 68, 68, 0.14);
+        --err-border: rgba(239, 68, 68, 0.4);
+        --info-text: #bfdbfe;
+        --info-bg: rgba(59, 130, 246, 0.14);
+        --info-border: rgba(59, 130, 246, 0.35);
+        --disabled-bg: #334155;
+        --disabled-text: #94a3b8;
+        --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        --bar-border: rgba(96, 165, 250, 0.32);
+        --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #86efac;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-border: rgba(34, 197, 94, 0.35);
+      --success-btn: #16a34a;
+      --success-btn-hover: #15803d;
+      --warn-text: #fde68a;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --warn-border: rgba(245, 158, 11, 0.35);
+      --err-text: #fecaca;
+      --err-bg: rgba(239, 68, 68, 0.14);
+      --err-border: rgba(239, 68, 68, 0.4);
+      --info-text: #bfdbfe;
+      --info-bg: rgba(59, 130, 246, 0.14);
+      --info-border: rgba(59, 130, 246, 0.35);
+      --disabled-bg: #334155;
+      --disabled-text: #94a3b8;
+      --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      --bar-border: rgba(96, 165, 250, 0.32);
+      --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      overflow-y: auto;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: 8px 14px 20px;
+      max-width: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: var(--bar-bg);
+      border: 1px solid var(--bar-border);
+      box-shadow: var(--bar-shadow);
+      color: #ffffff;
+    }
+
+    .ts-brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .ts-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.26);
+      flex-shrink: 0;
+    }
+
+    .page-header .ts-divider {
+      margin-left: auto;
+    }
+
+    .ts-project {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bulb-btn {
+      appearance: none;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .bulb-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.05);
+    }
+
+    .bulb-btn.is-lit {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: rgba(253, 224, 71, 0.65);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      opacity: 1;
+    }
+
+    .bulb-btn.is-off {
+      opacity: 0.45;
+      filter: grayscale(0.85);
+      box-shadow: none;
+    }
+
+    .page-header {
+      width: 100%;
+      margin-bottom: 14px;
+    }
+
+    .container {
+      flex: 1 0 auto;
+      width: 100%;
+    }
+
+    .search-box {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s ease, background-color 0.2s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #ffffff;
+      background: var(--accent);
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    button:disabled {
+      background: var(--disabled-bg);
+      color: var(--disabled-text);
+      cursor: not-allowed;
+    }
+
+    .btn-success {
+      background: var(--success-btn);
+      color: #ffffff;
+      width: 100%;
+      margin-top: 12px;
+      padding: 11px 16px;
+      font-size: 15px;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: var(--success-btn-hover);
+    }
+
+    .notice {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: center;
+      border: 1px solid transparent;
+      display: none;
+      word-break: break-word;
+    }
+
+    .notice.show {
+      display: block;
+    }
+
+    .notice.info {
+      background: var(--info-bg);
+      border-color: var(--info-border);
+      color: var(--info-text);
+    }
+
+    .notice.error {
+      background: var(--err-bg);
+      border-color: var(--err-border);
+      color: var(--err-text);
+    }
+
+    .notice.ok {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success);
+    }
+
+    .results {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .result-card {
+      background: var(--card);
+      border-radius: 10px;
+      border-left: 4px solid var(--accent);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .sheet-badge {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.84rem;
+    }
+
+    .status-pill {
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border: 1px solid var(--warn-border);
+    }
+
+    .status-pill.received {
+      background: var(--success-bg);
+      color: var(--success);
+      border-color: var(--success-border);
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 12px;
+      font-size: 0.88rem;
+    }
+
+    .meta-item {
+      color: var(--muted);
+    }
+
+    .meta-item strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .meta-full {
+      grid-column: 1 / -1;
+    }
+
+    .page-footer {
+      width: 100%;
+      margin-top: auto;
+      padding-top: 18px;
+    }
+
+    @media (max-width: 480px) {
+      .search-box {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px;
+      }
+      .meta {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .ts-bar {
+        padding: 11px 15px;
+        gap: 8px;
+      }
+
+      .ts-brand {
+        font-size: 18px;
+      }
+
+      .ts-divider {
+        height: 19px;
+      }
+
+      .ts-project {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ts-bar" aria-label="Tom Studio — Project Pay">
+      <span class="ts-brand">Tom Studio</span>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Pay</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="search-box">
+      <input
+        type="text"
+        id="trackInput"
+        placeholder="Введите трек-номер..."
+        autocomplete="off"
+      />
+      <button type="button" id="searchBtn">Найти</button>
+    </div>
+
+    <div class="notice" id="noticeBox"></div>
+    <div class="results" id="resultsBox"></div>
+  </div>
+
+  <footer class="page-footer">
+    <div class="ts-bar" aria-label="Tom Studio — Project Pay">
+      <span class="ts-brand">Tom Studio</span>
+      <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Pay</span>
+    </div>
+  </footer>
+
+  <script>
+    const bulbToggleEl = document.getElementById("bulbToggle");
+
+    function isEffectiveDarkTheme() {
+      const explicit = document.documentElement.getAttribute("data-theme");
+      if (explicit === "dark") return true;
+      if (explicit === "light") return false;
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+
+    function syncBulbButton() {
+      const dark = isEffectiveDarkTheme();
+      bulbToggleEl.classList.toggle("is-lit", !dark);
+      bulbToggleEl.classList.toggle("is-off", dark);
+      bulbToggleEl.title = dark ? "Тёмная тема (лампочка потухла) — включить свет" : "Светлая тема (лампочка горит) — выключить свет";
+    }
+
+    bulbToggleEl.addEventListener("click", () => {
+      const nextDark = !isEffectiveDarkTheme();
+      document.documentElement.setAttribute("data-theme", nextDark ? "dark" : "light");
+      syncBulbButton();
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        if (!document.documentElement.getAttribute("data-theme")) {
+          syncBulbButton();
+        }
+      });
+    }
+
+    syncBulbButton();
+
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_0bjBQcBtn2XpO5UtVHcC10TBdfrQJ93aRGbdDaq8ObvTN9sfRtrEJoOulJ91LntK/exec";
+
+    const trackInput = document.getElementById("trackInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const noticeBox = document.getElementById("noticeBox");
+    const resultsBox = document.getElementById("resultsBox");
+
+    function showNotice(type, text) {
+      noticeBox.className = `notice show ${type}`;
+      noticeBox.textContent = text;
+    }
+
+    function hideNotice() {
+      noticeBox.className = "notice";
+      noticeBox.textContent = "";
+    }
+
+    window.onerror = function (msg, url, line) {
+      showNotice("error", `Ошибка скрипта (стр. ${line}): ${msg}`);
+    };
+
+    window.addEventListener("unhandledrejection", function (event) {
+      const reason = event.reason && event.reason.message ? event.reason.message : String(event.reason);
+      showNotice("error", `Ошибка запроса: ${reason}`);
+    });
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function postToScript(payload) {
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка сети: ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    function isReceivedStatus(status) {
+      return String(status || "").trim().toLowerCase() === "получены";
+    }
+
+    function renderMatches(matches) {
+      resultsBox.innerHTML = "";
+
+      if (!Array.isArray(matches) || matches.length === 0) {
+        showNotice("info", "Заказ с таким трек-номером ни на одном листе не найден.");
+        return;
+      }
+
+      hideNotice();
+
+      matches.forEach((item, idx) => {
+        const card = document.createElement("div");
+        card.className = "result-card";
+
+        const received = isReceivedStatus(item.paymentStatus);
+        const statusText = item.paymentStatus ? item.paymentStatus : "не указан";
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="sheet-badge">Лист: ${escapeHtml(item.sheetName)} · строка ${escapeHtml(item.row)}</span>
+            <span class="status-pill ${received ? "received" : ""}" id="statusBadge-${idx}">
+              ${escapeHtml(statusText)}
+            </span>
+          </div>
+          <div class="meta">
+            <div class="meta-item">Трек: <strong>${escapeHtml(item.track)}</strong></div>
+            <div class="meta-item">Дата: <strong>${escapeHtml(item.date || "—")}</strong></div>
+            <div class="meta-item">Сумма: <strong>${escapeHtml(item.totalSum !== "" ? item.totalSum : "—")}</strong></div>
+            <div class="meta-item">Статус заказа: <strong>${escapeHtml(item.orderStatus || "—")}</strong></div>
+            <div class="meta-item meta-full">Позиция: <strong>${escapeHtml(item.firstItem || "—")}</strong></div>
+          </div>
+          <button
+            type="button"
+            class="btn-success"
+            id="markBtn-${idx}"
+            ${received ? "disabled" : ""}
+          >
+            ${received ? "Уже отмечено «получены»" : "Отметить «получены»"}
+          </button>
+        `;
+
+        const markBtn = card.querySelector(`#markBtn-${idx}`);
+        markBtn.addEventListener("click", () => handleMarkReceived(item, idx));
+
+        resultsBox.appendChild(card);
+      });
+
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
+    async function handleMarkReceived(item, idx) {
+      const btn = document.getElementById(`markBtn-${idx}`);
+      const badge = document.getElementById(`statusBadge-${idx}`);
+
+      btn.disabled = true;
+      btn.textContent = "Сохраняем...";
+
+      try {
+        const res = await postToScript({
+          action: "updateStatus",
+          sheetName: item.sheetName,
+          row: item.row,
+          track: item.track,
+          newStatus: "получены"
+        });
+
+        if (res.status === "Успешно") {
+          item.paymentStatus = "получены";
+          badge.textContent = "получены";
+          badge.classList.add("received");
+          btn.textContent = "Уже отмечено «получены»";
+          showNotice("ok", `Статус на листе «${item.sheetName}» (строка ${item.row}) обновлён на «получены».`);
+        } else {
+          btn.disabled = false;
+          btn.textContent = "Отметить «получены»";
+          showNotice("error", res.message || "Не удалось обновить статус.");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "Отметить «получены»";
+        showNotice("error", `Ошибка при обновлении: ${err.message}`);
+      }
+    }
+
+    async function runSearch() {
+      const track = trackInput.value.trim();
+      if (!track) {
+        showNotice("error", "Введите трек-номер.");
+        return;
+      }
+
+      searchBtn.disabled = true;
+      searchBtn.textContent = "Ищем...";
+      resultsBox.innerHTML = "";
+      showNotice("info", "Отправляем запрос...");
+
+      try {
+        const res = await postToScript({
+          action: "search",
+          track
+        });
+
+        if (res.status === "Успешно") {
+          renderMatches(res.matches);
+        } else {
+          showNotice("error", res.message || "Ошибка при поиске.");
+        }
+      } catch (err) {
+        showNotice("error", `Ошибка запроса: ${err.message}`);
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = "Найти";
+      }
+    }
+
+    trackInput.addEventListener("pointerdown", () => {
+      if (trackInput.value.length > 0) {
+        trackInput.value = "";
+        hideNotice();
+      }
+    });
+
+    searchBtn.addEventListener("click", runSearch);
+    trackInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        runSearch();
+      }
+    });
+  </script>
+</body>
+</html>
