@@ -386,7 +386,6 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      flex-wrap: wrap;
       margin-bottom: 6px;
     }
 
@@ -394,18 +393,31 @@
       font-size: 12px;
       font-weight: 700;
       color: var(--text);
+      min-width: 0;
+    }
+
+    .preset-reload-icon {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
     }
 
     .preset-controls {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 6px;
       align-items: center;
     }
 
-    @media (max-width: 560px) {
+    @media (max-width: 420px) {
       .preset-controls {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .preset-controls select {
         grid-column: 1 / -1;
@@ -416,6 +428,11 @@
       margin-top: 0;
       padding: 6px 8px;
       font-size: 12.5px;
+      min-width: 0;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .fine-offset-box {
@@ -1045,14 +1062,15 @@
       <div class="preset-box" aria-label="Пресеты из TXT-файла">
         <div class="preset-top">
           <span class="preset-title" id="presetStatusLabel">Пресеты (.txt) · встроенный №1</span>
+          <button type="button" class="action-btn small preset-reload-icon" id="reloadPresetsBtn" title="Перечитать presets.txt из директории" aria-label="Перечитать presets.txt из директории">↻</button>
           <input type="file" id="presetsTxtInput" accept=".txt,text/plain" hidden />
         </div>
         <div class="preset-controls">
           <select id="presetSelect" title="Выбор пресета из загруженного TXT">
             <option value="0">25x43 Матрица 20 (dy DM -1, код +3.2, название +2)</option>
           </select>
-          <button type="button" class="action-btn small" id="loadPresetsBtn">Загрузить .txt</button>
-          <button type="button" class="action-btn small" id="exportPresetBtn">Сохранить .txt</button>
+          <button type="button" class="action-btn small" id="loadPresetsBtn" title="Загрузить локальный .txt файл">Загрузить</button>
+          <button type="button" class="action-btn small" id="exportPresetBtn" title="Сохранить текущие настройки в .txt">Сохранить</button>
         </div>
       </div>
     </div>
@@ -1252,6 +1270,7 @@
     };
 
     const GTIN_CACHE_KEY = 'tom_studio_matrix_gtin_cache_v1';
+    const PRESETS_FILE_URL = './presets.txt';
 
     const DEFAULT_PRESETS_TXT = `[25x43 Матрица 20 (dy DM -1, код +3.2, название +2)]
 inputMode=auto
@@ -1441,6 +1460,64 @@ showRawCodeCheck=true
       document.getElementById('presetStatusLabel').textContent = `Пресеты из «${file.name}» (${loadedPresets.length})`;
       applyPresetObject(loadedPresets[0]);
       setBanner(`Загружено пресетов из «${file.name}»: ${loadedPresets.length}. Выбран: «${loadedPresets[0].name}».`, 'success');
+    }
+
+    async function loadPresetsFromDirectory(reRender = true, manualRefresh = false) {
+      const prevIdx = Number(document.getElementById('presetSelect')?.value);
+      const prevName = (Number.isInteger(prevIdx) && loadedPresets[prevIdx])
+        ? loadedPresets[prevIdx].name
+        : '';
+
+      if (manualRefresh) {
+        setBanner('Перечитываем ./presets.txt из директории...');
+      }
+
+      try {
+        const cacheBustUrl = `${PRESETS_FILE_URL}?t=${Date.now()}`;
+        const res = await fetch(cacheBustUrl, { cache: 'no-store' });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const text = await res.text();
+        const parsed = parsePresetsTxt(text);
+        if (!parsed.length) {
+          if (manualRefresh) {
+            setBanner('Файл presets.txt найден, но в нём нет ни одной секции [Название пресета].', 'warn');
+          }
+          return false;
+        }
+
+        loadedPresets = parsed;
+        let targetIdx = 0;
+        if (prevName) {
+          const foundIdx = loadedPresets.findIndex((p) => p.name === prevName);
+          if (foundIdx >= 0) {
+            targetIdx = foundIdx;
+          }
+        }
+
+        populatePresetSelect(loadedPresets, targetIdx);
+        document.getElementById('presetStatusLabel').textContent = `Пресеты из presets.txt (${loadedPresets.length})`;
+        applyPresetObject(loadedPresets[targetIdx]);
+        if (reRender) {
+          renderAll();
+        }
+        if (manualRefresh) {
+          setBanner(
+            `Файл presets.txt обновлён (${loadedPresets.length} пресетов). Активен: «${loadedPresets[targetIdx].name}».`,
+            'success'
+          );
+        }
+        return true;
+      } catch (_) {
+        if (manualRefresh) {
+          setBanner(
+            'Не удалось прочитать ./presets.txt из директории (файл не найден или страница открыта локально через file://).',
+            'warn'
+          );
+        }
+        return false;
+      }
     }
 
     let gtinMaps = {
@@ -3470,6 +3547,7 @@ showRawCodeCheck=true
 
     const presetsTxtInputEl = document.getElementById('presetsTxtInput');
     const presetSelectEl = document.getElementById('presetSelect');
+    document.getElementById('reloadPresetsBtn').addEventListener('click', () => loadPresetsFromDirectory(true, true));
     document.getElementById('loadPresetsBtn').addEventListener('click', () => presetsTxtInputEl.click());
     presetsTxtInputEl.addEventListener('change', (e) => {
       if (e.target.files && e.target.files.length > 0) {
@@ -3544,6 +3622,7 @@ showRawCodeCheck=true
     loadGtinCache();
     fetchGtinDatabases(false);
     renderAll();
+    loadPresetsFromDirectory(true, false);
   </script>
 </body>
 </html>
