@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light dark" />
   <link rel="icon" type="image/svg+xml" href="../assets/icons/matrix.svg">
-  <title>Tom Studio — Project Matrix · v11.8</title>
+  <title>Tom Studio — Project Matrix · v11.10-bwip-box</title>
 
-  <!-- Библиотеки для локальной распаковки ZIP и чтения таблиц (.xlsx, .xls, .csv) -->
+  <!-- Библиотеки для локальной распаковки ZIP, чтения таблиц (.xlsx, .xls, .csv) и генерации коробов через bwip-js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="./bwip-js-min.js"></script>
 
   <style>
     :root {
@@ -852,11 +853,13 @@
 
       html, body {
         width: var(--print-page-w, 25mm) !important;
+        min-width: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         max-width: none !important;
+        overflow: visible !important;
       }
 
       .page-header, .two-col, .summary-card, .io-panel, h3, .page-footer,
@@ -867,13 +870,13 @@
       .grid {
         display: block !important;
         width: var(--print-page-w, 25mm) !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
 
       .dm-card {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
+        display: block !important;
+        position: relative !important;
         width: var(--print-page-w, 25mm) !important;
         height: var(--print-page-h, 43mm) !important;
         padding: 0 !important;
@@ -896,77 +899,106 @@
       }
 
       .label-sheet-inner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        width: 100%;
-        height: 100%;
-        padding: var(--print-pad-y, 0.5mm) var(--print-pad-x, 1mm);
-        transform: translate(var(--print-offset-x, 0mm), var(--print-offset-y, 0mm));
+        position: relative !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        transform: translate(var(--print-offset-x, 0mm), var(--print-offset-y, 0mm)) !important;
+        overflow: hidden !important;
       }
 
       .matrix-box {
+        position: absolute !important;
+        left: 50% !important;
+        top: var(--print-matrix-top, 2.75mm) !important;
         background: #ffffff !important;
         padding: 0 !important;
         border-radius: 0 !important;
         width: var(--print-matrix-size, 20mm) !important;
         height: var(--print-matrix-size, 20mm) !important;
-        flex-shrink: 0;
-        transform: translate(var(--print-matrix-dx, 0mm), var(--print-matrix-dy, 0mm));
+        transform: translate(
+          calc(-50% + var(--print-matrix-dx, 0mm)),
+          var(--print-matrix-dy, 0mm)
+        ) !important;
+        overflow: hidden !important;
+      }
+
+      .matrix-box svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block !important;
       }
 
       .print-marker {
-        display: block !important;
-        font-size: var(--print-font-size, 6.5pt);
-        font-weight: 700;
-        line-height: 1.1;
-        color: #000000;
-        margin-top: 0.2mm;
-        transform: translate(var(--print-marker-dx, 0mm), var(--print-marker-dy, 0mm));
-      }
-
-      .print-serial {
-        display: block !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: calc(var(--print-font-size, 6.5pt) * 0.78);
-        font-weight: 600;
-        line-height: 1.1;
-        color: #000000;
-        margin-top: 0.3mm;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        transform: translate(var(--print-serial-dx, 0mm), var(--print-serial-dy, 0mm));
-      }
-
-      .print-name {
-        display: block !important;
-        font-size: calc(var(--print-font-size, 6.5pt) * 0.92);
-        font-weight: 600;
-        line-height: 1.12;
-        color: #000000;
-        margin-top: 0.35mm;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm));
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        left: 0.55mm !important;
+        right: 0.55mm !important;
+        top: 0.55mm !important;
+        height: 2.2mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        font-size: 6.4pt !important;
+        font-weight: 700 !important;
+        line-height: 1.1 !important;
+        color: #000000 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        transform: translate(var(--print-marker-dx, 0mm), var(--print-marker-dy, 0mm)) !important;
       }
 
       .print-raw {
-        display: block !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: calc(var(--print-font-size, 6.5pt) * 0.78);
-        line-height: 1.12;
-        color: #000000;
-        margin-top: 0.35mm;
-        max-width: 100%;
-        white-space: normal;
-        overflow-wrap: anywhere;
-        word-break: break-all;
-        transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm));
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        left: 0.55mm !important;
+        right: 0.55mm !important;
+        bottom: var(--print-code-bottom, 0.55mm) !important;
+        height: 5.8mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+        font-size: 4.6pt !important;
+        font-weight: 600 !important;
+        line-height: 1.14 !important;
+        letter-spacing: -0.02em !important;
+        color: #000000 !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-all !important;
+        overflow: hidden !important;
+        transform: translate(var(--print-serial-dx, 0mm), var(--print-serial-dy, 0mm)) !important;
+      }
+
+      .print-name {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        left: 0.55mm !important;
+        right: 0.55mm !important;
+        bottom: 0.55mm !important;
+        height: 6.2mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        font-size: 5.4pt !important;
+        font-weight: 700 !important;
+        line-height: 1.12 !important;
+        color: #000000 !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+        overflow: hidden !important;
+        transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm)) !important;
       }
     }
 
@@ -980,10 +1012,10 @@
 </head>
 <body>
   <header class="page-header">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.8">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.10-bwip-box">
       <span class="ts-brand">Tom Studio</span>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v11.8</span>
+      <span class="ts-project">Project Matrix · v11.10-bwip-box</span>
     </div>
   </header>
 
@@ -1001,7 +1033,7 @@
         <input type="file" id="tablesInput" accept=".xlsx,.xls,.csv,.txt,.tsv" multiple hidden />
 
         <div class="dropzone-main">Перетащите ZIP-архив сюда или нажмите для выбора</div>
-        <div class="dropzone-sub">Локальная обработка в браузере · Штучные коды и транспортная упаковка (00 / SSCC)</div>
+        <div class="dropzone-sub">Локальная обработка в браузере · Штучные коды и транспортная упаковка (00 / SSCC через bwip-js)</div>
         <div class="dropzone-actions">
           <button type="button" class="link-btn" id="pickSingleTablesBtn">Или выбрать таблицы (.xlsx / .xls / .csv) напрямую</button>
         </div>
@@ -1030,7 +1062,7 @@
       </div>
 
       <div class="info-banner" id="bannerInfo">
-        Поддерживаются ZIP-архивы с таблицами, таблицы Excel (.xlsx / .xls) и CSV/TXT. Шапки пропускаются автоматически.
+        Поддерживаются ZIP-архивы с таблицами, таблицы Excel (.xlsx / .xls) и CSV/TXT. Короба (SSCC) строятся через bwip-js.
       </div>
 
       <div class="compact-preview-box" aria-label="Предпросмотр этикетки">
@@ -1256,11 +1288,11 @@
   <div class="grid" id="outputGrid"></div>
 
   <footer class="page-footer">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.8">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.10-bwip-box">
       <span class="ts-brand">Tom Studio</span>
       <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v11.8</span>
+      <span class="ts-project">Project Matrix · v11.10-bwip-box</span>
     </div>
   </footer>
 
@@ -1440,12 +1472,12 @@ showRawCodeCheck=true
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'matrix_preset_v11.8.txt';
+      a.download = 'matrix_preset_v11.10-bwip-box.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setBanner('Сохранён файл пресета matrix_preset_v11.8.txt — можете скопировать секцию [...] в общий файл.', 'success');
+      setBanner('Сохранён файл пресета matrix_preset_v11.10-bwip-box.txt — можете скопировать секцию [...] в общий файл.', 'success');
     }
 
     async function handlePresetsTxtFile(file) {
@@ -1840,6 +1872,66 @@ showRawCodeCheck=true
       return { matrix: full, totalRows, totalCols };
     }
 
+function generateBoxMatrixViaBwip(ssccText) {
+  if (typeof window.bwipjs === 'undefined' || typeof window.bwipjs.toCanvas !== 'function') {
+    return null;
+  }
+
+  const scale = 2;
+  const tmpCanvas = document.createElement('canvas');
+  try {
+    window.bwipjs.toCanvas(tmpCanvas, {
+      bcid: 'datamatrix',
+      text: ssccText,
+      scale,
+      paddingwidth: 0,
+      paddingheight: 0
+    });
+  } catch (_) {
+    return null;
+  }
+
+  const w = tmpCanvas.width;
+  const h = tmpCanvas.height;
+  if (!w || !h || w % scale !== 0 || h % scale !== 0) {
+    return null;
+  }
+
+  const totalCols = w / scale;
+  const totalRows = h / scale;
+  if (totalCols < 10 || totalRows < 10 || totalCols > 144 || totalRows > 144) {
+    return null;
+  }
+
+  const ctx = tmpCanvas.getContext('2d');
+  const img = ctx.getImageData(0, 0, w, h).data;
+
+  let darkCount = 0;
+  const totalCells = totalRows * totalCols;
+  const matrix = Array.from({ length: totalRows }, () => Array(totalCols).fill(0));
+
+  for (let r = 0; r < totalRows; r++) {
+    for (let c = 0; c < totalCols; c++) {
+      const px = c * scale + Math.floor(scale / 2);
+      const py = r * scale + Math.floor(scale / 2);
+      const idx = (py * w + px) * 4;
+      const alpha = img[idx + 3];
+      const lum = (img[idx] + img[idx + 1] + img[idx + 2]) / 3;
+      const isDark = alpha > 128 && lum < 128;
+      if (isDark) {
+        matrix[r][c] = 1;
+        darkCount++;
+      }
+    }
+  }
+
+  if (darkCount === 0 || darkCount === totalCells) {
+    return null;
+  }
+
+  return { matrix, totalRows, totalCols };
+}
+
     function decodeBase64ToBytes(b64Str) {
       const cleaned = String(b64Str || '').trim().replace(/\s+/g, '');
       const binary = atob(cleaned);
@@ -1982,11 +2074,12 @@ showRawCodeCheck=true
         const arr = [];
         for (let i = 0; i < line.length; i++) arr.push(line.charCodeAt(i) & 0xff);
         const bytes = new Uint8Array(arr);
-        const isBox = Boolean(normalizeSsccString(line)) || isSsccBytes(bytes);
+        const directSscc = normalizeSsccString(line);
+        const isBox = Boolean(directSscc) || isSsccBytes(bytes);
         return {
           bytes,
           isGs1: false,
-          label: line,
+          label: directSscc || line,
           isBox,
           gtin: extractGtinFromTextOrBytes(line, bytes),
           serial: extractSerialFromTextOrBytes(line, bytes)
@@ -1999,8 +2092,8 @@ showRawCodeCheck=true
         for (let i = 0; i < directSscc.length; i++) arr.push(directSscc.charCodeAt(i) & 0xff);
         return {
           bytes: new Uint8Array(arr),
-          isGs1: true,
-          label: line,
+          isGs1: false,
+          label: directSscc,
           isBox: true,
           gtin: '',
           serial: ''
@@ -2010,10 +2103,11 @@ showRawCodeCheck=true
       if (mode === 'gs1_brackets' || (mode === 'auto' && /^\(\d{2,4}\)/.test(line))) {
         const bytes = parseBracketedGs1ToBytes(line);
         const isBox = isSsccBytes(bytes);
+        const ssccText = isBox ? bytesToAscii(bytes).slice(0, 20) : line;
         return {
           bytes,
-          isGs1: true,
-          label: line,
+          isGs1: !isBox,
+          label: isBox ? ssccText : line,
           isBox,
           gtin: extractGtinFromTextOrBytes(line, bytes),
           serial: extractSerialFromTextOrBytes(line, bytes)
@@ -2040,10 +2134,11 @@ showRawCodeCheck=true
         vis += (bytes[i] === 0x1d) ? '<GS>' : String.fromCharCode(bytes[i]);
       }
       const isBox = isSsccBytes(bytes);
+      const ssccText = isBox ? bytesToAscii(bytes).slice(0, 20) : vis;
       return {
         bytes,
-        isGs1: true,
-        label: vis,
+        isGs1: !isBox,
+        label: isBox ? ssccText : vis,
         isBox,
         gtin: extractGtinFromTextOrBytes(vis, bytes),
         serial: extractSerialFromTextOrBytes(vis, bytes)
@@ -2093,6 +2188,22 @@ showRawCodeCheck=true
 
     function generateMatrixForLine(rawLine, mode) {
       const prepared = prepareBytes(rawLine, mode);
+
+      if (prepared.isBox) {
+        const ssccPayload = bytesToAscii(prepared.bytes).slice(0, 20);
+        const bwipAssembled = generateBoxMatrixViaBwip(ssccPayload);
+        if (bwipAssembled) {
+          return {
+            ...bwipAssembled,
+            label: ssccPayload,
+            factoryCode: '',
+            isBox: true,
+            gtin: '',
+            serial: ''
+          };
+        }
+      }
+
       const rawCw = encodeAsciiCodewords(prepared.bytes, prepared.isGs1);
       const sym = selectSymbol(rawCw.length);
       const paddedCw = padToCapacity(rawCw, sym.dataCw);
@@ -2393,12 +2504,30 @@ showRawCodeCheck=true
       const oy = Number(document.getElementById('offsetYMm').value) || 0;
       const capOff = getCaptionOffsetsMm();
 
+      const hasCodeBlock = showRaw;
+      const hasNameBlock = showName;
+      const gapBetweenMm = (hasCodeBlock && hasNameBlock) ? layout.betweenBlocksGapMm : 0;
+      const middleTopMm = showMarkers ? (layout.edgePadMm + layout.topBandMm + layout.topGapMm) : layout.edgePadMm;
+      const middleBottomMm = h - (
+        layout.edgePadMm +
+        (hasNameBlock ? layout.nameBandMm : 0) +
+        (hasCodeBlock ? layout.codeBandMm : 0) +
+        layout.bottomGapMm
+      ) - gapBetweenMm;
+      const matrixTopMm = Math.max(
+        middleTopMm + 0.25,
+        Math.min(middleTopMm + 0.25, middleBottomMm - layout.safeMatrixMm)
+      );
+      const codeBottomMm = layout.edgePadMm + (hasNameBlock ? layout.nameBandMm : 0) + gapBetweenMm;
+
       const rootStyle = document.documentElement.style;
       rootStyle.setProperty('--print-page-w', `${w}mm`);
       rootStyle.setProperty('--print-page-h', `${h}mm`);
       rootStyle.setProperty('--print-matrix-size', `${layout.safeMatrixMm.toFixed(2)}mm`);
+      rootStyle.setProperty('--print-matrix-top', `${matrixTopMm.toFixed(2)}mm`);
+      rootStyle.setProperty('--print-code-bottom', `${codeBottomMm.toFixed(2)}mm`);
       rootStyle.setProperty('--print-offset-x', `${ox}mm`);
-      rootStyle.setProperty('--print-offset-y', `${oy}mm`);
+      rootStyle.setProperty('--print-offset-y', `${-oy}mm`);
       rootStyle.setProperty('--print-matrix-dx', formatMmVal(capOff.matrixDx));
       rootStyle.setProperty('--print-matrix-dy', formatMmVal(-capOff.matrixDy));
       rootStyle.setProperty('--print-marker-dx', formatMmVal(capOff.markerDx));
@@ -3226,7 +3355,7 @@ showRawCodeCheck=true
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.8.pdf`;
+      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.10-bwip-box.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3570,6 +3699,9 @@ showRawCodeCheck=true
     document.getElementById('printBtn').addEventListener('click', () => {
       syncPrintCssVars();
       window.print();
+    });
+    window.addEventListener('beforeprint', () => {
+      syncPrintCssVars();
     });
     document.getElementById('clearBtn').addEventListener('click', () => {
       document.getElementById('codesInput').value = '';
