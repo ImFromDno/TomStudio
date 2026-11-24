@@ -842,7 +842,7 @@
         <textarea
           id="pasteSourceArea"
           class="paste-input-area"
-          placeholder="(01)04810222001756(21)5Zj6JM&#9;(00)148102223600005718"
+          placeholder="(01)04810222001756(21)5Zj6JM&#9;00148102223600005718"
         ></textarea>
       </div>
 
@@ -855,6 +855,16 @@
       <div class="panel-head">
         <div class="panel-title">Параметры таблицы</div>
         <span class="panel-badge">Столбец B → 1:1</span>
+      </div>
+
+      <div class="mode-box">
+        <label class="checkbox-row" for="ignoreBracketsCheckbox">
+          <input type="checkbox" id="ignoreBracketsCheckbox" checked />
+          <div>
+            <span class="checkbox-text">Считать коды со скобками и без скобок одинаковыми</span>
+            <span class="checkbox-sub">Например: (00)148102223600005718 и 00148102223600005718 совпадут; в результат вставится значение из правого поля</span>
+          </div>
+        </label>
       </div>
 
       <div class="mode-box">
@@ -896,7 +906,7 @@
           class="box-list-area"
           placeholder="(00)148102223600005718&#10;(00)148102223600005725"
         ></textarea>
-        <div class="field-hint">Вставьте занятые/ошибочные номера коробок, каждый с новой строки</div>
+        <div class="field-hint">Вставьте занятые/ошибочные номера коробок (можно со скобками или без)</div>
       </div>
 
       <div class="list-col">
@@ -909,7 +919,7 @@
           class="box-list-area"
           placeholder="(00)148102223600009001&#10;(00)148102223600009002"
         ></textarea>
-        <div class="field-hint">1-я строка заменит 1-ю из левого поля, 2-я — 2-ю и т. д.</div>
+        <div class="field-hint">1-я строка заменит 1-ю из левого поля, 2-я — 2-ю и т. д. (формат скобок сохранится как здесь)</div>
       </div>
     </div>
   </section>
@@ -1036,6 +1046,7 @@
       const pasteSourceAreaEl = document.getElementById("pasteSourceArea");
       const pasteFromClipboardBtnEl = document.getElementById("pasteFromClipboardBtn");
 
+      const ignoreBracketsCheckboxEl = document.getElementById("ignoreBracketsCheckbox");
       const hasHeaderCheckboxEl = document.getElementById("hasHeaderCheckbox");
       const trimSpacesCheckboxEl = document.getElementById("trimSpacesCheckbox");
 
@@ -1137,6 +1148,11 @@
         return trimEdges ? str.trim() : str;
       }
 
+      function toMatchKey(code, ignoreBrackets) {
+        const str = String(code || "");
+        return ignoreBrackets ? str.replace(/[()]/g, "") : str;
+      }
+
       function isRowEmpty(row) {
         return !Array.isArray(row) || row.every((cell) => cleanValue(cell, true) === "");
       }
@@ -1232,7 +1248,7 @@
 
       /* ================= Логика замены 1-к-1 ================= */
 
-      function buildReplacementPlan(oldLines, newLines) {
+      function buildReplacementPlan(oldLines, newLines, ignoreBrackets) {
         const pairs = [];
         const minLen = Math.min(oldLines.length, newLines.length);
 
@@ -1241,24 +1257,26 @@
             index: i + 1,
             from: oldLines[i],
             to: newLines[i],
+            fromKey: toMatchKey(oldLines[i], ignoreBrackets),
+            toKey: toMatchKey(newLines[i], ignoreBrackets),
             replacedRows: 0,
           });
         }
 
-        // Карта замены 1-к-1: oldBox -> { to, pairIndex }
+        // Карта замены 1-к-1: normalizedOldBox -> { to, pairIndex }
         const replaceMap = new Map();
         const duplicateOlds = [];
         const chainedConflicts = [];
-        const oldSet = new Set(oldLines);
+        const oldKeySet = new Set(oldLines.map((x) => toMatchKey(x, ignoreBrackets)));
 
         for (const pair of pairs) {
-          if (replaceMap.has(pair.from)) {
+          if (replaceMap.has(pair.fromKey)) {
             duplicateOlds.push(pair.from);
           } else {
-            replaceMap.set(pair.from, { to: pair.to, pairIndex: pair.index - 1 });
+            replaceMap.set(pair.fromKey, { to: pair.to, pairIndex: pair.index - 1 });
           }
 
-          if (oldSet.has(pair.to) && pair.to !== pair.from) {
+          if (oldKeySet.has(pair.toKey) && pair.toKey !== pair.fromKey) {
             chainedConflicts.push(`${pair.from} → ${pair.to}`);
           }
         }
@@ -1279,6 +1297,7 @@
 
         const trimEdges = trimSpacesCheckboxEl.checked;
         const skipHeader = hasHeaderCheckboxEl.checked;
+        const ignoreBrackets = ignoreBracketsCheckboxEl.checked;
         const activeSources = getActiveSources();
 
         const oldLines = parseBoxLines(oldBoxesInputEl.value, trimEdges);
@@ -1287,7 +1306,7 @@
         oldBoxesCountEl.textContent = `${oldLines.length} шт.`;
         newBoxesCountEl.textContent = `${newLines.length} шт.`;
 
-        const plan = buildReplacementPlan(oldLines, newLines);
+        const plan = buildReplacementPlan(oldLines, newLines, ignoreBrackets);
 
         pairStatusBadgeEl.classList.remove("is-ok", "is-warn");
         if (plan.mismatch) {
@@ -1330,9 +1349,10 @@
           for (const row of rows) {
             const colA = cleanValue(row[0], trimEdges);
             let colB = cleanValue(row[1], trimEdges);
+            const colBKey = toMatchKey(colB, ignoreBrackets);
 
-            if (canApplyReplace && colB && plan.replaceMap.has(colB)) {
-              const entry = plan.replaceMap.get(colB);
+            if (canApplyReplace && colBKey && plan.replaceMap.has(colBKey)) {
+              const entry = plan.replaceMap.get(colBKey);
               colB = entry.to;
               plan.pairs[entry.pairIndex].replacedRows += 1;
               fileReplaced += 1;
@@ -1706,6 +1726,7 @@
 
       oldBoxesInputEl.addEventListener("input", rebuildReplacement);
       newBoxesInputEl.addEventListener("input", rebuildReplacement);
+      ignoreBracketsCheckboxEl.addEventListener("change", rebuildReplacement);
       hasHeaderCheckboxEl.addEventListener("change", rebuildReplacement);
       trimSpacesCheckboxEl.addEventListener("change", rebuildReplacement);
 
@@ -1713,4 +1734,4 @@
     })();
   </script>
 </body>
-</html>
+  </html>
