@@ -218,6 +218,46 @@
       flex-shrink: 0;
     }
 
+    .options-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-label code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+
     input[type="text"],
     select {
       height: 42px;
@@ -472,6 +512,12 @@
         </button>
       </div>
     </div>
+    <div class="options-row">
+      <label class="checkbox-label" for="leadingZeroCheckbox" title="Добавить или убрать ноль в начале GTIN">
+        <input type="checkbox" id="leadingZeroCheckbox">
+        <span>Ноль перед GTIN (<code>0</code> + GTIN)</span>
+      </label>
+    </div>
   </div>
 
   <div id="statsBar" class="stats-bar">
@@ -514,6 +560,16 @@
     let products = [];
 
     const bulbToggleEl = document.getElementById("bulbToggle");
+    const leadingZeroCheckboxEl = document.getElementById("leadingZeroCheckbox");
+
+    function formatGtin(rawGtin, withLeadingZero) {
+      const cleaned = String(rawGtin ?? '').trim();
+      if (!cleaned) return '';
+      if (withLeadingZero) {
+        return cleaned.startsWith('0') ? cleaned : '0' + cleaned;
+      }
+      return cleaned.replace(/^0+/, '');
+    }
 
     function isEffectiveDarkTheme() {
       const explicit = document.documentElement.getAttribute("data-theme");
@@ -627,12 +683,18 @@
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const tbody = document.getElementById('tableBody');
       const counter = document.getElementById('counter');
+      const withLeadingZero = Boolean(leadingZeroCheckboxEl && leadingZeroCheckboxEl.checked);
 
       const searchTerms = query.split(/\s+/).filter(Boolean);
 
-      const filtered = products.filter(item => {
+      const formattedProducts = products.map(item => ({
+        ...item,
+        displayGtin: formatGtin(item.gtin, withLeadingZero)
+      }));
+
+      const filtered = formattedProducts.filter(item => {
         if (searchTerms.length === 0) return true;
-        const haystack = `${item.gtin} ${item.name}`.toLowerCase();
+        const haystack = `${item.gtin} ${item.displayGtin} ${item.name}`.toLowerCase();
         return searchTerms.every(term => haystack.includes(term));
       });
 
@@ -647,8 +709,8 @@
         <tr>
           <td>
             <div class="gtin-cell">
-              <span>${escapeHtml(item.gtin)}</span>
-              <button type="button" class="copy-btn" onclick="copyGtin('${escapeHtml(item.gtin)}', this)" title="Копировать GTIN">
+              <span>${escapeHtml(item.displayGtin)}</span>
+              <button type="button" class="copy-btn" onclick="copyGtin('${escapeHtml(item.displayGtin)}', this)" title="Копировать GTIN">
                 ${iconCopy}
               </button>
             </div>
@@ -682,6 +744,7 @@
     }
 
     document.getElementById('searchInput').addEventListener('input', renderTable);
+    leadingZeroCheckboxEl.addEventListener('change', renderTable);
 
     loadData();
   </script>
