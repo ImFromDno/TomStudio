@@ -249,12 +249,11 @@
     .dropzone {
       border: 2px dashed var(--border);
       border-radius: 10px;
-      padding: 18px 14px;
+      padding: 16px 14px;
       text-align: center;
       background: var(--card-2);
       cursor: pointer;
       transition: border-color 0.15s ease, background-color 0.2s ease, transform 0.15s ease;
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -270,19 +269,19 @@
     }
 
     .dropzone-title {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 700;
       color: var(--text);
     }
 
     .dropzone-sub {
-      margin-top: 5px;
-      font-size: 13px;
+      margin-top: 4px;
+      font-size: 12.5px;
       color: var(--muted);
     }
 
     .dropzone-actions {
-      margin-top: 10px;
+      margin-top: 8px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
@@ -304,6 +303,65 @@
 
     .link-btn:hover {
       color: var(--accent-hover);
+    }
+
+    .paste-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+    }
+
+    .paste-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .paste-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .mini-btn {
+      appearance: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .mini-btn:hover {
+      border-color: var(--accent);
+      background: var(--info-bg);
+    }
+
+    textarea.paste-input-area {
+      width: 100%;
+      min-height: 78px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12.5px;
+      line-height: 1.45;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.paste-input-area:focus {
+      border-color: var(--accent);
     }
 
     .mode-box {
@@ -749,10 +807,10 @@
   </header>
 
   <div class="top-grid">
-    <section class="card" aria-label="Загрузка таблицы или архива">
+    <section class="card" aria-label="Загрузка таблицы или вставка из буфера">
       <div class="panel-head">
-        <div class="panel-title">1. Загрузка агрегации</div>
-        <span class="panel-badge" id="fileBadge">Файлов: 0</span>
+        <div class="panel-title">1. Источник агрегации (файл или буфер)</div>
+        <span class="panel-badge" id="fileBadge">Источников: 0</span>
       </div>
 
       <div
@@ -776,8 +834,20 @@
         </div>
       </div>
 
+      <div class="paste-box">
+        <div class="paste-head">
+          <label class="paste-label" for="pasteSourceArea">Или вставьте строки из буфера (Ctrl+V)</label>
+          <button type="button" class="mini-btn" id="pasteFromClipboardBtn">Вставить из буфера</button>
+        </div>
+        <textarea
+          id="pasteSourceArea"
+          class="paste-input-area"
+          placeholder="(01)04810222001756(21)5Zj6JM&#9;(00)148102223600005718"
+        ></textarea>
+      </div>
+
       <div id="statusBanner" class="status-banner" role="status">
-        Загрузите файл агрегации и укажите списки коробок для замены 1-к-1.
+        Загрузите файл/ZIP или вставьте строки из буфера обмена, затем укажите списки коробок для замены 1-к-1.
       </div>
     </section>
 
@@ -792,7 +862,7 @@
           <input type="checkbox" id="hasHeaderCheckbox" />
           <div>
             <span class="checkbox-text">Первая непустая строка — шапка таблицы</span>
-            <span class="checkbox-sub">По умолчанию выключено, если файл сразу начинается со строк кода и коробки</span>
+            <span class="checkbox-sub">По умолчанию выключено, если данные сразу начинаются со строк кода и коробки</span>
           </div>
         </label>
       </div>
@@ -913,13 +983,13 @@
     </div>
   </section>
 
-  <section class="card" aria-label="Отчёт по загруженным файлам">
+  <section class="card" aria-label="Отчёт по загруженным источникам">
     <div class="report-head">
       <div>
-        <div class="report-title">Отчёт по файлам</div>
-        <div class="report-sub">Список загруженных таблиц, всего строк и количество изменённых строк в каждой.</div>
+        <div class="report-title">Отчёт по файлам и буферу</div>
+        <div class="report-sub">Список загруженных таблиц или данных из буфера, всего строк и количество изменённых строк.</div>
       </div>
-      <span class="report-pill" id="filesReportPill">Файлов: 0</span>
+      <span class="report-pill" id="filesReportPill">Источников: 0</span>
     </div>
 
     <div class="table-wrap">
@@ -927,7 +997,7 @@
         <thead>
           <tr>
             <th class="col-num">#</th>
-            <th>Файл</th>
+            <th>Источник</th>
             <th class="col-right">Строк</th>
             <th class="col-right">Заменено</th>
             <th>Примечание</th>
@@ -935,7 +1005,7 @@
         </thead>
         <tbody id="filesReportBody">
           <tr>
-            <td colspan="5" class="empty-cell">Загрузите таблицу или ZIP-архив.</td>
+            <td colspan="5" class="empty-cell">Загрузите таблицу/ZIP или вставьте строки из буфера.</td>
           </tr>
         </tbody>
       </table>
@@ -962,6 +1032,9 @@
       const zipInputEl = document.getElementById("zipInput");
       const pickTablesBtnEl = document.getElementById("pickTablesBtn");
       const pickZipBtnEl = document.getElementById("pickZipBtn");
+
+      const pasteSourceAreaEl = document.getElementById("pasteSourceArea");
+      const pasteFromClipboardBtnEl = document.getElementById("pasteFromClipboardBtn");
 
       const hasHeaderCheckboxEl = document.getElementById("hasHeaderCheckbox");
       const trimSpacesCheckboxEl = document.getElementById("trimSpacesCheckbox");
@@ -992,6 +1065,7 @@
       const bulbToggleEl = document.getElementById("bulbToggle");
 
       let rawParsedFiles = [];
+      let pastedSourceItem = null;
       let copyFeedbackTimer = null;
 
       /* ================= Управление темой оформления ================= */
@@ -1074,6 +1148,53 @@
           .filter((line) => line.trim() !== "");
       }
 
+      function parsePastedTextToRows(rawText) {
+        const text = String(rawText || "").trim();
+        if (!text) return [];
+
+        const lines = text.split(/\r?\n/);
+        const rows = [];
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let cols;
+          if (line.includes("\t")) {
+            cols = line.split("\t");
+          } else if (line.includes(";")) {
+            cols = line.split(";");
+          } else {
+            cols = [line];
+          }
+          if (!isRowEmpty(cols)) {
+            rows.push(cols);
+          }
+        }
+
+        return rows;
+      }
+
+      function syncPastedSourceFromTextarea() {
+        const rows = parsePastedTextToRows(pasteSourceAreaEl.value);
+        if (rows.length === 0) {
+          pastedSourceItem = null;
+        } else {
+          pastedSourceItem = {
+            name: "Буфер обмена (вставленный текст)",
+            status: "parsed",
+            reason: "",
+            nonEmptyRows: rows,
+          };
+        }
+      }
+
+      function getActiveSources() {
+        const list = [...rawParsedFiles];
+        if (pastedSourceItem) {
+          list.push(pastedSourceItem);
+        }
+        return list;
+      }
+
       /* ================= Парсинг таблиц через SheetJS ================= */
 
       function parseTableFromArrayBuffer(buffer, name) {
@@ -1154,8 +1275,11 @@
       }
 
       function rebuildReplacement() {
+        syncPastedSourceFromTextarea();
+
         const trimEdges = trimSpacesCheckboxEl.checked;
         const skipHeader = hasHeaderCheckboxEl.checked;
+        const activeSources = getActiveSources();
 
         const oldLines = parseBoxLines(oldBoxesInputEl.value, trimEdges);
         const newLines = parseBoxLines(newBoxesInputEl.value, trimEdges);
@@ -1184,13 +1308,13 @@
 
         const canApplyReplace = !plan.mismatch && plan.pairs.length > 0;
 
-        for (const fileItem of rawParsedFiles) {
+        for (const fileItem of activeSources) {
           if (fileItem.status !== "parsed") {
             fileReportRows.push({
               name: fileItem.name,
               rowsCount: 0,
               replacedCount: 0,
-              note: fileItem.reason || "Ошибка файла",
+              note: fileItem.reason || "Ошибка источника",
               ok: false,
             });
             continue;
@@ -1215,7 +1339,6 @@
               totalReplacedRows += 1;
             }
 
-            // Сохраняем дополнительные столбцы, если они есть, иначе A\tB
             const extraCols = row
               .slice(2)
               .map((c) => cleanValue(c, trimEdges))
@@ -1248,11 +1371,11 @@
         statPairsCountEl.textContent = String(plan.pairs.length);
         statUnmatchedOldEl.textContent = String(unmatchedOldCount);
 
-        fileBadgeEl.textContent = `Файлов: ${rawParsedFiles.length}`;
-        filesReportPillEl.textContent = `Файлов: ${rawParsedFiles.length}`;
+        fileBadgeEl.textContent = `Источников: ${activeSources.length}`;
+        filesReportPillEl.textContent = `Источников: ${activeSources.length}`;
         pairsReportPillEl.textContent = `Замен: ${totalReplacedRows} строк`;
 
-        const hasData = rawParsedFiles.length > 0 || oldLines.length > 0 || newLines.length > 0;
+        const hasData = activeSources.length > 0 || oldLines.length > 0 || newLines.length > 0;
         clearAllBtnEl.disabled = !hasData;
         copyBtnEl.disabled = allOutputLines.length === 0;
 
@@ -1267,7 +1390,7 @@
         renderPairsReport(plan.pairs, plan.mismatch, plan.chainedConflicts);
         renderFilesReport(fileReportRows);
 
-        if (rawParsedFiles.length > 0) {
+        if (activeSources.length > 0) {
           if (plan.mismatch) {
             setStatus(
               `Количество строк не совпадает: «Какие заменить» — ${oldLines.length}, «На какие заменить» — ${newLines.length}. Замена приостановлена.`,
@@ -1324,7 +1447,7 @@
       function renderFilesReport(items) {
         if (!items || items.length === 0) {
           filesReportBodyEl.innerHTML =
-            '<tr><td colspan="5" class="empty-cell">Загрузите таблицу или ZIP-архив.</td></tr>';
+            '<tr><td colspan="5" class="empty-cell">Загрузите таблицу/ZIP или вставьте строки из буфера.</td></tr>';
           return;
         }
 
@@ -1433,6 +1556,29 @@
         }
       }
 
+      /* ================= Работа с буфером обмена ================= */
+
+      pasteFromClipboardBtnEl.addEventListener("click", async () => {
+        if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim()) {
+              pasteSourceAreaEl.value = text;
+              rebuildReplacement();
+              return;
+            }
+            setStatus("В буфере обмена нет текста для вставки.", "warn");
+            return;
+          } catch (_) {
+            // Если браузер заблокировал чтение буфера — фокусируем поле для Ctrl+V
+          }
+        }
+        pasteSourceAreaEl.focus();
+        setStatus("Нажмите Ctrl+V в поле буфера обмена для вставки строк.", "info");
+      });
+
+      pasteSourceAreaEl.addEventListener("input", rebuildReplacement);
+
       /* ================= Копирование и очистка ================= */
 
       function showCopiedFeedback() {
@@ -1493,12 +1639,14 @@
 
       clearAllBtnEl.addEventListener("click", () => {
         rawParsedFiles = [];
+        pastedSourceItem = null;
         tablesInputEl.value = "";
         zipInputEl.value = "";
+        pasteSourceAreaEl.value = "";
         oldBoxesInputEl.value = "";
         newBoxesInputEl.value = "";
         rebuildReplacement();
-        setStatus("Данные очищены. Загрузите файл агрегации и списки коробок.", "info");
+        setStatus("Данные очищены. Загрузите файл/ZIP или вставьте строки из буфера.", "info");
       });
 
       /* ================= События интерфейса ================= */
@@ -1565,4 +1713,4 @@
     })();
   </script>
 </body>
-  </html>
+</html>
