@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" type="image/svg+xml" href="../assets/icons/agregator.svg" />
+  <title>Tom Studio — Box Replacer</title>
+
+  <!-- Библиотеки для локальной распаковки ZIP и чтения таблиц (.xlsx, .xls, .csv) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    /* Единая система тем и CSS-переменных в стиле Tom Studio */
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --card-2: #fafafa;
+      --text: #333333;
+      --muted: #666666;
+      --border: #dddddd;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --accent: #1a73e8;
+      --accent-hover: #1557b0;
+      --success: #137333;
+      --success-bg: #e6f4ea;
+      --success-border: #ceead6;
+      --warn-text: #9a6700;
+      --warn-bg: #fef7e0;
+      --warn-border: #fde293;
+      --info-text: #174ea6;
+      --info-bg: #e8f0fe;
+      --info-border: #d2e3fc;
+      --bar-bg: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+      --bar-border: rgba(147, 197, 253, 0.28);
+      --bar-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-2: #0b1220;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #86efac;
+        --success-bg: rgba(34, 197, 94, 0.14);
+        --success-border: rgba(34, 197, 94, 0.35);
+        --warn-text: #fde68a;
+        --warn-bg: rgba(245, 158, 11, 0.14);
+        --warn-border: rgba(245, 158, 11, 0.35);
+        --info-text: #bfdbfe;
+        --info-bg: rgba(59, 130, 246, 0.14);
+        --info-border: rgba(59, 130, 246, 0.35);
+        --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        --bar-border: rgba(96, 165, 250, 0.32);
+        --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #86efac;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-border: rgba(34, 197, 94, 0.35);
+      --warn-text: #fde68a;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --warn-border: rgba(245, 158, 11, 0.35);
+      --info-text: #bfdbfe;
+      --info-bg: rgba(59, 130, 246, 0.14);
+      --info-border: rgba(59, 130, 246, 0.35);
+      --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      --bar-border: rgba(96, 165, 250, 0.32);
+      --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 14px auto 32px;
+      padding: 0 20px 20px;
+      max-width: 1040px;
+      font-size: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .page-header {
+      margin-bottom: 14px;
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: var(--bar-bg);
+      border: 1px solid var(--bar-border);
+      box-shadow: var(--bar-shadow);
+      color: #ffffff;
+    }
+
+    .ts-brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .ts-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.26);
+      flex-shrink: 0;
+    }
+
+    .page-header .ts-divider {
+      margin-left: auto;
+    }
+
+    .ts-project {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bulb-btn {
+      appearance: none;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .bulb-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.05);
+    }
+
+    .bulb-btn.is-lit {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: rgba(253, 224, 71, 0.65);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      opacity: 1;
+    }
+
+    .bulb-btn.is-off {
+      opacity: 0.45;
+      filter: grayscale(0.85);
+      box-shadow: none;
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .top-grid .card {
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .panel-badge {
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .panel-badge.is-ok {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success);
+    }
+
+    .panel-badge.is-warn {
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
+      color: var(--warn-text);
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 18px 14px;
+      text-align: center;
+      background: var(--card-2);
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.2s ease, transform 0.15s ease;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dropzone:hover,
+    .dropzone:focus-visible,
+    .dropzone.is-dragover {
+      border-color: var(--accent);
+      background: var(--info-bg);
+      outline: none;
+    }
+
+    .dropzone-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .dropzone-sub {
+      margin-top: 5px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .dropzone-actions {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .link-btn {
+      appearance: none;
+      background: transparent;
+      border: none;
+      padding: 2px 4px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .link-btn:hover {
+      color: var(--accent-hover);
+    }
+
+    .mode-box {
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+
+    .mode-box:last-child {
+      margin-bottom: 0;
+    }
+
+    .checkbox-row {
+      padding: 2px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .checkbox-sub {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .replace-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .list-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .list-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .field-label {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .line-counter {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    textarea.box-list-area {
+      width: 100%;
+      min-height: 165px;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-2);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.box-list-area:focus {
+      border-color: var(--accent);
+    }
+
+    .field-hint {
+      margin-top: 5px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .status-banner {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      border: 1px solid var(--info-border);
+      background: var(--info-bg);
+      color: var(--info-text);
+    }
+
+    .status-banner.warn {
+      border-color: var(--warn-border);
+      background: var(--warn-bg);
+      color: var(--warn-text);
+    }
+
+    .status-banner.success {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .summary-card {
+      background: var(--card);
+      border-radius: 10px;
+      border-left: 4px solid var(--accent);
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat-box {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      margin-top: 4px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-value.accent {
+      color: var(--accent);
+    }
+
+    .stat-value.success {
+      color: var(--success);
+    }
+
+    .stat-value.warn {
+      color: var(--warn-text);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .result-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .result-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary.is-copied {
+      background: #16a34a;
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: var(--card-2);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent);
+    }
+
+    textarea.output-area {
+      width: 100%;
+      min-height: 260px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-2);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13.5px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.output-area:focus {
+      border-color: var(--accent);
+    }
+
+    .report-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .report-title {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .report-sub {
+      margin-top: 3px;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    .report-pill {
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--card-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-2);
+    }
+
+    table.report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    table.report-table th,
+    table.report-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    table.report-table th {
+      background: var(--card);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    table.report-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.report-table tbody tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .col-num {
+      width: 48px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .col-file {
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .col-right {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .col-note {
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+
+    .code-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12.5px;
+      word-break: break-all;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-ok {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success-border);
+    }
+
+    .badge-skip {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border: 1px solid var(--warn-border);
+    }
+
+    .empty-cell {
+      text-align: center !important;
+      padding: 20px 14px !important;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .page-footer {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 780px) {
+      .top-grid,
+      .replace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 440px) {
+      body {
+        padding: 0 12px 16px;
+      }
+
+      .ts-bar {
+        padding: 11px 15px;
+        gap: 8px;
+      }
+
+      .ts-brand {
+        font-size: 18px;
+      }
+
+      .ts-divider {
+        height: 19px;
+      }
+
+      .ts-project {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ts-bar" aria-label="Tom Studio — Box Replacer">
+      <span class="ts-brand">Tom Studio</span>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Box Replacer</span>
+    </div>
+  </header>
+
+  <div class="top-grid">
+    <section class="card" aria-label="Загрузка таблицы или архива">
+      <div class="panel-head">
+        <div class="panel-title">1. Загрузка агрегации</div>
+        <span class="panel-badge" id="fileBadge">Файлов: 0</span>
+      </div>
+
+      <div
+        id="dropZone"
+        class="dropzone"
+        role="button"
+        tabindex="0"
+        aria-label="Перетащите таблицу или ZIP-архив или выберите файл"
+      >
+        <input type="file" id="tablesInput" accept=".xlsx,.xls,.csv" multiple hidden />
+        <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" hidden />
+
+        <div class="dropzone-title">Перетащите таблицу (.xlsx / .xls / .csv) или ZIP сюда</div>
+        <div class="dropzone-sub">
+          Столбец A — код позиции/маркировки · Столбец B — коробка (SSCC) · Локально в браузере
+        </div>
+        <div class="dropzone-actions">
+          <button type="button" class="link-btn" id="pickTablesBtn">Выбрать таблицу</button>
+          <span>·</span>
+          <button type="button" class="link-btn" id="pickZipBtn">Выбрать ZIP-архив</button>
+        </div>
+      </div>
+
+      <div id="statusBanner" class="status-banner" role="status">
+        Загрузите файл агрегации и укажите списки коробок для замены 1-к-1.
+      </div>
+    </section>
+
+    <section class="card" aria-label="Параметры чтения таблицы">
+      <div class="panel-head">
+        <div class="panel-title">Параметры таблицы</div>
+        <span class="panel-badge">Столбец B → 1:1</span>
+      </div>
+
+      <div class="mode-box">
+        <label class="checkbox-row" for="hasHeaderCheckbox">
+          <input type="checkbox" id="hasHeaderCheckbox" />
+          <div>
+            <span class="checkbox-text">Первая непустая строка — шапка таблицы</span>
+            <span class="checkbox-sub">По умолчанию выключено, если файл сразу начинается со строк кода и коробки</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="mode-box">
+        <label class="checkbox-row" for="trimSpacesCheckbox">
+          <input type="checkbox" id="trimSpacesCheckbox" checked />
+          <div>
+            <span class="checkbox-text">Убирать случайные пробелы по краям кодов</span>
+            <span class="checkbox-sub">Помогает, если при копировании из Excel/1С зацепился лишний пробел</span>
+          </div>
+        </label>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" aria-label="Списки коробок для замены 1 к 1">
+    <div class="panel-head">
+      <div class="panel-title">2. Замена коробок 1-к-1 (по порядку строк)</div>
+      <span class="panel-badge" id="pairStatusBadge">Пар: 0</span>
+    </div>
+
+    <div class="replace-grid">
+      <div class="list-col">
+        <div class="list-label-row">
+          <label class="field-label" for="oldBoxesInput">Какие коробки заменить (1 коробка = 1 строка)</label>
+          <span class="line-counter" id="oldBoxesCount">0 шт.</span>
+        </div>
+        <textarea
+          id="oldBoxesInput"
+          class="box-list-area"
+          placeholder="(00)148102223600005718&#10;(00)148102223600005725"
+        ></textarea>
+        <div class="field-hint">Вставьте занятые/ошибочные номера коробок, каждый с новой строки</div>
+      </div>
+
+      <div class="list-col">
+        <div class="list-label-row">
+          <label class="field-label" for="newBoxesInput">На какие коробки заменить (в том же порядке)</label>
+          <span class="line-counter" id="newBoxesCount">0 шт.</span>
+        </div>
+        <textarea
+          id="newBoxesInput"
+          class="box-list-area"
+          placeholder="(00)148102223600009001&#10;(00)148102223600009002"
+        ></textarea>
+        <div class="field-hint">1-я строка заменит 1-ю из левого поля, 2-я — 2-ю и т. д.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-card" aria-label="Сводка по замене">
+    <div class="summary-grid">
+      <div class="stat-box">
+        <div class="stat-label">Всего строк в таблице</div>
+        <div class="stat-value" id="statTotalRows">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Заменено строк (столбец B)</div>
+        <div class="stat-value success" id="statReplacedRows">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Пар замены 1-к-1</div>
+        <div class="stat-value accent" id="statPairsCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Не найдено в файле</div>
+        <div class="stat-value warn" id="statUnmatchedOld">0</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Результат с заменёнными коробками">
+    <div class="result-header">
+      <div>
+        <div class="result-title">3. Таблица с заменёнными коробками (TSV для 1С)</div>
+        <div class="result-sub" id="resultMeta">Скопируйте готовые строки и вставьте в 1С или таблицу</div>
+      </div>
+      <div class="btn-group">
+        <button type="button" class="btn btn-secondary" id="clearAllBtn" disabled>Очистить всё</button>
+        <button type="button" class="btn btn-primary" id="copyBtn" disabled>Копировать</button>
+      </div>
+    </div>
+    <textarea
+      id="outputArea"
+      class="output-area"
+      readonly
+      placeholder="Здесь появится таблица с заменёнными кодами коробок..."
+    ></textarea>
+  </section>
+
+  <section class="card" aria-label="Детализация замен по парам">
+    <div class="report-head">
+      <div>
+        <div class="report-title">Отчёт по заменам 1-к-1</div>
+        <div class="report-sub">Показывает каждую пару «было → стало» и сколько строк в таблице обновилось.</div>
+      </div>
+      <span class="report-pill" id="pairsReportPill">Замен: 0 строк</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th>Было (заменить)</th>
+            <th>Стало (на что заменить)</th>
+            <th class="col-right">Заменено строк</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="pairsReportBody">
+          <tr>
+            <td colspan="5" class="empty-cell">Укажите списки коробок в обоих полях для проверки и замены.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Отчёт по загруженным файлам">
+    <div class="report-head">
+      <div>
+        <div class="report-title">Отчёт по файлам</div>
+        <div class="report-sub">Список загруженных таблиц, всего строк и количество изменённых строк в каждой.</div>
+      </div>
+      <span class="report-pill" id="filesReportPill">Файлов: 0</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th>Файл</th>
+            <th class="col-right">Строк</th>
+            <th class="col-right">Заменено</th>
+            <th>Примечание</th>
+          </tr>
+        </thead>
+        <tbody id="filesReportBody">
+          <tr>
+            <td colspan="5" class="empty-cell">Загрузите таблицу или ZIP-архив.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div class="ts-bar" aria-label="Tom Studio — Box Replacer">
+      <span class="ts-brand">Tom Studio</span>
+      <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Box Replacer</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const TABLE_EXTENSIONS = [".xlsx", ".xls", ".csv"];
+
+      const dropZoneEl = document.getElementById("dropZone");
+      const tablesInputEl = document.getElementById("tablesInput");
+      const zipInputEl = document.getElementById("zipInput");
+      const pickTablesBtnEl = document.getElementById("pickTablesBtn");
+      const pickZipBtnEl = document.getElementById("pickZipBtn");
+
+      const hasHeaderCheckboxEl = document.getElementById("hasHeaderCheckbox");
+      const trimSpacesCheckboxEl = document.getElementById("trimSpacesCheckbox");
+
+      const oldBoxesInputEl = document.getElementById("oldBoxesInput");
+      const newBoxesInputEl = document.getElementById("newBoxesInput");
+      const oldBoxesCountEl = document.getElementById("oldBoxesCount");
+      const newBoxesCountEl = document.getElementById("newBoxesCount");
+      const pairStatusBadgeEl = document.getElementById("pairStatusBadge");
+      const fileBadgeEl = document.getElementById("fileBadge");
+
+      const statusBannerEl = document.getElementById("statusBanner");
+
+      const statTotalRowsEl = document.getElementById("statTotalRows");
+      const statReplacedRowsEl = document.getElementById("statReplacedRows");
+      const statPairsCountEl = document.getElementById("statPairsCount");
+      const statUnmatchedOldEl = document.getElementById("statUnmatchedOld");
+
+      const resultMetaEl = document.getElementById("resultMeta");
+      const clearAllBtnEl = document.getElementById("clearAllBtn");
+      const copyBtnEl = document.getElementById("copyBtn");
+      const outputAreaEl = document.getElementById("outputArea");
+
+      const pairsReportPillEl = document.getElementById("pairsReportPill");
+      const pairsReportBodyEl = document.getElementById("pairsReportBody");
+      const filesReportPillEl = document.getElementById("filesReportPill");
+      const filesReportBodyEl = document.getElementById("filesReportBody");
+      const bulbToggleEl = document.getElementById("bulbToggle");
+
+      let rawParsedFiles = [];
+      let copyFeedbackTimer = null;
+
+      /* ================= Управление темой оформления ================= */
+
+      function isEffectiveDarkTheme() {
+        const explicit = document.documentElement.getAttribute("data-theme");
+        if (explicit === "dark") return true;
+        if (explicit === "light") return false;
+        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+
+      function syncBulbButton() {
+        const dark = isEffectiveDarkTheme();
+        bulbToggleEl.classList.toggle("is-lit", !dark);
+        bulbToggleEl.classList.toggle("is-off", dark);
+        bulbToggleEl.title = dark
+          ? "Тёмная тема (лампочка потухла) — включить светлую тему"
+          : "Светлая тема (лампочка горит) — включить тёмную тему";
+      }
+
+      bulbToggleEl.addEventListener("click", () => {
+        const nextDark = !isEffectiveDarkTheme();
+        document.documentElement.setAttribute("data-theme", nextDark ? "dark" : "light");
+        syncBulbButton();
+      });
+
+      if (window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+          if (!document.documentElement.getAttribute("data-theme")) {
+            syncBulbButton();
+          }
+        });
+      }
+
+      syncBulbButton();
+
+      /* ================= Вспомогательные функции ================= */
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function setStatus(message, type = "info") {
+        statusBannerEl.className = `status-banner${type === "info" ? "" : ` ${type}`}`;
+        statusBannerEl.textContent = message;
+      }
+
+      function hasSupportedExtension(filename) {
+        const lower = String(filename || "").toLowerCase();
+        return TABLE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+      }
+
+      function isIgnoredArchiveEntry(name) {
+        if (!name || name.endsWith("/")) return true;
+        const normalized = name.replace(/\\/g, "/");
+        if (normalized.startsWith("__MACOSX/")) return true;
+        const baseName = normalized.split("/").pop() || "";
+        if (baseName.startsWith("._") || baseName === ".DS_Store") return true;
+        return false;
+      }
+
+      function cleanValue(val, trimEdges = true) {
+        if (val === null || val === undefined) return "";
+        const str = String(val).replace(/[\r\n\t]+/g, " ");
+        return trimEdges ? str.trim() : str;
+      }
+
+      function isRowEmpty(row) {
+        return !Array.isArray(row) || row.every((cell) => cleanValue(cell, true) === "");
+      }
+
+      function parseBoxLines(rawText, trimEdges = true) {
+        return String(rawText || "")
+          .split(/\r?\n/)
+          .map((line) => (trimEdges ? line.trim() : line))
+          .filter((line) => line.trim() !== "");
+      }
+
+      /* ================= Парсинг таблиц через SheetJS ================= */
+
+      function parseTableFromArrayBuffer(buffer, name) {
+        if (typeof XLSX === "undefined") {
+          throw new Error("Библиотека чтения таблиц (SheetJS) не загрузилась");
+        }
+
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        if (!firstSheetName) {
+          return {
+            name,
+            status: "error",
+            reason: "В файле нет листов",
+            nonEmptyRows: [],
+          };
+        }
+
+        const sheet = workbook.Sheets[firstSheetName];
+        const rawRows = XLSX.utils.sheet_to_json(sheet, {
+          header: 1,
+          raw: false,
+          defval: "",
+        });
+
+        const nonEmptyRows = Array.isArray(rawRows) ? rawRows.filter((row) => !isRowEmpty(row)) : [];
+
+        return {
+          name,
+          status: "parsed",
+          reason: "",
+          nonEmptyRows,
+        };
+      }
+
+      /* ================= Логика замены 1-к-1 ================= */
+
+      function buildReplacementPlan(oldLines, newLines) {
+        const pairs = [];
+        const minLen = Math.min(oldLines.length, newLines.length);
+
+        for (let i = 0; i < minLen; i++) {
+          pairs.push({
+            index: i + 1,
+            from: oldLines[i],
+            to: newLines[i],
+            replacedRows: 0,
+          });
+        }
+
+        // Карта замены 1-к-1: oldBox -> { to, pairIndex }
+        const replaceMap = new Map();
+        const duplicateOlds = [];
+        const chainedConflicts = [];
+        const oldSet = new Set(oldLines);
+
+        for (const pair of pairs) {
+          if (replaceMap.has(pair.from)) {
+            duplicateOlds.push(pair.from);
+          } else {
+            replaceMap.set(pair.from, { to: pair.to, pairIndex: pair.index - 1 });
+          }
+
+          if (oldSet.has(pair.to) && pair.to !== pair.from) {
+            chainedConflicts.push(`${pair.from} → ${pair.to}`);
+          }
+        }
+
+        return {
+          pairs,
+          replaceMap,
+          mismatch: oldLines.length !== newLines.length,
+          oldCount: oldLines.length,
+          newCount: newLines.length,
+          duplicateOlds,
+          chainedConflicts,
+        };
+      }
+
+      function rebuildReplacement() {
+        const trimEdges = trimSpacesCheckboxEl.checked;
+        const skipHeader = hasHeaderCheckboxEl.checked;
+
+        const oldLines = parseBoxLines(oldBoxesInputEl.value, trimEdges);
+        const newLines = parseBoxLines(newBoxesInputEl.value, trimEdges);
+
+        oldBoxesCountEl.textContent = `${oldLines.length} шт.`;
+        newBoxesCountEl.textContent = `${newLines.length} шт.`;
+
+        const plan = buildReplacementPlan(oldLines, newLines);
+
+        pairStatusBadgeEl.classList.remove("is-ok", "is-warn");
+        if (plan.mismatch) {
+          pairStatusBadgeEl.textContent = `Несовпадение: ${oldLines.length} и ${newLines.length}`;
+          pairStatusBadgeEl.classList.add("is-warn");
+        } else if (plan.pairs.length > 0) {
+          pairStatusBadgeEl.textContent = `Пар: ${plan.pairs.length} (1:1)`;
+          pairStatusBadgeEl.classList.add("is-ok");
+        } else {
+          pairStatusBadgeEl.textContent = "Пар: 0";
+        }
+
+        const allOutputLines = [];
+        const fileReportRows = [];
+
+        let totalDataRows = 0;
+        let totalReplacedRows = 0;
+
+        const canApplyReplace = !plan.mismatch && plan.pairs.length > 0;
+
+        for (const fileItem of rawParsedFiles) {
+          if (fileItem.status !== "parsed") {
+            fileReportRows.push({
+              name: fileItem.name,
+              rowsCount: 0,
+              replacedCount: 0,
+              note: fileItem.reason || "Ошибка файла",
+              ok: false,
+            });
+            continue;
+          }
+
+          const rows =
+            skipHeader && fileItem.nonEmptyRows.length > 0
+              ? fileItem.nonEmptyRows.slice(1)
+              : fileItem.nonEmptyRows;
+
+          let fileReplaced = 0;
+
+          for (const row of rows) {
+            const colA = cleanValue(row[0], trimEdges);
+            let colB = cleanValue(row[1], trimEdges);
+
+            if (canApplyReplace && colB && plan.replaceMap.has(colB)) {
+              const entry = plan.replaceMap.get(colB);
+              colB = entry.to;
+              plan.pairs[entry.pairIndex].replacedRows += 1;
+              fileReplaced += 1;
+              totalReplacedRows += 1;
+            }
+
+            // Сохраняем дополнительные столбцы, если они есть, иначе A\tB
+            const extraCols = row
+              .slice(2)
+              .map((c) => cleanValue(c, trimEdges))
+              .filter((c) => c !== "");
+
+            const lineParts = [colA, colB, ...extraCols];
+            allOutputLines.push(lineParts.join("\t"));
+            totalDataRows += 1;
+          }
+
+          fileReportRows.push({
+            name: fileItem.name,
+            rowsCount: rows.length,
+            replacedCount: fileReplaced,
+            note:
+              rows.length === 0
+                ? "Нет строк данных"
+                : fileReplaced > 0
+                  ? `Обновлено коробок в столбце B: ${fileReplaced}`
+                  : "Строки без совпадений по списку замены",
+            ok: rows.length > 0,
+          });
+        }
+
+        const unmatchedOldCount = plan.pairs.filter((p) => p.replacedRows === 0).length;
+
+        outputAreaEl.value = allOutputLines.join("\n");
+        statTotalRowsEl.textContent = String(totalDataRows);
+        statReplacedRowsEl.textContent = String(totalReplacedRows);
+        statPairsCountEl.textContent = String(plan.pairs.length);
+        statUnmatchedOldEl.textContent = String(unmatchedOldCount);
+
+        fileBadgeEl.textContent = `Файлов: ${rawParsedFiles.length}`;
+        filesReportPillEl.textContent = `Файлов: ${rawParsedFiles.length}`;
+        pairsReportPillEl.textContent = `Замен: ${totalReplacedRows} строк`;
+
+        const hasData = rawParsedFiles.length > 0 || oldLines.length > 0 || newLines.length > 0;
+        clearAllBtnEl.disabled = !hasData;
+        copyBtnEl.disabled = allOutputLines.length === 0;
+
+        if (plan.mismatch) {
+          resultMetaEl.textContent = `Внимание: в левом списке ${oldLines.length} коробок, а в правом ${newLines.length} — выровняйте количество строк`;
+        } else if (allOutputLines.length > 0) {
+          resultMetaEl.textContent = `Строк в выводе: ${allOutputLines.length} · Заменено в столбце B: ${totalReplacedRows}`;
+        } else {
+          resultMetaEl.textContent = "Скопируйте готовые строки и вставьте в 1С или таблицу";
+        }
+
+        renderPairsReport(plan.pairs, plan.mismatch, plan.chainedConflicts);
+        renderFilesReport(fileReportRows);
+
+        if (rawParsedFiles.length > 0) {
+          if (plan.mismatch) {
+            setStatus(
+              `Количество строк не совпадает: «Какие заменить» — ${oldLines.length}, «На какие заменить» — ${newLines.length}. Замена приостановлена.`,
+              "warn"
+            );
+          } else if (plan.chainedConflicts.length > 0) {
+            setStatus(
+              `Обработано строк: ${totalDataRows}, заменено: ${totalReplacedRows}. Внимание: найдено пересечение кодов (${plan.chainedConflicts.join(", ")}).`,
+              "warn"
+            );
+          } else {
+            setStatus(
+              `Готово: строк ${totalDataRows}, заменено коробок (1-к-1): ${totalReplacedRows}.`,
+              "success"
+            );
+          }
+        }
+      }
+
+      function renderPairsReport(pairs, mismatch, chainedConflicts) {
+        if (!pairs || pairs.length === 0) {
+          pairsReportBodyEl.innerHTML =
+            '<tr><td colspan="5" class="empty-cell">Укажите списки коробок в обоих полях для проверки и замены.</td></tr>';
+          return;
+        }
+
+        pairsReportBodyEl.innerHTML = pairs
+          .map((p) => {
+            let statusHtml = '<span class="badge badge-ok">Применено</span>';
+            if (mismatch) {
+              statusHtml = '<span class="badge badge-skip">Ждёт выравнивания списков</span>';
+            } else if (p.replacedRows === 0) {
+              statusHtml = '<span class="badge badge-skip">0 совпадений в файле</span>';
+            }
+
+            const hasChain = chainedConflicts.some((c) => c.startsWith(`${p.from} →`));
+            const toDisplay = hasChain
+              ? `${escapeHtml(p.to)} <span class="badge badge-skip">пересечение</span>`
+              : escapeHtml(p.to);
+
+            return `
+              <tr>
+                <td class="col-num">${p.index}</td>
+                <td class="code-mono">${escapeHtml(p.from)}</td>
+                <td class="code-mono">${toDisplay}</td>
+                <td class="col-right"><strong>${p.replacedRows}</strong></td>
+                <td>${statusHtml}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function renderFilesReport(items) {
+        if (!items || items.length === 0) {
+          filesReportBodyEl.innerHTML =
+            '<tr><td colspan="5" class="empty-cell">Загрузите таблицу или ZIP-архив.</td></tr>';
+          return;
+        }
+
+        filesReportBodyEl.innerHTML = items
+          .map((item, idx) => {
+            return `
+              <tr>
+                <td class="col-num">${idx + 1}</td>
+                <td class="col-file">${escapeHtml(item.name)}</td>
+                <td class="col-right">${item.rowsCount}</td>
+                <td class="col-right"><strong>${item.replacedCount}</strong></td>
+                <td class="col-note">${escapeHtml(item.note)}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      /* ================= Загрузка таблиц и ZIP ================= */
+
+      async function handleTableFiles(fileList) {
+        const files = Array.from(fileList || [])
+          .filter((f) => hasSupportedExtension(f.name))
+          .sort((a, b) => a.name.localeCompare(b.name, "ru", { numeric: true, sensitivity: "base" }));
+
+        if (files.length === 0) {
+          setStatus("Выберите файлы форматов .xlsx, .xls или .csv.", "warn");
+          return;
+        }
+
+        const results = [];
+        for (const f of files) {
+          try {
+            const buf = await f.arrayBuffer();
+            results.push(parseTableFromArrayBuffer(buf, f.name));
+          } catch (err) {
+            results.push({
+              name: f.name,
+              status: "error",
+              reason: `Ошибка чтения: ${err && err.message ? err.message : "ошибка"}`,
+              nonEmptyRows: [],
+            });
+          }
+        }
+
+        rawParsedFiles = results;
+        rebuildReplacement();
+      }
+
+      async function handleZipFile(file) {
+        if (typeof JSZip === "undefined") {
+          setStatus("Библиотека JSZip не загрузилась. Проверьте подключение к сети или обновите страницу.", "warn");
+          return;
+        }
+
+        try {
+          setStatus(`Распаковываем архив «${file.name}»...`, "info");
+          const zipData = await file.arrayBuffer();
+          const zip = await JSZip.loadAsync(zipData);
+
+          const entries = Object.keys(zip.files)
+            .filter((entryName) => !isIgnoredArchiveEntry(entryName) && hasSupportedExtension(entryName))
+            .sort((a, b) => a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" }));
+
+          if (entries.length === 0) {
+            rawParsedFiles = [];
+            rebuildReplacement();
+            setStatus(`В архиве «${file.name}» не найдено таблиц (.xlsx, .xls, .csv).`, "warn");
+            return;
+          }
+
+          const results = [];
+          for (const entryName of entries) {
+            try {
+              const buf = await zip.files[entryName].async("arraybuffer");
+              results.push(parseTableFromArrayBuffer(buf, entryName));
+            } catch (err) {
+              results.push({
+                name: entryName,
+                status: "error",
+                reason: `Ошибка чтения: ${err && err.message ? err.message : "повреждённый файл"}`,
+                nonEmptyRows: [],
+              });
+            }
+          }
+
+          rawParsedFiles = results;
+          rebuildReplacement();
+        } catch (err) {
+          setStatus(
+            `Не удалось прочитать ZIP-архив: ${err && err.message ? err.message : "некорректный файл"}.`,
+            "warn"
+          );
+        }
+      }
+
+      function handleIncomingFiles(fileList) {
+        const files = Array.from(fileList || []);
+        if (files.length === 0) return;
+
+        const zipFile = files.find((f) => f.name.toLowerCase().endsWith(".zip"));
+        if (zipFile) {
+          handleZipFile(zipFile);
+        } else {
+          handleTableFiles(files);
+        }
+      }
+
+      /* ================= Копирование и очистка ================= */
+
+      function showCopiedFeedback() {
+        if (copyFeedbackTimer) {
+          clearTimeout(copyFeedbackTimer);
+        }
+        copyBtnEl.textContent = "Скопировано!";
+        copyBtnEl.classList.add("is-copied");
+
+        copyFeedbackTimer = setTimeout(() => {
+          copyBtnEl.textContent = "Копировать";
+          copyBtnEl.classList.remove("is-copied");
+        }, 2000);
+      }
+
+      function fallbackCopyText(text) {
+        const helper = document.createElement("textarea");
+        helper.value = text;
+        helper.setAttribute("readonly", "");
+        helper.style.position = "fixed";
+        helper.style.top = "-9999px";
+        document.body.appendChild(helper);
+        helper.select();
+        let ok = false;
+        try {
+          ok = document.execCommand("copy");
+        } catch (_) {
+          ok = false;
+        }
+        document.body.removeChild(helper);
+        return ok;
+      }
+
+      copyBtnEl.addEventListener("click", async () => {
+        const text = outputAreaEl.value;
+        if (!text) return;
+
+        let copied = false;
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          try {
+            await navigator.clipboard.writeText(text);
+            copied = true;
+          } catch (_) {
+            copied = fallbackCopyText(text);
+          }
+        } else {
+          copied = fallbackCopyText(text);
+        }
+
+        if (copied) {
+          showCopiedFeedback();
+        } else {
+          outputAreaEl.focus();
+          outputAreaEl.select();
+          setStatus("Не удалось скопировать автоматически — текст выделен, нажмите Ctrl+C / Cmd+C.", "warn");
+        }
+      });
+
+      clearAllBtnEl.addEventListener("click", () => {
+        rawParsedFiles = [];
+        tablesInputEl.value = "";
+        zipInputEl.value = "";
+        oldBoxesInputEl.value = "";
+        newBoxesInputEl.value = "";
+        rebuildReplacement();
+        setStatus("Данные очищены. Загрузите файл агрегации и списки коробок.", "info");
+      });
+
+      /* ================= События интерфейса ================= */
+
+      dropZoneEl.addEventListener("click", () => tablesInputEl.click());
+      dropZoneEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          tablesInputEl.click();
+        }
+      });
+
+      pickTablesBtnEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        tablesInputEl.click();
+      });
+
+      pickZipBtnEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        zipInputEl.click();
+      });
+
+      tablesInputEl.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleTableFiles(e.target.files);
+        }
+      });
+
+      zipInputEl.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleZipFile(e.target.files[0]);
+        }
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZoneEl.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZoneEl.classList.add("is-dragover");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZoneEl.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZoneEl.classList.remove("is-dragover");
+        });
+      });
+
+      dropZoneEl.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          handleIncomingFiles(dt.files);
+        }
+      });
+
+      oldBoxesInputEl.addEventListener("input", rebuildReplacement);
+      newBoxesInputEl.addEventListener("input", rebuildReplacement);
+      hasHeaderCheckboxEl.addEventListener("change", rebuildReplacement);
+      trimSpacesCheckboxEl.addEventListener("change", rebuildReplacement);
+
+      rebuildReplacement();
+    })();
+  </script>
+</body>
+  </html>
