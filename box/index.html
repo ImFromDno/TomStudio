@@ -7,12 +7,10 @@
   <link rel="icon" type="image/svg+xml" href="../assets/icons/agregator.svg" />
   <title>Tom Studio — Box Replacer</title>
 
-  <!-- Библиотеки для локальной распаковки ZIP и чтения таблиц (.xlsx, .xls, .csv) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
-    /* Единая система тем и CSS-переменных в стиле Tom Studio */
     :root {
       --bg: #f4f4f9;
       --card: #ffffff;
@@ -87,11 +85,7 @@
       --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
     }
 
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { box-sizing: border-box; }
 
     body {
       margin: 14px auto 32px;
@@ -104,9 +98,7 @@
       transition: background-color 0.2s ease, color 0.2s ease;
     }
 
-    .page-header {
-      margin-bottom: 14px;
-    }
+    .page-header { margin-bottom: 14px; }
 
     .ts-bar {
       display: flex;
@@ -136,9 +128,7 @@
       flex-shrink: 0;
     }
 
-    .page-header .ts-divider {
-      margin-left: auto;
-    }
+    .page-header .ts-divider { margin-left: auto; }
 
     .ts-project {
       font-size: 15px;
@@ -169,23 +159,14 @@
       transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     }
 
-    .bulb-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      transform: scale(1.05);
-    }
-
+    .bulb-btn:hover { background: rgba(255, 255, 255, 0.16); transform: scale(1.05); }
     .bulb-btn.is-lit {
       background: rgba(250, 204, 21, 0.2);
       border-color: rgba(253, 224, 71, 0.65);
       box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
       opacity: 1;
     }
-
-    .bulb-btn.is-off {
-      opacity: 0.45;
-      filter: grayscale(0.85);
-      box-shadow: none;
-    }
+    .bulb-btn.is-off { opacity: 0.45; filter: grayscale(0.85); box-shadow: none; }
 
     .top-grid {
       display: grid;
@@ -207,6 +188,7 @@
       margin-bottom: 0;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
     }
 
     .panel-head {
@@ -218,11 +200,7 @@
       flex-wrap: wrap;
     }
 
-    .panel-title {
-      font-size: 15.5px;
-      font-weight: 700;
-      color: var(--text);
-    }
+    .panel-title { font-size: 15.5px; font-weight: 700; color: var(--text); }
 
     .panel-badge {
       font-size: 12.5px;
@@ -249,44 +227,28 @@
     .dropzone {
       border: 2px dashed var(--border);
       border-radius: 10px;
-      padding: 16px 14px;
+      padding: 14px 12px;
       text-align: center;
       background: var(--card-2);
       cursor: pointer;
-      transition: border-color 0.15s ease, background-color 0.2s ease, transform 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      transition: border-color 0.15s ease, background-color 0.2s ease;
     }
 
-    .dropzone:hover,
-    .dropzone:focus-visible,
-    .dropzone.is-dragover {
+    .dropzone:hover, .dropzone:focus-visible, .dropzone.is-dragover {
       border-color: var(--accent);
       background: var(--info-bg);
       outline: none;
     }
 
-    .dropzone-title {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .dropzone-sub {
-      margin-top: 4px;
-      font-size: 12.5px;
-      color: var(--muted);
-    }
-
+    .dropzone-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .dropzone-sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
     .dropzone-actions {
-      margin-top: 8px;
+      margin-top: 6px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 8px;
-      font-size: 13px;
+      font-size: 12.5px;
     }
 
     .link-btn {
@@ -295,19 +257,17 @@
       border: none;
       padding: 2px 4px;
       color: var(--accent);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       text-decoration: underline;
       cursor: pointer;
     }
 
-    .link-btn:hover {
-      color: var(--accent-hover);
-    }
+    .link-btn:hover { color: var(--accent-hover); }
 
     .paste-box {
       margin-top: 10px;
-      padding: 10px 12px;
+      padding: 9px 11px;
       border-radius: 8px;
       background: var(--card-2);
       border: 1px solid var(--border);
@@ -321,15 +281,11 @@
       margin-bottom: 6px;
     }
 
-    .paste-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-    }
+    .paste-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
 
     .mini-btn {
       appearance: none;
-      padding: 4px 10px;
+      padding: 3px 9px;
       border-radius: 6px;
       border: 1px solid var(--border);
       background: var(--card);
@@ -340,40 +296,188 @@
       transition: border-color 0.15s ease, background-color 0.15s ease;
     }
 
-    .mini-btn:hover {
-      border-color: var(--accent);
-      background: var(--info-bg);
-    }
+    .mini-btn:hover { border-color: var(--accent); background: var(--info-bg); }
 
     textarea.paste-input-area {
       width: 100%;
-      min-height: 78px;
-      padding: 8px 10px;
+      min-height: 68px;
+      padding: 7px 9px;
       border: 1px solid var(--border);
       border-radius: 6px;
       background: var(--card);
       color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 12.5px;
-      line-height: 1.45;
+      line-height: 1.4;
       resize: vertical;
       outline: none;
     }
 
-    textarea.paste-input-area:focus {
-      border-color: var(--accent);
-    }
+    textarea.paste-input-area:focus { border-color: var(--accent); }
 
-    .mode-box {
-      padding: 12px;
+    /* Компактные параметры таблицы + подсказки по наведению */
+    .compact-opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      padding: 9px 11px;
       border-radius: 8px;
       background: var(--card-2);
       border: 1px solid var(--border);
       margin-bottom: 10px;
     }
 
-    .mode-box:last-child {
-      margin-bottom: 0;
+    .opt-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .opt-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .help-tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: help;
+      flex-shrink: 0;
+    }
+
+    .help-tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 7px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 250px;
+      padding: 6px 9px;
+      border-radius: 7px;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 11.5px;
+      font-weight: 400;
+      line-height: 1.35;
+      white-space: normal;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.14s ease;
+      z-index: 30;
+    }
+
+    .help-tip:hover::after,
+    .help-tip:focus-visible::after {
+      opacity: 1;
+    }
+
+    /* Блок генератора с двумя пресетами внутри правой карточки */
+    .gen-box {
+      padding: 11px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+    }
+
+    .gen-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .gen-title { font-size: 13px; font-weight: 700; color: var(--text); }
+
+    .preset-tabs { display: flex; gap: 6px; }
+
+    .preset-btn {
+      appearance: none;
+      padding: 4px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+
+    .preset-btn.is-active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .preset-meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-bottom: 8px;
+    }
+
+    .gen-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .gen-field label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .gen-field input {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .gen-field input:focus { border-color: var(--accent); }
+
+    .gen-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .auto-fill-bar {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
     }
 
     .checkbox-row {
@@ -394,12 +498,7 @@
       flex-shrink: 0;
     }
 
-    .checkbox-text {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
+    .checkbox-text { font-size: 14px; font-weight: 600; color: var(--text); }
     .checkbox-sub {
       display: block;
       font-size: 12.5px;
@@ -414,10 +513,7 @@
       gap: 14px;
     }
 
-    .list-col {
-      display: flex;
-      flex-direction: column;
-    }
+    .list-col { display: flex; flex-direction: column; }
 
     .list-label-row {
       display: flex;
@@ -427,11 +523,7 @@
       margin-bottom: 6px;
     }
 
-    .field-label {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--text);
-    }
+    .field-label { font-size: 13.5px; font-weight: 700; color: var(--text); }
 
     .line-counter {
       font-size: 12.5px;
@@ -448,29 +540,24 @@
       border-radius: 8px;
       background: var(--card-2);
       color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13px;
       line-height: 1.5;
       resize: vertical;
       outline: none;
     }
 
-    textarea.box-list-area:focus {
-      border-color: var(--accent);
-    }
+    textarea.box-list-area:focus { border-color: var(--accent); }
+    textarea.box-list-area:read-only { opacity: 0.9; background: var(--card); }
 
-    .field-hint {
-      margin-top: 5px;
-      font-size: 12.5px;
-      color: var(--muted);
-    }
+    .field-hint { margin-top: 5px; font-size: 12.5px; color: var(--muted); }
 
     .status-banner {
-      margin-top: 12px;
-      padding: 10px 14px;
+      margin-top: 10px;
+      padding: 9px 12px;
       border-radius: 8px;
-      font-size: 13.5px;
-      line-height: 1.45;
+      font-size: 13px;
+      line-height: 1.4;
       border: 1px solid var(--info-border);
       background: var(--info-bg);
       color: var(--info-text);
@@ -513,10 +600,7 @@
       padding: 11px 14px;
     }
 
-    .stat-label {
-      font-size: 13px;
-      color: var(--muted);
-    }
+    .stat-label { font-size: 13px; color: var(--muted); }
 
     .stat-value {
       margin-top: 4px;
@@ -526,17 +610,9 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .stat-value.accent {
-      color: var(--accent);
-    }
-
-    .stat-value.success {
-      color: var(--success);
-    }
-
-    .stat-value.warn {
-      color: var(--warn-text);
-    }
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.success { color: var(--success); }
+    .stat-value.warn { color: var(--warn-text); }
 
     .result-header {
       display: flex;
@@ -547,68 +623,28 @@
       margin-bottom: 12px;
     }
 
-    .result-title {
-      font-size: 15.5px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .result-sub {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .btn-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .result-title { font-size: 15.5px; font-weight: 700; color: var(--text); }
+    .result-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .btn-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
     .btn {
       appearance: none;
       border: 1px solid transparent;
       border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 14px;
+      padding: 8px 13px;
+      font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
       transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
     }
 
-    .btn:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #ffffff;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: var(--accent-hover);
-    }
-
-    .btn-primary.is-copied {
-      background: #16a34a;
-      color: #ffffff;
-    }
-
-    .btn-secondary {
-      background: var(--card-2);
-      color: var(--text);
-      border-color: var(--border);
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      border-color: var(--accent);
-    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #ffffff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary.is-copied { background: #16a34a; color: #ffffff; }
+    .btn-secondary { background: var(--card-2); color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
 
     textarea.output-area {
       width: 100%;
@@ -618,16 +654,14 @@
       border-radius: 8px;
       background: var(--card-2);
       color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13.5px;
       line-height: 1.5;
       resize: vertical;
       outline: none;
     }
 
-    textarea.output-area:focus {
-      border-color: var(--accent);
-    }
+    textarea.output-area:focus { border-color: var(--accent); }
 
     .report-head {
       display: flex;
@@ -638,17 +672,8 @@
       margin-bottom: 14px;
     }
 
-    .report-title {
-      font-size: 16.5px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .report-sub {
-      margin-top: 3px;
-      font-size: 13.5px;
-      color: var(--muted);
-    }
+    .report-title { font-size: 16.5px; font-weight: 700; color: var(--text); }
+    .report-sub { margin-top: 3px; font-size: 13.5px; color: var(--muted); }
 
     .report-pill {
       padding: 6px 13px;
@@ -676,8 +701,7 @@
       text-align: left;
     }
 
-    table.report-table th,
-    table.report-table td {
+    table.report-table th, table.report-table td {
       padding: 11px 14px;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
@@ -691,39 +715,16 @@
       white-space: nowrap;
     }
 
-    table.report-table tbody tr:last-child td {
-      border-bottom: none;
-    }
+    table.report-table tbody tr:last-child td { border-bottom: none; }
+    table.report-table tbody tr:hover { background: rgba(59, 130, 246, 0.05); }
 
-    table.report-table tbody tr:hover {
-      background: rgba(59, 130, 246, 0.05);
-    }
-
-    .col-num {
-      width: 48px;
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .col-file {
-      font-weight: 600;
-      color: var(--text);
-      word-break: break-word;
-    }
-
-    .col-right {
-      text-align: right;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .col-note {
-      color: var(--muted);
-      font-size: 13.5px;
-    }
+    .col-num { width: 48px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .col-file { font-weight: 600; color: var(--text); word-break: break-word; }
+    .col-right { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .col-note { color: var(--muted); font-size: 13.5px; }
 
     .code-mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 12.5px;
       word-break: break-all;
     }
@@ -737,17 +738,8 @@
       white-space: nowrap;
     }
 
-    .badge-ok {
-      background: var(--success-bg);
-      color: var(--success);
-      border: 1px solid var(--success-border);
-    }
-
-    .badge-skip {
-      background: var(--warn-bg);
-      color: var(--warn-text);
-      border: 1px solid var(--warn-border);
-    }
+    .badge-ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+    .badge-skip { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
 
     .empty-cell {
       text-align: center !important;
@@ -756,44 +748,16 @@
       font-size: 14px;
     }
 
-    .page-footer {
-      margin-top: 18px;
-    }
+    .page-footer { margin-top: 18px; }
 
     @media (max-width: 780px) {
-      .top-grid,
-      .replace-grid {
-        grid-template-columns: 1fr;
-      }
+      .top-grid, .replace-grid { grid-template-columns: 1fr; }
+      .gen-fields { grid-template-columns: 1fr 1fr; }
+      .gen-actions { grid-column: 1 / -1; }
     }
 
     @media (max-width: 560px) {
-      .summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 440px) {
-      body {
-        padding: 0 12px 16px;
-      }
-
-      .ts-bar {
-        padding: 11px 15px;
-        gap: 8px;
-      }
-
-      .ts-brand {
-        font-size: 18px;
-      }
-
-      .ts-divider {
-        height: 19px;
-      }
-
-      .ts-project {
-        font-size: 14px;
-      }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -808,83 +772,99 @@
 
   <div class="top-grid">
     <section class="card" aria-label="Загрузка таблицы или вставка из буфера">
-      <div class="panel-head">
-        <div class="panel-title">1. Источник агрегации (файл или буфер)</div>
-        <span class="panel-badge" id="fileBadge">Источников: 0</span>
-      </div>
-
-      <div
-        id="dropZone"
-        class="dropzone"
-        role="button"
-        tabindex="0"
-        aria-label="Перетащите таблицу или ZIP-архив или выберите файл"
-      >
-        <input type="file" id="tablesInput" accept=".xlsx,.xls,.csv" multiple hidden />
-        <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" hidden />
-
-        <div class="dropzone-title">Перетащите таблицу (.xlsx / .xls / .csv) или ZIP сюда</div>
-        <div class="dropzone-sub">
-          Столбец A — код позиции/маркировки · Столбец B — коробка (SSCC) · Локально в браузере
+      <div>
+        <div class="panel-head">
+          <div class="panel-title">1. Источник агрегации</div>
+          <span class="panel-badge" id="fileBadge">Источников: 0</span>
         </div>
-        <div class="dropzone-actions">
-          <button type="button" class="link-btn" id="pickTablesBtn">Выбрать таблицу</button>
-          <span>·</span>
-          <button type="button" class="link-btn" id="pickZipBtn">Выбрать ZIP-архив</button>
-        </div>
-      </div>
 
-      <div class="paste-box">
-        <div class="paste-head">
-          <label class="paste-label" for="pasteSourceArea">Или вставьте строки из буфера (Ctrl+V)</label>
-          <button type="button" class="mini-btn" id="pasteFromClipboardBtn">Вставить из буфера</button>
+        <div id="dropZone" class="dropzone" role="button" tabindex="0">
+          <input type="file" id="tablesInput" accept=".xlsx,.xls,.csv" multiple hidden />
+          <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" hidden />
+
+          <div class="dropzone-title">Перетащите таблицу (.xlsx / .xls / .csv) или ZIP</div>
+          <div class="dropzone-sub">Столбец A — код · Столбец B — коробка (SSCC)</div>
+          <div class="dropzone-actions">
+            <button type="button" class="link-btn" id="pickTablesBtn">Выбрать таблицу</button>
+            <span>·</span>
+            <button type="button" class="link-btn" id="pickZipBtn">Выбрать ZIP</button>
+          </div>
         </div>
-        <textarea
-          id="pasteSourceArea"
-          class="paste-input-area"
-          placeholder="(01)04810222001756(21)5Zj6JM&#9;00148102223600005718"
-        ></textarea>
+
+        <div class="paste-box">
+          <div class="paste-head">
+            <label class="paste-label" for="pasteSourceArea">Или вставьте строки из буфера (Ctrl+V)</label>
+            <button type="button" class="mini-btn" id="pasteFromClipboardBtn">Вставить из буфера</button>
+          </div>
+          <textarea
+            id="pasteSourceArea"
+            class="paste-input-area"
+            placeholder="(01)04810222001756(21)5Zj6JM&#9;00948102223600001952"
+          ></textarea>
+        </div>
       </div>
 
       <div id="statusBanner" class="status-banner" role="status">
-        Загрузите файл/ZIP или вставьте строки из буфера обмена, затем укажите списки коробок для замены 1-к-1.
+        Загрузите файл/ZIP или вставьте строки из буфера.
       </div>
     </section>
 
-    <section class="card" aria-label="Параметры чтения таблицы">
-      <div class="panel-head">
-        <div class="panel-title">Параметры таблицы</div>
-        <span class="panel-badge">Столбец B → 1:1</span>
-      </div>
+    <section class="card" aria-label="Параметры таблицы и генератор SSCC-18">
+      <div>
+        <div class="panel-head">
+          <div class="panel-title">Параметры и генератор SSCC</div>
+          <span class="panel-badge" id="genPreviewBadge">Старт: —</span>
+        </div>
 
-      <div class="mode-box">
-        <label class="checkbox-row" for="ignoreBracketsCheckbox">
-          <input type="checkbox" id="ignoreBracketsCheckbox" checked />
-          <div>
-            <span class="checkbox-text">Считать коды со скобками и без скобок одинаковыми</span>
-            <span class="checkbox-sub">Например: (00)148102223600005718 и 00148102223600005718 совпадут; в результат вставится значение из правого поля</span>
-          </div>
-        </label>
-      </div>
+        <div class="compact-opts">
+          <label class="opt-item" for="ignoreBracketsCheckbox">
+            <input type="checkbox" id="ignoreBracketsCheckbox" checked />
+            <span>Без скобок</span>
+            <span class="help-tip" tabindex="0" data-tip="(00)9481... и 009481... считаются одним кодом при поиске и дедупликации; в результат идёт значение из правого поля">?</span>
+          </label>
 
-      <div class="mode-box">
-        <label class="checkbox-row" for="hasHeaderCheckbox">
-          <input type="checkbox" id="hasHeaderCheckbox" />
-          <div>
-            <span class="checkbox-text">Первая непустая строка — шапка таблицы</span>
-            <span class="checkbox-sub">По умолчанию выключено, если данные сразу начинаются со строк кода и коробки</span>
-          </div>
-        </label>
-      </div>
+          <label class="opt-item" for="hasHeaderCheckbox">
+            <input type="checkbox" id="hasHeaderCheckbox" />
+            <span>Шапка</span>
+            <span class="help-tip" tabindex="0" data-tip="Пропускать первую непустую строку таблицы как заголовок">?</span>
+          </label>
 
-      <div class="mode-box">
-        <label class="checkbox-row" for="trimSpacesCheckbox">
-          <input type="checkbox" id="trimSpacesCheckbox" checked />
-          <div>
-            <span class="checkbox-text">Убирать случайные пробелы по краям кодов</span>
-            <span class="checkbox-sub">Помогает, если при копировании из Excel/1С зацепился лишний пробел</span>
+          <label class="opt-item" for="trimSpacesCheckbox">
+            <input type="checkbox" id="trimSpacesCheckbox" checked />
+            <span>Без пробелов</span>
+            <span class="help-tip" tabindex="0" data-tip="Убирать случайные пробелы по краям кодов при чтении и замене">?</span>
+          </label>
+        </div>
+
+        <div class="gen-box">
+          <div class="gen-top">
+            <span class="gen-title">Генератор SSCC-18</span>
+            <div class="preset-tabs" role="tablist">
+              <button type="button" class="preset-btn is-active" id="presetBelsvetBtn" data-preset="belsvet">
+                БелСвет
+              </button>
+              <button type="button" class="preset-btn" id="presetEnergodarBtn" data-preset="energodar">
+                Энергодар
+              </button>
+            </div>
           </div>
-        </label>
+
+          <div class="preset-meta" id="presetMetaText">Расширение: 9 · Префикс: 481022236 · (00)...</div>
+
+          <div class="gen-fields">
+            <div class="gen-field">
+              <label for="genStartSerial">Старт (пул)</label>
+              <input type="number" id="genStartSerial" value="196" min="0" max="9999999" />
+            </div>
+            <div class="gen-field">
+              <label for="genCount">Количество</label>
+              <input type="number" id="genCount" value="53" min="1" max="5000" />
+            </div>
+            <div class="gen-actions">
+              <button type="button" class="btn btn-primary" id="applyGeneratedBtn">В правое поле</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -893,6 +873,16 @@
     <div class="panel-head">
       <div class="panel-title">2. Замена коробок 1-к-1 (по порядку строк)</div>
       <span class="panel-badge" id="pairStatusBadge">Пар: 0</span>
+    </div>
+
+    <div class="auto-fill-bar">
+      <label class="checkbox-row" for="autoFillOldBoxesCheckbox">
+        <input type="checkbox" id="autoFillOldBoxesCheckbox" />
+        <div>
+          <span class="checkbox-text">Автоподставлять в левое поле уникальные коробки из загруженной таблицы (столбец B)</span>
+          <span class="checkbox-sub">Повторяющиеся коды коробок из строк товаров сворачиваются в одну запись по порядку первого появления — замена пойдёт по всем строкам этой коробки</span>
+        </div>
+      </label>
     </div>
 
     <div class="replace-grid">
@@ -904,9 +894,9 @@
         <textarea
           id="oldBoxesInput"
           class="box-list-area"
-          placeholder="(00)148102223600005718&#10;(00)148102223600005725"
+          placeholder="(00)948102223600001945&#10;(00)948102223600001952"
         ></textarea>
-        <div class="field-hint">Вставьте занятые/ошибочные номера коробок (можно со скобками или без)</div>
+        <div class="field-hint" id="oldBoxesHint">Вставьте номера коробок или включите автоподстановку из таблицы</div>
       </div>
 
       <div class="list-col">
@@ -917,9 +907,9 @@
         <textarea
           id="newBoxesInput"
           class="box-list-area"
-          placeholder="(00)148102223600009001&#10;(00)148102223600009002"
+          placeholder="Нажмите «В правое поле» в генераторе или вставьте готовый столбик"
         ></textarea>
-        <div class="field-hint">1-я строка заменит 1-ю из левого поля, 2-я — 2-ю и т. д. (формат скобок сохранится как здесь)</div>
+        <div class="field-hint">1-я строка заменит 1-ю из левого поля, 2-я — 2-ю и т. д.</div>
       </div>
     </div>
   </section>
@@ -1037,6 +1027,21 @@
 
       const TABLE_EXTENSIONS = [".xlsx", ".xls", ".csv"];
 
+      const PRESETS = {
+        belsvet: {
+          label: "БелСвет",
+          ext: 9,
+          prefix: "481022236",
+          withAI: true,
+        },
+        energodar: {
+          label: "Энергодар",
+          ext: 7,
+          prefix: "481608650",
+          withAI: true,
+        },
+      };
+
       const dropZoneEl = document.getElementById("dropZone");
       const tablesInputEl = document.getElementById("tablesInput");
       const zipInputEl = document.getElementById("zipInput");
@@ -1050,8 +1055,18 @@
       const hasHeaderCheckboxEl = document.getElementById("hasHeaderCheckbox");
       const trimSpacesCheckboxEl = document.getElementById("trimSpacesCheckbox");
 
+      const presetBelsvetBtnEl = document.getElementById("presetBelsvetBtn");
+      const presetEnergodarBtnEl = document.getElementById("presetEnergodarBtn");
+      const presetMetaTextEl = document.getElementById("presetMetaText");
+      const genPreviewBadgeEl = document.getElementById("genPreviewBadge");
+      const genStartSerialEl = document.getElementById("genStartSerial");
+      const genCountEl = document.getElementById("genCount");
+      const applyGeneratedBtnEl = document.getElementById("applyGeneratedBtn");
+
+      const autoFillOldBoxesCheckboxEl = document.getElementById("autoFillOldBoxesCheckbox");
       const oldBoxesInputEl = document.getElementById("oldBoxesInput");
       const newBoxesInputEl = document.getElementById("newBoxesInput");
+      const oldBoxesHintEl = document.getElementById("oldBoxesHint");
       const oldBoxesCountEl = document.getElementById("oldBoxesCount");
       const newBoxesCountEl = document.getElementById("newBoxesCount");
       const pairStatusBadgeEl = document.getElementById("pairStatusBadge");
@@ -1075,11 +1090,13 @@
       const filesReportBodyEl = document.getElementById("filesReportBody");
       const bulbToggleEl = document.getElementById("bulbToggle");
 
+      let activePresetKey = "belsvet";
       let rawParsedFiles = [];
       let pastedSourceItem = null;
+      let manualOldBoxesText = "";
       let copyFeedbackTimer = null;
 
-      /* ================= Управление темой оформления ================= */
+      /* ================= Тема ================= */
 
       function isEffectiveDarkTheme() {
         const explicit = document.documentElement.getAttribute("data-theme");
@@ -1093,8 +1110,8 @@
         bulbToggleEl.classList.toggle("is-lit", !dark);
         bulbToggleEl.classList.toggle("is-off", dark);
         bulbToggleEl.title = dark
-          ? "Тёмная тема (лампочка потухла) — включить светлую тему"
-          : "Светлая тема (лампочка горит) — включить тёмную тему";
+          ? "Тёмная тема — включить светлую"
+          : "Светлая тема — включить тёмную";
       }
 
       bulbToggleEl.addEventListener("click", () => {
@@ -1105,13 +1122,93 @@
 
       if (window.matchMedia) {
         window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-          if (!document.documentElement.getAttribute("data-theme")) {
-            syncBulbButton();
-          }
+          if (!document.documentElement.getAttribute("data-theme")) syncBulbButton();
         });
       }
-
       syncBulbButton();
+
+      /* ================= Генератор SSCC-18 (GS1 Mod 10) ================= */
+
+      function calculateGS1CheckDigit(base17) {
+        if (!/^\d{17}$/.test(base17)) {
+          throw new Error("Основание SSCC должно содержать 17 цифр");
+        }
+        let sum = 0;
+        for (let i = 0; i < 17; i++) {
+          const digit = parseInt(base17.charAt(16 - i), 10);
+          const weight = i % 2 === 0 ? 3 : 1;
+          sum += digit * weight;
+        }
+        return (10 - (sum % 10)) % 10;
+      }
+
+      function buildSsccBatch(presetKey, startSerialRaw, countRaw) {
+        const preset = PRESETS[presetKey] || PRESETS.belsvet;
+        const cleanPrefix = preset.prefix.replace(/\D/g, "");
+        const serialDigitsLen = 16 - cleanPrefix.length;
+        const maxSerial = Math.pow(10, serialDigitsLen) - 1;
+
+        let start = parseInt(startSerialRaw, 10);
+        if (isNaN(start) || start < 0) start = 0;
+        if (start > maxSerial) start = maxSerial;
+
+        let count = parseInt(countRaw, 10);
+        if (isNaN(count) || count < 1) count = 1;
+        if (count > 5000) count = 5000;
+
+        const list = [];
+        let current = start;
+        while (list.length < count && current <= maxSerial) {
+          const serialStr = String(current).padStart(serialDigitsLen, "0");
+          const base17 = `${preset.ext}${cleanPrefix}${serialStr}`;
+          const check = calculateGS1CheckDigit(base17);
+          const raw18 = `${base17}${check}`;
+          list.push(preset.withAI ? `(00)${raw18}` : raw18);
+          current++;
+        }
+
+        return {
+          codes: list,
+          startUsed: start,
+          endUsed: current - 1,
+          preset,
+        };
+      }
+
+      function syncPresetUI() {
+        const preset = PRESETS[activePresetKey] || PRESETS.belsvet;
+        presetBelsvetBtnEl.classList.toggle("is-active", activePresetKey === "belsvet");
+        presetEnergodarBtnEl.classList.toggle("is-active", activePresetKey === "energodar");
+        presetMetaTextEl.textContent = `Расширение: ${preset.ext} · Префикс: ${preset.prefix} · (00)...`;
+
+        const batch = buildSsccBatch(activePresetKey, genStartSerialEl.value, genCountEl.value);
+        genPreviewBadgeEl.textContent = batch.codes.length > 0 ? batch.codes[0] : "—";
+      }
+
+      presetBelsvetBtnEl.addEventListener("click", () => {
+        activePresetKey = "belsvet";
+        syncPresetUI();
+      });
+
+      presetEnergodarBtnEl.addEventListener("click", () => {
+        activePresetKey = "energodar";
+        syncPresetUI();
+      });
+
+      genStartSerialEl.addEventListener("input", syncPresetUI);
+      genCountEl.addEventListener("input", syncPresetUI);
+
+      applyGeneratedBtnEl.addEventListener("click", () => {
+        const batch = buildSsccBatch(activePresetKey, genStartSerialEl.value, genCountEl.value);
+        if (batch.codes.length === 0) return;
+
+        newBoxesInputEl.value = batch.codes.join("\n");
+        rebuildReplacement();
+        setStatus(
+          `Сгенерировано ${batch.codes.length} кодов (${batch.preset.label}, серия ${batch.startUsed}–${batch.endUsed}) и подставлено в правое поле.`,
+          "success"
+        );
+      });
 
       /* ================= Вспомогательные функции ================= */
 
@@ -1138,8 +1235,7 @@
         const normalized = name.replace(/\\/g, "/");
         if (normalized.startsWith("__MACOSX/")) return true;
         const baseName = normalized.split("/").pop() || "";
-        if (baseName.startsWith("._") || baseName === ".DS_Store") return true;
-        return false;
+        return baseName.startsWith("._") || baseName === ".DS_Store";
       }
 
       function cleanValue(val, trimEdges = true) {
@@ -1167,92 +1263,82 @@
       function parsePastedTextToRows(rawText) {
         const text = String(rawText || "").trim();
         if (!text) return [];
-
         const lines = text.split(/\r?\n/);
         const rows = [];
-
         for (const line of lines) {
           if (!line.trim()) continue;
-          let cols;
-          if (line.includes("\t")) {
-            cols = line.split("\t");
-          } else if (line.includes(";")) {
-            cols = line.split(";");
-          } else {
-            cols = [line];
-          }
-          if (!isRowEmpty(cols)) {
-            rows.push(cols);
-          }
+          const cols = line.includes("\t")
+            ? line.split("\t")
+            : line.includes(";")
+              ? line.split(";")
+              : [line];
+          if (!isRowEmpty(cols)) rows.push(cols);
         }
-
         return rows;
       }
 
       function syncPastedSourceFromTextarea() {
         const rows = parsePastedTextToRows(pasteSourceAreaEl.value);
-        if (rows.length === 0) {
-          pastedSourceItem = null;
-        } else {
-          pastedSourceItem = {
-            name: "Буфер обмена (вставленный текст)",
-            status: "parsed",
-            reason: "",
-            nonEmptyRows: rows,
-          };
-        }
+        pastedSourceItem = rows.length === 0
+          ? null
+          : { name: "Буфер обмена", status: "parsed", reason: "", nonEmptyRows: rows };
       }
 
       function getActiveSources() {
         const list = [...rawParsedFiles];
-        if (pastedSourceItem) {
-          list.push(pastedSourceItem);
-        }
+        if (pastedSourceItem) list.push(pastedSourceItem);
         return list;
       }
 
-      /* ================= Парсинг таблиц через SheetJS ================= */
+      function collectBoxesFromSources(activeSources, trimEdges, skipHeader, ignoreBrackets) {
+        const boxes = [];
+        const seen = new Set();
+
+        for (const fileItem of activeSources) {
+          if (fileItem.status !== "parsed") continue;
+          const rows =
+            skipHeader && fileItem.nonEmptyRows.length > 0
+              ? fileItem.nonEmptyRows.slice(1)
+              : fileItem.nonEmptyRows;
+
+          for (const row of rows) {
+            const colB = cleanValue(row[1], trimEdges);
+            if (!colB) continue;
+
+            const key = toMatchKey(colB, ignoreBrackets);
+            if (!seen.has(key)) {
+              seen.add(key);
+              boxes.push(colB);
+            }
+          }
+        }
+        return boxes;
+      }
+
+      /* ================= Парсинг таблиц ================= */
 
       function parseTableFromArrayBuffer(buffer, name) {
         if (typeof XLSX === "undefined") {
-          throw new Error("Библиотека чтения таблиц (SheetJS) не загрузилась");
+          throw new Error("SheetJS не загрузился");
         }
-
         const workbook = XLSX.read(buffer, { type: "array" });
         const firstSheetName = workbook.SheetNames[0];
         if (!firstSheetName) {
-          return {
-            name,
-            status: "error",
-            reason: "В файле нет листов",
-            nonEmptyRows: [],
-          };
+          return { name, status: "error", reason: "Нет листов", nonEmptyRows: [] };
         }
-
         const sheet = workbook.Sheets[firstSheetName];
-        const rawRows = XLSX.utils.sheet_to_json(sheet, {
-          header: 1,
-          raw: false,
-          defval: "",
-        });
-
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
         const nonEmptyRows = Array.isArray(rawRows) ? rawRows.filter((row) => !isRowEmpty(row)) : [];
-
-        return {
-          name,
-          status: "parsed",
-          reason: "",
-          nonEmptyRows,
-        };
+        return { name, status: "parsed", reason: "", nonEmptyRows };
       }
 
-      /* ================= Логика замены 1-к-1 ================= */
+      /* ================= Замена 1-к-1 ================= */
 
       function buildReplacementPlan(oldLines, newLines, ignoreBrackets) {
+        const pairCount = Math.min(oldLines.length, newLines.length);
         const pairs = [];
-        const minLen = Math.min(oldLines.length, newLines.length);
 
-        for (let i = 0; i < minLen; i++) {
+        for (let i = 0; i < pairCount; i++) {
           pairs.push({
             index: i + 1,
             from: oldLines[i],
@@ -1263,33 +1349,41 @@
           });
         }
 
-        // Карта замены 1-к-1: normalizedOldBox -> { to, pairIndex }
-        const replaceMap = new Map();
-        const duplicateOlds = [];
+        const fromKeySet = new Set(pairs.map((p) => p.fromKey));
         const chainedConflicts = [];
-        const oldKeySet = new Set(oldLines.map((x) => toMatchKey(x, ignoreBrackets)));
-
         for (const pair of pairs) {
-          if (replaceMap.has(pair.fromKey)) {
-            duplicateOlds.push(pair.from);
-          } else {
-            replaceMap.set(pair.fromKey, { to: pair.to, pairIndex: pair.index - 1 });
-          }
-
-          if (oldKeySet.has(pair.toKey) && pair.toKey !== pair.fromKey) {
+          if (fromKeySet.has(pair.toKey) && pair.toKey !== pair.fromKey) {
             chainedConflicts.push(`${pair.from} → ${pair.to}`);
           }
         }
 
         return {
           pairs,
-          replaceMap,
-          mismatch: oldLines.length !== newLines.length,
           oldCount: oldLines.length,
           newCount: newLines.length,
-          duplicateOlds,
+          partialNew: oldLines.length > newLines.length && newLines.length > 0,
+          extraNew: newLines.length > oldLines.length && oldLines.length > 0,
           chainedConflicts,
         };
+      }
+
+      function applyPairsToValue(initialValue, pairs, trimEdges, ignoreBrackets) {
+        let current = cleanValue(initialValue, trimEdges);
+        let currentKey = toMatchKey(current, ignoreBrackets);
+        let matchedPairIndex = -1;
+
+        if (!currentKey) return { value: current, matchedPairIndex };
+
+        for (let i = 0; i < pairs.length; i++) {
+          const pair = pairs[i];
+          if (currentKey === pair.fromKey) {
+            current = pair.to;
+            currentKey = toMatchKey(current, ignoreBrackets);
+            matchedPairIndex = i;
+          }
+        }
+
+        return { value: current, matchedPairIndex };
       }
 
       function rebuildReplacement() {
@@ -1298,7 +1392,18 @@
         const trimEdges = trimSpacesCheckboxEl.checked;
         const skipHeader = hasHeaderCheckboxEl.checked;
         const ignoreBrackets = ignoreBracketsCheckboxEl.checked;
+        const autoFillOld = autoFillOldBoxesCheckboxEl.checked;
         const activeSources = getActiveSources();
+
+        if (autoFillOld) {
+          const sourceBoxes = collectBoxesFromSources(activeSources, trimEdges, skipHeader, ignoreBrackets);
+          oldBoxesInputEl.value = sourceBoxes.join("\n");
+          oldBoxesInputEl.readOnly = true;
+          oldBoxesHintEl.textContent = "Уникальные коробки из столбца B по порядку первого появления";
+        } else {
+          oldBoxesInputEl.readOnly = false;
+          oldBoxesHintEl.textContent = "Вставьте номера коробок или включите автоподстановку из таблицы";
+        }
 
         const oldLines = parseBoxLines(oldBoxesInputEl.value, trimEdges);
         const newLines = parseBoxLines(newBoxesInputEl.value, trimEdges);
@@ -1309,14 +1414,17 @@
         const plan = buildReplacementPlan(oldLines, newLines, ignoreBrackets);
 
         pairStatusBadgeEl.classList.remove("is-ok", "is-warn");
-        if (plan.mismatch) {
-          pairStatusBadgeEl.textContent = `Несовпадение: ${oldLines.length} и ${newLines.length}`;
+        if (plan.pairs.length === 0) {
+          pairStatusBadgeEl.textContent = "Пар: 0";
+        } else if (plan.partialNew) {
+          pairStatusBadgeEl.textContent = `Пар: ${plan.pairs.length} из ${oldLines.length}`;
+          pairStatusBadgeEl.classList.add("is-ok");
+        } else if (plan.extraNew) {
+          pairStatusBadgeEl.textContent = `Пар: ${plan.pairs.length} (лишних справа: ${newLines.length - oldLines.length})`;
           pairStatusBadgeEl.classList.add("is-warn");
-        } else if (plan.pairs.length > 0) {
+        } else {
           pairStatusBadgeEl.textContent = `Пар: ${plan.pairs.length} (1:1)`;
           pairStatusBadgeEl.classList.add("is-ok");
-        } else {
-          pairStatusBadgeEl.textContent = "Пар: 0";
         }
 
         const allOutputLines = [];
@@ -1325,8 +1433,6 @@
         let totalDataRows = 0;
         let totalReplacedRows = 0;
 
-        const canApplyReplace = !plan.mismatch && plan.pairs.length > 0;
-
         for (const fileItem of activeSources) {
           if (fileItem.status !== "parsed") {
             fileReportRows.push({
@@ -1334,7 +1440,6 @@
               rowsCount: 0,
               replacedCount: 0,
               note: fileItem.reason || "Ошибка источника",
-              ok: false,
             });
             continue;
           }
@@ -1348,15 +1453,17 @@
 
           for (const row of rows) {
             const colA = cleanValue(row[0], trimEdges);
-            let colB = cleanValue(row[1], trimEdges);
-            const colBKey = toMatchKey(colB, ignoreBrackets);
+            const rawColB = cleanValue(row[1], trimEdges);
 
-            if (canApplyReplace && colBKey && plan.replaceMap.has(colBKey)) {
-              const entry = plan.replaceMap.get(colBKey);
-              colB = entry.to;
-              plan.pairs[entry.pairIndex].replacedRows += 1;
-              fileReplaced += 1;
-              totalReplacedRows += 1;
+            let colB = rawColB;
+            if (plan.pairs.length > 0) {
+              const applied = applyPairsToValue(rawColB, plan.pairs, trimEdges, ignoreBrackets);
+              colB = applied.value;
+              if (applied.matchedPairIndex >= 0) {
+                plan.pairs[applied.matchedPairIndex].replacedRows += 1;
+                fileReplaced += 1;
+                totalReplacedRows += 1;
+              }
             }
 
             const extraCols = row
@@ -1364,8 +1471,7 @@
               .map((c) => cleanValue(c, trimEdges))
               .filter((c) => c !== "");
 
-            const lineParts = [colA, colB, ...extraCols];
-            allOutputLines.push(lineParts.join("\t"));
+            allOutputLines.push([colA, colB, ...extraCols].join("\t"));
             totalDataRows += 1;
           }
 
@@ -1378,8 +1484,7 @@
                 ? "Нет строк данных"
                 : fileReplaced > 0
                   ? `Обновлено коробок в столбце B: ${fileReplaced}`
-                  : "Строки без совпадений по списку замены",
-            ok: rows.length > 0,
+                  : "Совпадений не найдено",
           });
         }
 
@@ -1395,42 +1500,33 @@
         filesReportPillEl.textContent = `Источников: ${activeSources.length}`;
         pairsReportPillEl.textContent = `Замен: ${totalReplacedRows} строк`;
 
-        const hasData = activeSources.length > 0 || oldLines.length > 0 || newLines.length > 0;
+        const hasData = activeSources.length > 0 || oldLines.length > 0 || newLines.length > 0 || autoFillOld;
         clearAllBtnEl.disabled = !hasData;
         copyBtnEl.disabled = allOutputLines.length === 0;
 
-        if (plan.mismatch) {
-          resultMetaEl.textContent = `Внимание: в левом списке ${oldLines.length} коробок, а в правом ${newLines.length} — выровняйте количество строк`;
-        } else if (allOutputLines.length > 0) {
-          resultMetaEl.textContent = `Строк в выводе: ${allOutputLines.length} · Заменено в столбце B: ${totalReplacedRows}`;
-        } else {
-          resultMetaEl.textContent = "Скопируйте готовые строки и вставьте в 1С или таблицу";
-        }
+        resultMetaEl.textContent = allOutputLines.length > 0
+          ? `Строк в выводе: ${allOutputLines.length} · Заменено в столбце B: ${totalReplacedRows}`
+          : "Скопируйте готовые строки и вставьте в 1С или таблицу";
 
-        renderPairsReport(plan.pairs, plan.mismatch, plan.chainedConflicts);
+        renderPairsReport(plan.pairs, plan.chainedConflicts);
         renderFilesReport(fileReportRows);
 
         if (activeSources.length > 0) {
-          if (plan.mismatch) {
+          if (plan.chainedConflicts.length > 0) {
             setStatus(
-              `Количество строк не совпадает: «Какие заменить» — ${oldLines.length}, «На какие заменить» — ${newLines.length}. Замена приостановлена.`,
-              "warn"
-            );
-          } else if (plan.chainedConflicts.length > 0) {
-            setStatus(
-              `Обработано строк: ${totalDataRows}, заменено: ${totalReplacedRows}. Внимание: найдено пересечение кодов (${plan.chainedConflicts.join(", ")}).`,
+              `Готово: строк ${totalDataRows}, заменено: ${totalReplacedRows}. Учтена цепочка (${plan.chainedConflicts.join(", ")}).`,
               "warn"
             );
           } else {
             setStatus(
-              `Готово: строк ${totalDataRows}, заменено коробок (1-к-1): ${totalReplacedRows}.`,
+              `Готово: строк ${totalDataRows}, заменено коробок: ${totalReplacedRows}.`,
               "success"
             );
           }
         }
       }
 
-      function renderPairsReport(pairs, mismatch, chainedConflicts) {
+      function renderPairsReport(pairs, chainedConflicts) {
         if (!pairs || pairs.length === 0) {
           pairsReportBodyEl.innerHTML =
             '<tr><td colspan="5" class="empty-cell">Укажите списки коробок в обоих полях для проверки и замены.</td></tr>';
@@ -1439,16 +1535,13 @@
 
         pairsReportBodyEl.innerHTML = pairs
           .map((p) => {
-            let statusHtml = '<span class="badge badge-ok">Применено</span>';
-            if (mismatch) {
-              statusHtml = '<span class="badge badge-skip">Ждёт выравнивания списков</span>';
-            } else if (p.replacedRows === 0) {
-              statusHtml = '<span class="badge badge-skip">0 совпадений в файле</span>';
-            }
-
+            const statusHtml =
+              p.replacedRows > 0
+                ? '<span class="badge badge-ok">Применено</span>'
+                : '<span class="badge badge-skip">0 совпадений</span>';
             const hasChain = chainedConflicts.some((c) => c.startsWith(`${p.from} →`));
             const toDisplay = hasChain
-              ? `${escapeHtml(p.to)} <span class="badge badge-skip">пересечение</span>`
+              ? `${escapeHtml(p.to)} <span class="badge badge-skip">цепочка</span>`
               : escapeHtml(p.to);
 
             return `
@@ -1472,21 +1565,19 @@
         }
 
         filesReportBodyEl.innerHTML = items
-          .map((item, idx) => {
-            return `
-              <tr>
-                <td class="col-num">${idx + 1}</td>
-                <td class="col-file">${escapeHtml(item.name)}</td>
-                <td class="col-right">${item.rowsCount}</td>
-                <td class="col-right"><strong>${item.replacedCount}</strong></td>
-                <td class="col-note">${escapeHtml(item.note)}</td>
-              </tr>
-            `;
-          })
+          .map((item, idx) => `
+            <tr>
+              <td class="col-num">${idx + 1}</td>
+              <td class="col-file">${escapeHtml(item.name)}</td>
+              <td class="col-right">${item.rowsCount}</td>
+              <td class="col-right"><strong>${item.replacedCount}</strong></td>
+              <td class="col-note">${escapeHtml(item.note)}</td>
+            </tr>
+          `)
           .join("");
       }
 
-      /* ================= Загрузка таблиц и ZIP ================= */
+      /* ================= Загрузка файлов и буфер ================= */
 
       async function handleTableFiles(fileList) {
         const files = Array.from(fileList || [])
@@ -1494,7 +1585,7 @@
           .sort((a, b) => a.name.localeCompare(b.name, "ru", { numeric: true, sensitivity: "base" }));
 
         if (files.length === 0) {
-          setStatus("Выберите файлы форматов .xlsx, .xls или .csv.", "warn");
+          setStatus("Выберите файлы .xlsx, .xls или .csv.", "warn");
           return;
         }
 
@@ -1504,38 +1595,29 @@
             const buf = await f.arrayBuffer();
             results.push(parseTableFromArrayBuffer(buf, f.name));
           } catch (err) {
-            results.push({
-              name: f.name,
-              status: "error",
-              reason: `Ошибка чтения: ${err && err.message ? err.message : "ошибка"}`,
-              nonEmptyRows: [],
-            });
+            results.push({ name: f.name, status: "error", reason: err.message || "Ошибка чтения", nonEmptyRows: [] });
           }
         }
-
         rawParsedFiles = results;
         rebuildReplacement();
       }
 
       async function handleZipFile(file) {
         if (typeof JSZip === "undefined") {
-          setStatus("Библиотека JSZip не загрузилась. Проверьте подключение к сети или обновите страницу.", "warn");
+          setStatus("JSZip не загрузился.", "warn");
           return;
         }
-
         try {
-          setStatus(`Распаковываем архив «${file.name}»...`, "info");
-          const zipData = await file.arrayBuffer();
-          const zip = await JSZip.loadAsync(zipData);
-
+          setStatus(`Распаковываем «${file.name}»...`, "info");
+          const zip = await JSZip.loadAsync(await file.arrayBuffer());
           const entries = Object.keys(zip.files)
-            .filter((entryName) => !isIgnoredArchiveEntry(entryName) && hasSupportedExtension(entryName))
+            .filter((n) => !isIgnoredArchiveEntry(n) && hasSupportedExtension(n))
             .sort((a, b) => a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" }));
 
           if (entries.length === 0) {
             rawParsedFiles = [];
             rebuildReplacement();
-            setStatus(`В архиве «${file.name}» не найдено таблиц (.xlsx, .xls, .csv).`, "warn");
+            setStatus(`В архиве «${file.name}» нет таблиц.`, "warn");
             return;
           }
 
@@ -1545,38 +1627,23 @@
               const buf = await zip.files[entryName].async("arraybuffer");
               results.push(parseTableFromArrayBuffer(buf, entryName));
             } catch (err) {
-              results.push({
-                name: entryName,
-                status: "error",
-                reason: `Ошибка чтения: ${err && err.message ? err.message : "повреждённый файл"}`,
-                nonEmptyRows: [],
-              });
+              results.push({ name: entryName, status: "error", reason: err.message || "Ошибка чтения", nonEmptyRows: [] });
             }
           }
-
           rawParsedFiles = results;
           rebuildReplacement();
         } catch (err) {
-          setStatus(
-            `Не удалось прочитать ZIP-архив: ${err && err.message ? err.message : "некорректный файл"}.`,
-            "warn"
-          );
+          setStatus(`Ошибка ZIP: ${err.message || "некорректный файл"}`, "warn");
         }
       }
 
       function handleIncomingFiles(fileList) {
         const files = Array.from(fileList || []);
         if (files.length === 0) return;
-
         const zipFile = files.find((f) => f.name.toLowerCase().endsWith(".zip"));
-        if (zipFile) {
-          handleZipFile(zipFile);
-        } else {
-          handleTableFiles(files);
-        }
+        if (zipFile) handleZipFile(zipFile);
+        else handleTableFiles(files);
       }
-
-      /* ================= Работа с буфером обмена ================= */
 
       pasteFromClipboardBtnEl.addEventListener("click", async () => {
         if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
@@ -1587,27 +1654,17 @@
               rebuildReplacement();
               return;
             }
-            setStatus("В буфере обмена нет текста для вставки.", "warn");
-            return;
-          } catch (_) {
-            // Если браузер заблокировал чтение буфера — фокусируем поле для Ctrl+V
-          }
+          } catch (_) {}
         }
         pasteSourceAreaEl.focus();
-        setStatus("Нажмите Ctrl+V в поле буфера обмена для вставки строк.", "info");
       });
 
       pasteSourceAreaEl.addEventListener("input", rebuildReplacement);
 
-      /* ================= Копирование и очистка ================= */
-
       function showCopiedFeedback() {
-        if (copyFeedbackTimer) {
-          clearTimeout(copyFeedbackTimer);
-        }
+        if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer);
         copyBtnEl.textContent = "Скопировано!";
         copyBtnEl.classList.add("is-copied");
-
         copyFeedbackTimer = setTimeout(() => {
           copyBtnEl.textContent = "Копировать";
           copyBtnEl.classList.remove("is-copied");
@@ -1623,11 +1680,7 @@
         document.body.appendChild(helper);
         helper.select();
         let ok = false;
-        try {
-          ok = document.execCommand("copy");
-        } catch (_) {
-          ok = false;
-        }
+        try { ok = document.execCommand("copy"); } catch (_) {}
         document.body.removeChild(helper);
         return ok;
       }
@@ -1635,7 +1688,6 @@
       copyBtnEl.addEventListener("click", async () => {
         const text = outputAreaEl.value;
         if (!text) return;
-
         let copied = false;
         if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
           try {
@@ -1647,29 +1699,22 @@
         } else {
           copied = fallbackCopyText(text);
         }
-
-        if (copied) {
-          showCopiedFeedback();
-        } else {
-          outputAreaEl.focus();
-          outputAreaEl.select();
-          setStatus("Не удалось скопировать автоматически — текст выделен, нажмите Ctrl+C / Cmd+C.", "warn");
-        }
+        if (copied) showCopiedFeedback();
       });
 
       clearAllBtnEl.addEventListener("click", () => {
         rawParsedFiles = [];
         pastedSourceItem = null;
+        manualOldBoxesText = "";
         tablesInputEl.value = "";
         zipInputEl.value = "";
         pasteSourceAreaEl.value = "";
+        autoFillOldBoxesCheckboxEl.checked = false;
         oldBoxesInputEl.value = "";
         newBoxesInputEl.value = "";
         rebuildReplacement();
-        setStatus("Данные очищены. Загрузите файл/ZIP или вставьте строки из буфера.", "info");
+        setStatus("Данные очищены.", "info");
       });
-
-      /* ================= События интерфейса ================= */
 
       dropZoneEl.addEventListener("click", () => tablesInputEl.click());
       dropZoneEl.addEventListener("keydown", (e) => {
@@ -1678,39 +1723,26 @@
           tablesInputEl.click();
         }
       });
-
-      pickTablesBtnEl.addEventListener("click", (e) => {
-        e.stopPropagation();
-        tablesInputEl.click();
-      });
-
-      pickZipBtnEl.addEventListener("click", (e) => {
-        e.stopPropagation();
-        zipInputEl.click();
-      });
+      pickTablesBtnEl.addEventListener("click", (e) => { e.stopPropagation(); tablesInputEl.click(); });
+      pickZipBtnEl.addEventListener("click", (e) => { e.stopPropagation(); zipInputEl.click(); });
 
       tablesInputEl.addEventListener("change", (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-          handleTableFiles(e.target.files);
-        }
+        if (e.target.files && e.target.files.length > 0) handleTableFiles(e.target.files);
       });
-
       zipInputEl.addEventListener("change", (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-          handleZipFile(e.target.files[0]);
-        }
+        if (e.target.files && e.target.files.length > 0) handleZipFile(e.target.files[0]);
       });
 
-      ["dragenter", "dragover"].forEach((eventName) => {
-        dropZoneEl.addEventListener(eventName, (e) => {
+      ["dragenter", "dragover"].forEach((ev) => {
+        dropZoneEl.addEventListener(ev, (e) => {
           e.preventDefault();
           e.stopPropagation();
           dropZoneEl.classList.add("is-dragover");
         });
       });
 
-      ["dragleave", "drop"].forEach((eventName) => {
-        dropZoneEl.addEventListener(eventName, (e) => {
+      ["dragleave", "drop"].forEach((ev) => {
+        dropZoneEl.addEventListener(ev, (e) => {
           e.preventDefault();
           e.stopPropagation();
           dropZoneEl.classList.remove("is-dragover");
@@ -1718,20 +1750,30 @@
       });
 
       dropZoneEl.addEventListener("drop", (e) => {
-        const dt = e.dataTransfer;
-        if (dt && dt.files && dt.files.length > 0) {
-          handleIncomingFiles(dt.files);
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleIncomingFiles(e.dataTransfer.files);
         }
       });
 
-      oldBoxesInputEl.addEventListener("input", rebuildReplacement);
+      autoFillOldBoxesCheckboxEl.addEventListener("change", () => {
+        if (autoFillOldBoxesCheckboxEl.checked) manualOldBoxesText = oldBoxesInputEl.value;
+        else oldBoxesInputEl.value = manualOldBoxesText;
+        rebuildReplacement();
+      });
+
+      oldBoxesInputEl.addEventListener("input", () => {
+        if (!autoFillOldBoxesCheckboxEl.checked) manualOldBoxesText = oldBoxesInputEl.value;
+        rebuildReplacement();
+      });
+
       newBoxesInputEl.addEventListener("input", rebuildReplacement);
       ignoreBracketsCheckboxEl.addEventListener("change", rebuildReplacement);
       hasHeaderCheckboxEl.addEventListener("change", rebuildReplacement);
       trimSpacesCheckboxEl.addEventListener("change", rebuildReplacement);
 
+      syncPresetUI();
       rebuildReplacement();
     })();
   </script>
 </body>
-  </html>
+</html>
