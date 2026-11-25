@@ -3,30 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>V1 — Подбор GTIN к номенклатуре — Tom studio</title>
+  <title>V2 — Подбор GTIN к номенклатуре — Tom studio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f8fafc;
       color: #1e293b;
-      max-width: 1120px;
-      margin: 32px auto;
-      padding: 0 20px;
+      max-width: 1440px;
+      margin: 24px auto;
+      padding: 0 16px;
     }
     .card {
       background: #ffffff;
-      padding: 28px;
+      padding: 24px;
       border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
     }
     .top-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .ver-badge {
       display: inline-block;
@@ -38,8 +39,8 @@
       padding: 4px 10px;
       border-radius: 6px;
     }
-    h1 { margin: 0 0 10px; font-size: 22px; color: #0f172a; }
-    p { color: #64748b; font-size: 14px; line-height: 1.5; margin: 0 0 16px; }
+    h1 { margin: 0 0 8px; font-size: 22px; color: #0f172a; }
+    p { color: #64748b; font-size: 14px; line-height: 1.45; margin: 0 0 14px; }
     .db-status {
       display: inline-block;
       font-size: 13px;
@@ -47,31 +48,31 @@
       border-radius: 6px;
       background: #f1f5f9;
       color: #475569;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       font-weight: 500;
     }
     .db-status.ok { background: #dcfce7; color: #166534; }
     .db-status.err { background: #fee2e2; color: #991b1b; }
     .controls {
       display: flex;
-      gap: 14px;
+      gap: 12px;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .upload-box {
       flex: 1;
-      min-width: 260px;
+      min-width: 240px;
       border: 2px dashed #cbd5e1;
       border-radius: 8px;
-      padding: 14px;
+      padding: 10px 14px;
       background: #f8fafc;
     }
     button {
       background-color: #2563eb;
       color: #fff;
       border: none;
-      padding: 12px 18px;
+      padding: 11px 16px;
       font-size: 14px;
       font-weight: 600;
       border-radius: 8px;
@@ -79,21 +80,17 @@
     }
     button:hover { background-color: #1d4ed8; }
     button:disabled { background-color: #94a3b8; cursor: not-allowed; }
-    button.secondary {
-      background-color: #0f766e;
-    }
-    button.secondary:hover {
-      background-color: #115e59;
-    }
+    button.secondary { background-color: #0f766e; }
+    button.secondary:hover { background-color: #115e59; }
     .summary {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       font-size: 13px;
     }
     .pill {
-      padding: 6px 12px;
+      padding: 5px 12px;
       border-radius: 999px;
       font-weight: 600;
       background: #e2e8f0;
@@ -102,36 +99,50 @@
     .pill.good { background: #dcfce7; color: #166534; }
     .pill.warn { background: #fef3c7; color: #92400e; }
     .pill.none { background: #fee2e2; color: #991b1b; }
+
     .table-wrap {
-      overflow-x: auto;
+      overflow: auto;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      max-height: 520px;
+      max-height: 620px;
     }
     table {
       width: 100%;
+      min-width: 1180px;
       border-collapse: collapse;
       font-size: 13px;
+      table-layout: fixed;
     }
     th, td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid #e2e8f0;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
+      overflow-wrap: anywhere;
     }
     th {
       background: #f1f5f9;
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 2;
       color: #334155;
+      font-size: 12px;
+      white-space: nowrap;
     }
+    /* Выверенные ширины колонок без лишнего пустого места */
+    col.c-gtin { width: 148px; }
+    col.c-name { width: 32%; }
+    col.c-stock { width: 82px; }
+    col.c-score { width: 108px; }
+    col.c-cand { width: 36%; }
+
     tr.status-exact { background: #f0fdf4; }
     tr.status-fuzzy { background: #fffbeb; }
     tr.status-none { background: #fef2f2; }
-    input.gtin-input, select.gtin-select {
-      width: 100%;
-      min-width: 150px;
+
+    input.gtin-input {
+      width: 130px;
+      max-width: 100%;
       padding: 6px 8px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
@@ -139,18 +150,40 @@
       font-size: 12px;
       background: #fff;
     }
+    .cand-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    select.gtin-select {
+      width: 100%;
+      max-width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 12px;
+      background: #fff;
+      text-overflow: ellipsis;
+    }
+    .cand-preview {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.35;
+      word-break: break-word;
+    }
     .badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 3px 7px;
       border-radius: 4px;
       font-size: 11px;
       font-weight: 700;
+      white-space: nowrap;
     }
     .b-exact { background: #bbf7d0; color: #14532d; }
     .b-fuzzy { background: #fde68a; color: #78350f; }
     .b-none { background: #fecaca; color: #7f1d1d; }
     .footer {
-      margin-top: 20px;
+      margin-top: 18px;
       text-align: right;
       font-size: 12px;
       color: #94a3b8;
@@ -161,7 +194,7 @@
 
 <div class="card">
   <div class="top-bar">
-    <span class="ver-badge">V1 — GTIN Matcher</span>
+    <span class="ver-badge">V2 — GTIN Matcher</span>
   </div>
   <h1>Подбор GTIN к номенклатуре</h1>
   <div id="dbStatus" class="db-status">Загружаю базы GTIN (БелСвет + Энергодар)...</div>
@@ -180,13 +213,20 @@
 
   <div id="tableWrap" class="table-wrap" style="display:none;">
     <table>
+      <colgroup>
+        <col class="c-gtin">
+        <col class="c-name">
+        <col class="c-stock">
+        <col class="c-score">
+        <col class="c-cand">
+      </colgroup>
       <thead>
         <tr>
-          <th style="width:170px;">GTIN (1-й столбец)</th>
+          <th>GTIN (1-й)</th>
           <th>Номенклатура</th>
-          <th style="width:120px;">Остаток</th>
-          <th style="width:120px;">Точность</th>
-          <th style="width:240px;">Кандидаты / выбор</th>
+          <th>Остаток</th>
+          <th>Точность</th>
+          <th>Кандидаты / выбор</th>
         </tr>
       </thead>
       <tbody id="resultBody"></tbody>
@@ -208,9 +248,7 @@
     }
   ];
 
-  // Храним записи базы: { gtin, rawTitle, source, tokens, codeKeys }
   let dbEntries = [];
-  // Текущие строки результата для экспорта и ручной правки
   let matchedRows = [];
 
   function normalizeGtin(raw) {
@@ -219,7 +257,6 @@
     return digits.length < 14 ? digits.padStart(14, '0') : digits;
   }
 
-  // Нормализация текста: убираем лишние пробелы, приводим ё->е и нижний регистр
   function normText(str) {
     return String(str || '')
       .toLowerCase()
@@ -229,57 +266,49 @@
       .trim();
   }
 
-  // Выделяем ключевые кодовые блоки вида "в-рц-657", "2в-рц-659", "(03)", цвета и числа
   function extractSignature(str) {
     const clean = String(str || '')
       .toLowerCase()
       .replace(/ё/g, 'е');
 
-    // Склеенный вариант без пробелов и дефисов для поиска точных кодов (например "врц657", "2врц659")
     const compact = clean.replace(/[^a-zа-я0-9]/g, '');
 
-    // Коды с буквами и цифрами (например в-рц-657, 2в-рц-659, ра16-243)
     const alphaNumCodes = Array.from(clean.matchAll(/[a-zа-я]{1,6}\s*[-_]?\s*[a-zа-я0-9]{1,6}\s*[-_]?\s*\d{2,5}/g))
       .map(m => m[0].replace(/[^a-zа-я0-9]/g, ''));
 
-    // Скобочные пометки вроде (03), (25), (40)
     const parens = Array.from(clean.matchAll(/\(([^)]+)\)/g))
       .map(m => m[1].replace(/\s+/g, '').trim())
       .filter(Boolean);
 
-    // Цветовые маркеры
     const colors = ['черн', 'сер', 'бел', 'красн', 'син', 'зелен', 'желт', 'коричн']
       .filter(c => clean.includes(c));
 
-    // Отдельные числа (кроме совсем мелких штук в скобках, но сохраняем их отдельно)
-    const numbers = Array.from(clean.matchAll(/\d+/g)).map(m => m[0]);
+    const ipMatches = Array.from(clean.matchAll(/ip\s*\d+/g)).map(m => m[0].replace(/\s+/g, ''));
+    const hasBez = /(?:^|\s)без(?:\s|$)/.test(clean);
+    const hasS = /(?:^|\s)с(?:\s|$)/.test(clean) && !hasBez;
 
     const words = normText(clean).split(' ').filter(w => w.length > 1);
 
-    return { compact, alphaNumCodes, parens, colors, numbers, words };
+    return { compact, alphaNumCodes, parens, colors, ipMatches, hasBez, hasS, words };
   }
 
-  // Оценка похожести строки таблицы и записи из базы (0..100)
   function scoreMatch(itemSig, dbSig) {
     if (!dbSig.compact) return 0;
 
     let score = 0;
 
-    // 1. Точное совпадение компактного ключа
     if (itemSig.compact === dbSig.compact) {
       score += 100;
     } else if (itemSig.compact.includes(dbSig.compact)) {
       score += 55;
     }
 
-    // 2. Совпадение буквенно-цифровых кодов (например В-РЦ-657 vs 2В-РЦ-659)
     let codeMatched = false;
     for (const dbCode of dbSig.alphaNumCodes) {
       if (itemSig.alphaNumCodes.includes(dbCode) || itemSig.compact.includes(dbCode)) {
         score += 35;
         codeMatched = true;
       } else {
-        // Если есть код с тем же числом, но другой буквенной частью — штрафуем
         const dbNumMatch = dbCode.match(/\d+$/);
         if (dbNumMatch) {
           const sameNumOtherPrefix = itemSig.alphaNumCodes.some(ic => ic.endsWith(dbNumMatch[0]) && ic !== dbCode);
@@ -288,12 +317,10 @@
       }
     }
 
-    // Если в базе есть коды, но ни один не совпал — снижаем вес
     if (dbSig.alphaNumCodes.length > 0 && !codeMatched) {
       score -= 15;
     }
 
-    // 3. Совпадение скобочных уточнений (например (03) или (25))
     for (const p of dbSig.parens) {
       if (itemSig.parens.includes(p)) {
         score += 12;
@@ -302,7 +329,17 @@
       }
     }
 
-    // 4. Совпадение цвета
+    for (const ip of dbSig.ipMatches) {
+      if (itemSig.ipMatches.includes(ip)) {
+        score += 10;
+      } else if (itemSig.ipMatches.length > 0) {
+        score -= 10;
+      }
+    }
+
+    if (dbSig.hasBez && itemSig.hasBez) score += 8;
+    if (dbSig.hasBez !== itemSig.hasBez && (dbSig.hasBez || itemSig.hasBez)) score -= 8;
+
     for (const col of dbSig.colors) {
       if (itemSig.colors.includes(col)) {
         score += 10;
@@ -311,7 +348,6 @@
       }
     }
 
-    // 5. Общие слова
     for (const w of dbSig.words) {
       if (itemSig.words.includes(w)) {
         score += 4;
@@ -393,7 +429,6 @@
       rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
     }
 
-    // Пропускаем строку заголовка, если в 1-й ячейке написано "Номенклатура"
     const items = [];
     for (let i = 0; i < rawRows.length; i++) {
       const r = rawRows[i];
@@ -408,7 +443,6 @@
   }
 
   function runMatching(items) {
-    // Собираем все пары (индекс строки таблицы, индекс записи базы, балл)
     const candidatesPerItem = items.map(item => {
       const itemSig = extractSignature(item.name);
       const scored = dbEntries.map((dbItem, dbIdx) => ({
@@ -423,7 +457,6 @@
       return scored.slice(0, 8);
     });
 
-    // Жадное назначение без дублей GTIN: сначала самые надёжные совпадения
     const allPairs = [];
     candidatesPerItem.forEach((list, rowIdx) => {
       list.forEach(cand => {
@@ -432,7 +465,7 @@
     });
     allPairs.sort((a, b) => b.score - a.score);
 
-    const assignedRowGtin = new Map(); // rowIdx -> { gtin, score, title }
+    const assignedRowGtin = new Map();
     const usedGtins = new Set();
 
     for (const pair of allPairs) {
@@ -467,6 +500,14 @@
     });
   }
 
+  function getSelectedCandidateText(row) {
+    if (!row.gtin) return '';
+    const found = row.candidates.find(c => c.gtin === row.gtin);
+    if (found) return `${found.gtin} — ${found.title}`;
+    const dbFound = dbEntries.find(d => d.gtin === row.gtin);
+    return dbFound ? `${dbFound.gtin} — ${dbFound.title}` : row.gtin;
+  }
+
   function renderResults() {
     const summary = document.getElementById('summary');
     const wrap = document.getElementById('tableWrap');
@@ -496,12 +537,19 @@
         .concat(row.candidates.map(c => `<option value="${c.gtin}" ${c.gtin === row.gtin ? 'selected' : ''}>[${c.score}] ${c.gtin} — ${c.title}</option>`))
         .join('');
 
+      const previewText = getSelectedCandidateText(row);
+
       tr.innerHTML = `
-        <td><input type="text" class="gtin-input" data-idx="${i}" value="${row.gtin}" placeholder="GTIN..."></td>
+        <td><input type="text" class="gtin-input" data-idx="${i}" value="${escapeHtml(row.gtin)}" placeholder="GTIN..."></td>
         <td>${escapeHtml(row.name)}</td>
         <td>${escapeHtml(row.stock)}</td>
         <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-        <td><select class="gtin-select" data-idx="${i}">${selectOptions}</select></td>
+        <td>
+          <div class="cand-box">
+            <select class="gtin-select" data-idx="${i}">${selectOptions}</select>
+            <div class="cand-preview" id="candPreview_${i}">${escapeHtml(previewText)}</div>
+          </div>
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -510,6 +558,8 @@
       inp.addEventListener('input', e => {
         const idx = Number(e.target.dataset.idx);
         matchedRows[idx].gtin = e.target.value.trim();
+        const prev = document.getElementById(`candPreview_${idx}`);
+        if (prev) prev.textContent = getSelectedCandidateText(matchedRows[idx]);
       });
     });
 
@@ -520,6 +570,8 @@
         matchedRows[idx].gtin = val;
         const inp = tbody.querySelector(`.gtin-input[data-idx="${idx}"]`);
         if (inp) inp.value = val;
+        const prev = document.getElementById(`candPreview_${idx}`);
+        if (prev) prev.textContent = getSelectedCandidateText(matchedRows[idx]);
       });
     });
 
@@ -553,7 +605,6 @@
   });
 
   function buildOutputRows() {
-    // GTIN встаёт первым столбцом перед названием
     const out = [['GTIN', 'Номенклатура', 'Начальный остаток']];
     for (const r of matchedRows) {
       out.push([r.gtin, r.name, r.stock]);
