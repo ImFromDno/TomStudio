@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Разделитель эмиссии по GTIN — Tom studio</title>
+  <title>V4 — Разделитель эмиссии по GTIN — Tom studio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -22,7 +22,25 @@
       border-radius: 12px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    h1 { margin-top: 0; font-size: 22px; color: #0f172a; }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .ver-badge {
+      display: inline-block;
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    h1 { margin: 0 0 12px; font-size: 22px; color: #0f172a; }
     p { color: #64748b; line-height: 1.5; font-size: 14px; }
     .db-status {
       display: inline-block;
@@ -114,6 +132,9 @@
 <body>
 
 <div class="card">
+  <div class="top-bar">
+    <span class="ver-badge">V4</span>
+  </div>
   <h1>Разделитель эмиссии по GTIN (до маркера <code>(21)</code>)</h1>
   <div id="dbStatus" class="db-status">Загружаю справочник названий из Google Таблицы...</div>
   <p>Поддерживает <strong>.xlsx, .xls, .csv, .tsv, .txt</strong>. Имена файлов формируются в формате: <code>№_Название_Кол-во_GTIN</code>.</p>
@@ -143,46 +164,68 @@
   const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv';
   const gtinNamesMap = new Map();
 
-  // Нормализация GTIN до 14 цифр (на случай если Google Таблица обрезала ведущий 0)
   function normalizeGtin(raw) {
     const digits = String(raw || '').replace(/^\(01\)/, '').replace(/\D/g, '');
     if (!digits) return '';
     return digits.length < 14 ? digits.padStart(14, '0') : digits;
   }
 
-  // Очистка названия товара от запрещённых для имён файлов символов
   function sanitizeFileNamePart(name) {
     return String(name || '')
-      .replace(/[\\/:*?"<>|]/g, ' ') // запрещённые символы ОС
-      .replace(/\s+/g, ' ')           // схлопываем лишние пробелы
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 60);                  // страховка по длине имени
+      .slice(0, 60);
   }
 
-  // Подгружаем справочник GTIN -> Название при открытии страницы
   async function loadGtinDatabase() {
     const dbStatus = document.getElementById('dbStatus');
+    const statusLog = document.getElementById('statusLog');
     try {
-      const response = await fetch(SHEET_CSV_URL);
+      const cacheBuster = (SHEET_CSV_URL.includes('?') ? '&' : '?') + '_t=' + Date.now();
+      const response = await fetch(SHEET_CSV_URL + cacheBuster);
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const csvText = await response.text();
 
-      // Парсим CSV через встроенный SheetJS (он корректно понимает кавычки и запятые в названиях)
       const wb = XLSX.read(csvText, { type: 'string', raw: true });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
 
       for (const row of rows) {
         if (!row || row.length < 2) continue;
-        const gtin = normalizeGtin(row[0]);
-        const title = String(row[1] || '').trim();
-        if (gtin && title && gtin !== '00000000000000') {
-          gtinNamesMap.set(gtin, title);
+
+        let foundGtin = '';
+        let foundTitle = '';
+
+        for (let i = 0; i < row.length; i++) {
+          const cellStr = String(row[i] ?? '').trim();
+          const digits = cellStr.replace(/\D/g, '');
+          if (!foundGtin && digits.length >= 12 && digits.length <= 14) {
+            foundGtin = normalizeGtin(digits);
+          } else if (cellStr && !/^\d{12,14}$/.test(digits)) {
+            if (!foundTitle) foundTitle = cellStr;
+          }
+        }
+
+        const col0Gtin = normalizeGtin(row[0]);
+        const col1Title = String(row[1] ?? '').trim();
+
+        const finalGtin = col0Gtin || foundGtin;
+        const finalTitle = (col0Gtin && col1Title) ? col1Title : foundTitle;
+
+        if (finalGtin && finalTitle && finalGtin !== '00000000000000') {
+          gtinNamesMap.set(finalGtin, finalTitle);
         }
       }
 
       dbStatus.className = 'db-status ok';
       dbStatus.textContent = `✔ База названий загружена: ${gtinNamesMap.size} позиций`;
+
+      const sample = Array.from(gtinNamesMap.entries()).slice(0, 3);
+      if (sample.length) {
+        statusLog.style.display = 'block';
+        statusLog.innerHTML += `Пример из базы: ${sample.map(([k, v]) => `${k} → ${v}`).join(' | ')}<br>`;
+      }
     } catch (err) {
       dbStatus.className = 'db-status err';
       dbStatus.textContent = `⚠ Не удалось загрузить базу названий (${err.message}). Файлы сохранятся без названий.`;
@@ -284,11 +327,9 @@
         const prefix = String(idx).padStart(2, '0');
         const countLabel = `${items.length}шт`;
 
-        // Ищем название в загруженной таблице
         const rawTitle = gtinNamesMap.get(gtin) || gtinNamesMap.get(safeGtin) || '';
         const cleanTitle = sanitizeFileNamePart(rawTitle);
 
-        // Формат: ПорядковыйНомер_Название_Кол-во_GTIN (если названия нет в базе — опускаем его)
         const fileNameBase = cleanTitle
           ? `${prefix}_${cleanTitle}_${countLabel}_${safeGtin}`
           : `${prefix}_${countLabel}_${safeGtin}`;
