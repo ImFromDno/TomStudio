@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Разделитель эмиссии по GTIN — Tom studio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    h1 { margin-top: 0; font-size: 22px; color: #0f172a; }
+    p { color: #64748b; line-height: 1.5; font-size: 14px; }
+    .db-status {
+      display: inline-block;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    .db-status.ok { background: #dcfce7; color: #166534; }
+    .db-status.err { background: #fee2e2; color: #991b1b; }
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      margin: 16px 0 24px;
+      background: #f8fafc;
+    }
+    input[type="file"] { font-size: 14px; }
+    .options {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .option-box {
+      flex: 1;
+      min-width: 220px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+    button:hover { background-color: #1d4ed8; }
+    button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    #progress {
+      margin-top: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .status-log {
+      margin-top: 12px;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      line-height: 1.5;
+    }
+    .footer {
+      margin-top: 24px;
+      text-align: right;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Разделитель эмиссии по GTIN (до маркера <code>(21)</code>)</h1>
+  <div id="dbStatus" class="db-status">Загружаю справочник названий из Google Таблицы...</div>
+  <p>Поддерживает <strong>.xlsx, .xls, .csv, .tsv, .txt</strong>. Имена файлов формируются в формате: <code>№_Название_Кол-во_GTIN</code>.</p>
+  
+  <div class="upload-area">
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.tsv,.txt">
+  </div>
+
+  <div class="options">
+    <div class="option-box">
+      <label for="outFormat">Формат выходных файлов:</label>
+      <select id="outFormat">
+        <option value="xlsx" selected>Excel (.xlsx) — без потери спецсимволов</option>
+        <option value="csv">CSV (.csv, разделитель — табуляция)</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="processBtn">Разделить и скачать ZIP</button>
+
+  <div id="progress"></div>
+  <div id="statusLog" class="status-log"></div>
+  <div class="footer">Tom studio</div>
+</div>
+
+<script>
+  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv';
+  const gtinNamesMap = new Map();
+
+  // Нормализация GTIN до 14 цифр (на случай если Google Таблица обрезала ведущий 0)
+  function normalizeGtin(raw) {
+    const digits = String(raw || '').replace(/^\(01\)/, '').replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.length < 14 ? digits.padStart(14, '0') : digits;
+  }
+
+  // Очистка названия товара от запрещённых для имён файлов символов
+  function sanitizeFileNamePart(name) {
+    return String(name || '')
+      .replace(/[\\/:*?"<>|]/g, ' ') // запрещённые символы ОС
+      .replace(/\s+/g, ' ')           // схлопываем лишние пробелы
+      .trim()
+      .slice(0, 60);                  // страховка по длине имени
+  }
+
+  // Подгружаем справочник GTIN -> Название при открытии страницы
+  async function loadGtinDatabase() {
+    const dbStatus = document.getElementById('dbStatus');
+    try {
+      const response = await fetch(SHEET_CSV_URL);
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const csvText = await response.text();
+
+      // Парсим CSV через встроенный SheetJS (он корректно понимает кавычки и запятые в названиях)
+      const wb = XLSX.read(csvText, { type: 'string', raw: true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+
+      for (const row of rows) {
+        if (!row || row.length < 2) continue;
+        const gtin = normalizeGtin(row[0]);
+        const title = String(row[1] || '').trim();
+        if (gtin && title && gtin !== '00000000000000') {
+          gtinNamesMap.set(gtin, title);
+        }
+      }
+
+      dbStatus.className = 'db-status ok';
+      dbStatus.textContent = `✔ База названий загружена: ${gtinNamesMap.size} позиций`;
+    } catch (err) {
+      dbStatus.className = 'db-status err';
+      dbStatus.textContent = `⚠ Не удалось загрузить базу названий (${err.message}). Файлы сохранятся без названий.`;
+    }
+  }
+
+  loadGtinDatabase();
+
+  document.getElementById('processBtn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('fileInput');
+    const outFormat = document.getElementById('outFormat').value;
+    const progressDiv = document.getElementById('progress');
+    const statusLog = document.getElementById('statusLog');
+    const btn = document.getElementById('processBtn');
+
+    if (!fileInput.files.length) {
+      alert('Сначала выбери файл с таблицей.');
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const fileNameLower = file.name.toLowerCase();
+    btn.disabled = true;
+    progressDiv.textContent = 'Читаю файл...';
+    statusLog.style.display = 'block';
+    statusLog.innerHTML = `Файл: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} МБ)<br>`;
+
+    try {
+      let rowsData = [];
+
+      if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array', raw: true });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: true, defval: '' });
+
+        for (const r of rawRows) {
+          if (!r || r.length === 0) continue;
+          const c1 = r[0] !== undefined && r[0] !== null ? String(r[0]).trim() : '';
+          const c2 = r[1] !== undefined && r[1] !== null ? String(r[1]).trim() : '';
+          if (!c1 && !c2) continue;
+          rowsData.push([c1, c2]);
+        }
+      } else {
+        const text = await file.text();
+        const lines = text.split(/\r?\n/);
+
+        for (let line of lines) {
+          if (!line || !line.trim()) continue;
+          if (line.charCodeAt(0) === 0xFEFF) line = line.slice(1);
+
+          let c1 = '';
+          let c2 = '';
+
+          if (line.includes('\t')) {
+            const tabIdx = line.indexOf('\t');
+            c1 = line.slice(0, tabIdx).trim();
+            c2 = line.slice(tabIdx + 1).trim();
+          } else {
+            c1 = line.trim();
+          }
+
+          rowsData.push([c1, c2]);
+        }
+      }
+
+      if (rowsData.length === 0) {
+        progressDiv.textContent = 'Не удалось найти строки с данными.';
+        btn.disabled = false;
+        return;
+      }
+
+      progressDiv.textContent = `Прочитано строк: ${rowsData.length}. Группирую по GTIN...`;
+      const groups = new Map();
+
+      for (const [col1, col2] of rowsData) {
+        const markerIndex = col1.indexOf('(21)');
+        const baseKey = markerIndex !== -1
+          ? col1.substring(0, markerIndex).trim()
+          : col1;
+
+        const normalizedGtin = normalizeGtin(baseKey);
+        const groupKey = normalizedGtin || baseKey || 'unknown';
+
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, []);
+        }
+        groups.get(groupKey).push(col2 ? [col1, col2] : [col1]);
+      }
+
+      statusLog.innerHTML += `Найдено уникальных позиций (GTIN): <b>${groups.size}</b><br>`;
+      progressDiv.textContent = `Упаковываю ${groups.size} файлов в ZIP...`;
+
+      const zip = new JSZip();
+      let idx = 1;
+
+      for (const [gtin, items] of groups.entries()) {
+        const safeGtin = gtin.replace(/[^a-zA-Z0-9_-]/g, '') || `part_${idx}`;
+        const prefix = String(idx).padStart(2, '0');
+        const countLabel = `${items.length}шт`;
+
+        // Ищем название в загруженной таблице
+        const rawTitle = gtinNamesMap.get(gtin) || gtinNamesMap.get(safeGtin) || '';
+        const cleanTitle = sanitizeFileNamePart(rawTitle);
+
+        // Формат: ПорядковыйНомер_Название_Кол-во_GTIN (если названия нет в базе — опускаем его)
+        const fileNameBase = cleanTitle
+          ? `${prefix}_${cleanTitle}_${countLabel}_${safeGtin}`
+          : `${prefix}_${countLabel}_${safeGtin}`;
+
+        if (outFormat === 'xlsx') {
+          const ws = XLSX.utils.aoa_to_sheet(items);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Codes');
+          const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          zip.file(`${fileNameBase}.xlsx`, wbOut);
+        } else {
+          const csvLines = items.map(pair => pair.join('\t')).join('\r\n');
+          zip.file(`${fileNameBase}.csv`, '\uFEFF' + csvLines);
+        }
+
+        statusLog.innerHTML += `✔ ${fileNameBase}.${outFormat}<br>`;
+        idx++;
+      }
+
+      statusLog.scrollTop = statusLog.scrollHeight;
+
+      const zipBlob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 3 }
+      });
+
+      saveAs(zipBlob, `GTIN_split_${groups.size}_items.zip`);
+      progressDiv.textContent = `Готово! ${rowsData.length} строк разложено по ${groups.size} файлам.`;
+      statusLog.innerHTML += '<b>Архив отправлен в Загрузки!</b>';
+    } catch (err) {
+      progressDiv.textContent = 'Ошибка: ' + err.message;
+      statusLog.innerHTML += `<span style="color:#f87171">Ошибка: ${err.message}</span><br>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
