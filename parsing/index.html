@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V1 — Подбор GTIN к номенклатуре — Tom studio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      max-width: 1120px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .ver-badge {
+      display: inline-block;
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    h1 { margin: 0 0 10px; font-size: 22px; color: #0f172a; }
+    p { color: #64748b; font-size: 14px; line-height: 1.5; margin: 0 0 16px; }
+    .db-status {
+      display: inline-block;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+      margin-bottom: 18px;
+      font-weight: 500;
+    }
+    .db-status.ok { background: #dcfce7; color: #166534; }
+    .db-status.err { background: #fee2e2; color: #991b1b; }
+    .controls {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .upload-box {
+      flex: 1;
+      min-width: 260px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 14px;
+      background: #f8fafc;
+    }
+    button {
+      background-color: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #1d4ed8; }
+    button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    button.secondary {
+      background-color: #0f766e;
+    }
+    button.secondary:hover {
+      background-color: #115e59;
+    }
+    .summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .pill.good { background: #dcfce7; color: #166534; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+    .pill.none { background: #fee2e2; color: #991b1b; }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      max-height: 520px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: #334155;
+    }
+    tr.status-exact { background: #f0fdf4; }
+    tr.status-fuzzy { background: #fffbeb; }
+    tr.status-none { background: #fef2f2; }
+    input.gtin-input, select.gtin-select {
+      width: 100%;
+      min-width: 150px;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      background: #fff;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .b-exact { background: #bbf7d0; color: #14532d; }
+    .b-fuzzy { background: #fde68a; color: #78350f; }
+    .b-none { background: #fecaca; color: #7f1d1d; }
+    .footer {
+      margin-top: 20px;
+      text-align: right;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="top-bar">
+    <span class="ver-badge">V1 — GTIN Matcher</span>
+  </div>
+  <h1>Подбор GTIN к номенклатуре</h1>
+  <div id="dbStatus" class="db-status">Загружаю базы GTIN (БелСвет + Энергодар)...</div>
+  <p>Загрузи таблицу с номенклатурой (например, <code>Номенклатура</code> + <code>Начальный остаток</code>). Скрипт подставит GTIN <strong>первым столбцом</strong> без дублей одного GTIN на разные позиции.</p>
+
+  <div class="controls">
+    <div class="upload-box">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.tsv,.txt">
+    </div>
+    <button id="matchBtn">Подобрать GTIN</button>
+    <button id="exportXlsxBtn" class="secondary" disabled>Скачать .XLSX</button>
+    <button id="exportCsvBtn" class="secondary" disabled>Скачать .CSV</button>
+  </div>
+
+  <div id="summary" class="summary" style="display:none;"></div>
+
+  <div id="tableWrap" class="table-wrap" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:170px;">GTIN (1-й столбец)</th>
+          <th>Номенклатура</th>
+          <th style="width:120px;">Остаток</th>
+          <th style="width:120px;">Точность</th>
+          <th style="width:240px;">Кандидаты / выбор</th>
+        </tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">Tom studio</div>
+</div>
+
+<script>
+  const SHEET_SOURCES = [
+    {
+      name: 'БелСвет',
+      url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv'
+    },
+    {
+      name: 'Энергодар',
+      url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=21252746&single=true&output=csv'
+    }
+  ];
+
+  // Храним записи базы: { gtin, rawTitle, source, tokens, codeKeys }
+  let dbEntries = [];
+  // Текущие строки результата для экспорта и ручной правки
+  let matchedRows = [];
+
+  function normalizeGtin(raw) {
+    const digits = String(raw || '').replace(/^\(01\)/, '').replace(/\D/g, '');
+    if (!digits || digits.length < 8) return '';
+    return digits.length < 14 ? digits.padStart(14, '0') : digits;
+  }
+
+  // Нормализация текста: убираем лишние пробелы, приводим ё->е и нижний регистр
+  function normText(str) {
+    return String(str || '')
+      .toLowerCase()
+      .replace(/ё/g, 'е')
+      .replace(/[^a-zа-я0-9()+-]+/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Выделяем ключевые кодовые блоки вида "в-рц-657", "2в-рц-659", "(03)", цвета и числа
+  function extractSignature(str) {
+    const clean = String(str || '')
+      .toLowerCase()
+      .replace(/ё/g, 'е');
+
+    // Склеенный вариант без пробелов и дефисов для поиска точных кодов (например "врц657", "2врц659")
+    const compact = clean.replace(/[^a-zа-я0-9]/g, '');
+
+    // Коды с буквами и цифрами (например в-рц-657, 2в-рц-659, ра16-243)
+    const alphaNumCodes = Array.from(clean.matchAll(/[a-zа-я]{1,6}\s*[-_]?\s*[a-zа-я0-9]{1,6}\s*[-_]?\s*\d{2,5}/g))
+      .map(m => m[0].replace(/[^a-zа-я0-9]/g, ''));
+
+    // Скобочные пометки вроде (03), (25), (40)
+    const parens = Array.from(clean.matchAll(/\(([^)]+)\)/g))
+      .map(m => m[1].replace(/\s+/g, '').trim())
+      .filter(Boolean);
+
+    // Цветовые маркеры
+    const colors = ['черн', 'сер', 'бел', 'красн', 'син', 'зелен', 'желт', 'коричн']
+      .filter(c => clean.includes(c));
+
+    // Отдельные числа (кроме совсем мелких штук в скобках, но сохраняем их отдельно)
+    const numbers = Array.from(clean.matchAll(/\d+/g)).map(m => m[0]);
+
+    const words = normText(clean).split(' ').filter(w => w.length > 1);
+
+    return { compact, alphaNumCodes, parens, colors, numbers, words };
+  }
+
+  // Оценка похожести строки таблицы и записи из базы (0..100)
+  function scoreMatch(itemSig, dbSig) {
+    if (!dbSig.compact) return 0;
+
+    let score = 0;
+
+    // 1. Точное совпадение компактного ключа
+    if (itemSig.compact === dbSig.compact) {
+      score += 100;
+    } else if (itemSig.compact.includes(dbSig.compact)) {
+      score += 55;
+    }
+
+    // 2. Совпадение буквенно-цифровых кодов (например В-РЦ-657 vs 2В-РЦ-659)
+    let codeMatched = false;
+    for (const dbCode of dbSig.alphaNumCodes) {
+      if (itemSig.alphaNumCodes.includes(dbCode) || itemSig.compact.includes(dbCode)) {
+        score += 35;
+        codeMatched = true;
+      } else {
+        // Если есть код с тем же числом, но другой буквенной частью — штрафуем
+        const dbNumMatch = dbCode.match(/\d+$/);
+        if (dbNumMatch) {
+          const sameNumOtherPrefix = itemSig.alphaNumCodes.some(ic => ic.endsWith(dbNumMatch[0]) && ic !== dbCode);
+          if (sameNumOtherPrefix) score -= 25;
+        }
+      }
+    }
+
+    // Если в базе есть коды, но ни один не совпал — снижаем вес
+    if (dbSig.alphaNumCodes.length > 0 && !codeMatched) {
+      score -= 15;
+    }
+
+    // 3. Совпадение скобочных уточнений (например (03) или (25))
+    for (const p of dbSig.parens) {
+      if (itemSig.parens.includes(p)) {
+        score += 12;
+      } else if (/^\d+$/.test(p) && itemSig.parens.some(ip => /^\d+$/.test(ip) && ip !== p)) {
+        score -= 8;
+      }
+    }
+
+    // 4. Совпадение цвета
+    for (const col of dbSig.colors) {
+      if (itemSig.colors.includes(col)) {
+        score += 10;
+      } else if (itemSig.colors.length > 0) {
+        score -= 10;
+      }
+    }
+
+    // 5. Общие слова
+    for (const w of dbSig.words) {
+      if (itemSig.words.includes(w)) {
+        score += 4;
+      }
+    }
+
+    return score;
+  }
+
+  async function loadSingleSource(source) {
+    const cacheBuster = (source.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    const res = await fetch(source.url + cacheBuster);
+    if (!res.ok) throw new Error(`${source.name}: HTTP ${res.status}`);
+    const csvText = await res.text();
+
+    const wb = XLSX.read(csvText, { type: 'string', raw: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+
+    const list = [];
+    for (const row of rows) {
+      if (!row || row.length < 2) continue;
+      const gtin = normalizeGtin(row[0]);
+      const title = String(row[1] ?? '').trim();
+      if (gtin && title) {
+        list.push({
+          gtin,
+          title,
+          source: source.name,
+          sig: extractSignature(title)
+        });
+      }
+    }
+    return list;
+  }
+
+  async function initDatabases() {
+    const dbStatus = document.getElementById('dbStatus');
+    const results = await Promise.allSettled(SHEET_SOURCES.map(loadSingleSource));
+
+    const stats = [];
+    const errs = [];
+    dbEntries = [];
+
+    results.forEach((r, idx) => {
+      const name = SHEET_SOURCES[idx].name;
+      if (r.status === 'fulfilled') {
+        dbEntries.push(...r.value);
+        stats.push(`${name}: ${r.value.length}`);
+      } else {
+        errs.push(`${name} (${r.reason.message})`);
+      }
+    });
+
+    if (dbEntries.length > 0) {
+      dbStatus.className = 'db-status ok';
+      dbStatus.textContent = `✔ Базы загружены (${stats.join(' | ')}) — всего ${dbEntries.length} GTIN` + (errs.length ? ` | Ошибки: ${errs.join(', ')}` : '');
+    } else {
+      dbStatus.className = 'db-status err';
+      dbStatus.textContent = `⚠ Не удалось загрузить базы: ${errs.join('; ')}`;
+    }
+  }
+
+  initDatabases();
+
+  async function parseInputFile(file) {
+    const lower = file.name.toLowerCase();
+    let rawRows = [];
+
+    if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array', raw: true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+    } else {
+      const text = await file.text();
+      const wb = XLSX.read(text, { type: 'string', raw: true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+    }
+
+    // Пропускаем строку заголовка, если в 1-й ячейке написано "Номенклатура"
+    const items = [];
+    for (let i = 0; i < rawRows.length; i++) {
+      const r = rawRows[i];
+      if (!r || r.length === 0) continue;
+      const name = String(r[0] ?? '').trim();
+      const stock = r[1] !== undefined && r[1] !== null ? String(r[1]).trim() : '';
+      if (!name && !stock) continue;
+      if (i === 0 && /^номенклатура$/i.test(name)) continue;
+      items.push({ name, stock });
+    }
+    return items;
+  }
+
+  function runMatching(items) {
+    // Собираем все пары (индекс строки таблицы, индекс записи базы, балл)
+    const candidatesPerItem = items.map(item => {
+      const itemSig = extractSignature(item.name);
+      const scored = dbEntries.map((dbItem, dbIdx) => ({
+        dbIdx,
+        gtin: dbItem.gtin,
+        title: dbItem.title,
+        source: dbItem.source,
+        score: scoreMatch(itemSig, dbItem.sig)
+      })).filter(x => x.score >= 25);
+
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, 8);
+    });
+
+    // Жадное назначение без дублей GTIN: сначала самые надёжные совпадения
+    const allPairs = [];
+    candidatesPerItem.forEach((list, rowIdx) => {
+      list.forEach(cand => {
+        allPairs.push({ rowIdx, ...cand });
+      });
+    });
+    allPairs.sort((a, b) => b.score - a.score);
+
+    const assignedRowGtin = new Map(); // rowIdx -> { gtin, score, title }
+    const usedGtins = new Set();
+
+    for (const pair of allPairs) {
+      if (assignedRowGtin.has(pair.rowIdx)) continue;
+      if (usedGtins.has(pair.gtin)) continue;
+      if (pair.score < 30) continue;
+
+      assignedRowGtin.set(pair.rowIdx, {
+        gtin: pair.gtin,
+        score: pair.score,
+        title: pair.title
+      });
+      usedGtins.add(pair.gtin);
+    }
+
+    return items.map((item, idx) => {
+      const assigned = assignedRowGtin.get(idx);
+      const cands = candidatesPerItem[idx] || [];
+      let status = 'none';
+      if (assigned) {
+        status = assigned.score >= 65 ? 'exact' : 'fuzzy';
+      }
+      return {
+        rowIndex: idx,
+        gtin: assigned ? assigned.gtin : '',
+        name: item.name,
+        stock: item.stock,
+        score: assigned ? assigned.score : 0,
+        status,
+        candidates: cands
+      };
+    });
+  }
+
+  function renderResults() {
+    const summary = document.getElementById('summary');
+    const wrap = document.getElementById('tableWrap');
+    const tbody = document.getElementById('resultBody');
+
+    const exactCount = matchedRows.filter(r => r.status === 'exact').length;
+    const fuzzyCount = matchedRows.filter(r => r.status === 'fuzzy').length;
+    const noneCount = matchedRows.filter(r => r.status === 'none').length;
+
+    summary.style.display = 'flex';
+    summary.innerHTML = `
+      <span class="pill">Всего строк: ${matchedRows.length}</span>
+      <span class="pill good">Точно / высоко: ${exactCount}</span>
+      <span class="pill warn">Проверить (похожие): ${fuzzyCount}</span>
+      <span class="pill none">Без GTIN: ${noneCount}</span>
+    `;
+
+    tbody.innerHTML = '';
+    matchedRows.forEach((row, i) => {
+      const tr = document.createElement('tr');
+      tr.className = `status-${row.status}`;
+
+      const badgeClass = row.status === 'exact' ? 'b-exact' : row.status === 'fuzzy' ? 'b-fuzzy' : 'b-none';
+      const badgeText = row.status === 'exact' ? `Точно (${row.score})` : row.status === 'fuzzy' ? `Похоже (${row.score})` : 'Нет';
+
+      const selectOptions = ['<option value="">— выбрать из похожих —</option>']
+        .concat(row.candidates.map(c => `<option value="${c.gtin}" ${c.gtin === row.gtin ? 'selected' : ''}>[${c.score}] ${c.gtin} — ${c.title}</option>`))
+        .join('');
+
+      tr.innerHTML = `
+        <td><input type="text" class="gtin-input" data-idx="${i}" value="${row.gtin}" placeholder="GTIN..."></td>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${escapeHtml(row.stock)}</td>
+        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td><select class="gtin-select" data-idx="${i}">${selectOptions}</select></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.gtin-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const idx = Number(e.target.dataset.idx);
+        matchedRows[idx].gtin = e.target.value.trim();
+      });
+    });
+
+    tbody.querySelectorAll('.gtin-select').forEach(sel => {
+      sel.addEventListener('change', e => {
+        const idx = Number(e.target.dataset.idx);
+        const val = e.target.value;
+        matchedRows[idx].gtin = val;
+        const inp = tbody.querySelector(`.gtin-input[data-idx="${idx}"]`);
+        if (inp) inp.value = val;
+      });
+    });
+
+    wrap.style.display = 'block';
+    document.getElementById('exportXlsxBtn').disabled = false;
+    document.getElementById('exportCsvBtn').disabled = false;
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  document.getElementById('matchBtn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files.length) {
+      alert('Сначала выбери файл с номенклатурой.');
+      return;
+    }
+    if (dbEntries.length === 0) {
+      alert('Базы GTIN ещё не загрузились или недоступны.');
+      return;
+    }
+
+    const items = await parseInputFile(fileInput.files[0]);
+    matchedRows = runMatching(items);
+    renderResults();
+  });
+
+  function buildOutputRows() {
+    // GTIN встаёт первым столбцом перед названием
+    const out = [['GTIN', 'Номенклатура', 'Начальный остаток']];
+    for (const r of matchedRows) {
+      out.push([r.gtin, r.name, r.stock]);
+    }
+    return out;
+  }
+
+  document.getElementById('exportXlsxBtn').addEventListener('click', () => {
+    const data = buildOutputRows();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Номенклатура_GTIN');
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([buf], { type: 'application/octet-stream' }), 'nomenklatura_with_gtin.xlsx');
+  });
+
+  document.getElementById('exportCsvBtn').addEventListener('click', () => {
+    const data = buildOutputRows();
+    const lines = data.map(row =>
+      row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(';')
+    ).join('\r\n');
+    saveAs(new Blob(['\uFEFF' + lines], { type: 'text/csv;charset=utf-8;' }), 'nomenklatura_with_gtin.csv');
+  });
+</script>
+
+</body>
+</html>
