@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>V4 — Разделитель эмиссии по GTIN — Tom studio</title>
+  <title>V5 — Разделитель эмиссии по GTIN — Tom studio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -133,10 +133,10 @@
 
 <div class="card">
   <div class="top-bar">
-    <span class="ver-badge">V4</span>
+    <span class="ver-badge">V5</span>
   </div>
   <h1>Разделитель эмиссии по GTIN (до маркера <code>(21)</code>)</h1>
-  <div id="dbStatus" class="db-status">Загружаю справочник названий из Google Таблицы...</div>
+  <div id="dbStatus" class="db-status">Загружаю базы названий (БелСвет + Энергодар)...</div>
   <p>Поддерживает <strong>.xlsx, .xls, .csv, .tsv, .txt</strong>. Имена файлов формируются в формате: <code>№_Название_Кол-во_GTIN</code>.</p>
   
   <div class="upload-area">
@@ -161,7 +161,17 @@
 </div>
 
 <script>
-  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv';
+  const SHEET_SOURCES = [
+    {
+      name: 'БелСвет',
+      url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv'
+    },
+    {
+      name: 'Энергодар',
+      url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=21252746&single=true&output=csv'
+    }
+  ];
+
   const gtinNamesMap = new Map();
 
   function normalizeGtin(raw) {
@@ -178,61 +188,75 @@
       .slice(0, 60);
   }
 
-  async function loadGtinDatabase() {
+  async function loadSingleSource(source) {
+    const cacheBuster = (source.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    const response = await fetch(source.url + cacheBuster);
+    if (!response.ok) throw new Error(`${source.name}: HTTP ${response.status}`);
+    const csvText = await response.text();
+
+    const wb = XLSX.read(csvText, { type: 'string', raw: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+
+    let added = 0;
+    for (const row of rows) {
+      if (!row || row.length < 2) continue;
+
+      let foundGtin = '';
+      let foundTitle = '';
+
+      for (let i = 0; i < row.length; i++) {
+        const cellStr = String(row[i] ?? '').trim();
+        const digits = cellStr.replace(/\D/g, '');
+        if (!foundGtin && digits.length >= 12 && digits.length <= 14) {
+          foundGtin = normalizeGtin(digits);
+        } else if (cellStr && !/^\d{12,14}$/.test(digits)) {
+          if (!foundTitle) foundTitle = cellStr;
+        }
+      }
+
+      const col0Gtin = normalizeGtin(row[0]);
+      const col1Title = String(row[1] ?? '').trim();
+
+      const finalGtin = col0Gtin || foundGtin;
+      const finalTitle = (col0Gtin && col1Title) ? col1Title : foundTitle;
+
+      if (finalGtin && finalTitle && finalGtin !== '00000000000000') {
+        gtinNamesMap.set(finalGtin, finalTitle);
+        added++;
+      }
+    }
+    return { name: source.name, count: added };
+  }
+
+  async function loadAllDatabases() {
     const dbStatus = document.getElementById('dbStatus');
-    const statusLog = document.getElementById('statusLog');
-    try {
-      const cacheBuster = (SHEET_CSV_URL.includes('?') ? '&' : '?') + '_t=' + Date.now();
-      const response = await fetch(SHEET_CSV_URL + cacheBuster);
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      const csvText = await response.text();
+    const results = await Promise.allSettled(SHEET_SOURCES.map(loadSingleSource));
 
-      const wb = XLSX.read(csvText, { type: 'string', raw: true });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+    const loadedInfo = [];
+    const errors = [];
 
-      for (const row of rows) {
-        if (!row || row.length < 2) continue;
-
-        let foundGtin = '';
-        let foundTitle = '';
-
-        for (let i = 0; i < row.length; i++) {
-          const cellStr = String(row[i] ?? '').trim();
-          const digits = cellStr.replace(/\D/g, '');
-          if (!foundGtin && digits.length >= 12 && digits.length <= 14) {
-            foundGtin = normalizeGtin(digits);
-          } else if (cellStr && !/^\d{12,14}$/.test(digits)) {
-            if (!foundTitle) foundTitle = cellStr;
-          }
-        }
-
-        const col0Gtin = normalizeGtin(row[0]);
-        const col1Title = String(row[1] ?? '').trim();
-
-        const finalGtin = col0Gtin || foundGtin;
-        const finalTitle = (col0Gtin && col1Title) ? col1Title : foundTitle;
-
-        if (finalGtin && finalTitle && finalGtin !== '00000000000000') {
-          gtinNamesMap.set(finalGtin, finalTitle);
-        }
+    for (const res of results) {
+      if (res.status === 'fulfilled') {
+        loadedInfo.push(`${res.value.name}: ${res.value.count}`);
+      } else {
+        errors.push(res.reason.message);
       }
+    }
 
+    if (gtinNamesMap.size > 0) {
       dbStatus.className = 'db-status ok';
-      dbStatus.textContent = `✔ База названий загружена: ${gtinNamesMap.size} позиций`;
-
-      const sample = Array.from(gtinNamesMap.entries()).slice(0, 3);
-      if (sample.length) {
-        statusLog.style.display = 'block';
-        statusLog.innerHTML += `Пример из базы: ${sample.map(([k, v]) => `${k} → ${v}`).join(' | ')}<br>`;
+      dbStatus.textContent = `✔ Базы загружены (${loadedInfo.join(' | ')}) — всего ${gtinNamesMap.size} поз.`;
+      if (errors.length) {
+        dbStatus.textContent += ` [Ошибка: ${errors.join(', ')}]`;
       }
-    } catch (err) {
+    } else {
       dbStatus.className = 'db-status err';
-      dbStatus.textContent = `⚠ Не удалось загрузить базу названий (${err.message}). Файлы сохранятся без названий.`;
+      dbStatus.textContent = `⚠ Не удалось загрузить базы (${errors.join('; ')})`;
     }
   }
 
-  loadGtinDatabase();
+  loadAllDatabases();
 
   document.getElementById('processBtn').addEventListener('click', async () => {
     const fileInput = document.getElementById('fileInput');
