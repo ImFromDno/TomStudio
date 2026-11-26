@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Тестовый билд — камера, кнопка и звук</title>
+  <title>Тестовый билд — камера по удержанию и звук</title>
   <style>
     :root {
       --bg: #121417;
@@ -98,7 +98,7 @@
 
     .scan-btn {
       width: 100%;
-      min-height: 82px;
+      min-height: 92px;
       border: 0;
       border-radius: 14px;
       background: var(--active);
@@ -106,22 +106,16 @@
       font-size: 18px;
       font-weight: 600;
       cursor: pointer;
-      touch-action: manipulation;
+      touch-action: none;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       transition: transform 0.08s ease, background 0.15s ease, opacity 0.15s ease;
     }
 
-    .scan-btn.active {
+    .scan-btn.holding {
       background: #c93c37;
-    }
-
-    .scan-btn:active {
       transform: scale(0.98);
-    }
-
-    .scan-btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
     }
 
     .test-row {
@@ -157,11 +151,11 @@
 
     <div class="viewport">
       <video id="video" playsinline muted></video>
-      <div id="placeholder" class="placeholder">Нажмите «СКАНИРОВАТЬ», чтобы запустить камеру</div>
+      <div id="placeholder" class="placeholder">Удерживайте кнопку «СКАНИРОВАТЬ» для работы камеры</div>
     </div>
 
     <button id="scanBtn" class="scan-btn" type="button">
-      СКАНИРОВАТЬ
+      УДЕРЖИВАЙТЕ ДЛЯ СКАНИРОВАНИЯ
     </button>
 
     <div class="test-row">
@@ -170,16 +164,15 @@
     </div>
 
     <p class="hint">
-      Повторное нажатие останавливает камеру и освобождает треки. Для доступа к камере требуется HTTPS (например, GitHub Pages) или localhost.
+      Камера работает только пока палец удерживает кнопку. При отпускании поток сразу останавливается.
     </p>
   </main>
 
   <script>
-    const COOLDOWN_MS = 450;
-    let lastTriggerAt = 0;
     let audioCtx = null;
     let currentStream = null;
-    let isCameraRunning = false;
+    let isHolding = false;
+    let isStarting = false;
 
     const video = document.getElementById('video');
     const placeholder = document.getElementById('placeholder');
@@ -244,54 +237,14 @@
         statusBadge.textContent = 'ОШИБКА';
         statusBadge.classList.add('err');
       } else if (mode === 'run') {
-        statusBadge.textContent = 'КАМЕРА ВКЛ';
+        statusBadge.textContent = 'УДЕРЖАНИЕ';
         statusBadge.classList.add('run');
       } else {
         statusBadge.textContent = 'ОЖИДАНИЕ';
       }
     }
 
-    async function startCamera() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setState('Браузер не поддерживает камеру или нет HTTPS', 'err');
-        soundError();
-        return;
-      }
-
-      scanBtn.disabled = true;
-      setState('Запрос доступа к камере...', 'run');
-
-      try {
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-
-        video.srcObject = currentStream;
-        await video.play();
-
-        video.classList.add('active');
-        placeholder.style.display = 'none';
-        isCameraRunning = true;
-
-        scanBtn.textContent = 'ОСТАНОВИТЬ КАМЕРУ';
-        scanBtn.classList.add('active');
-        setState('Камера активна', 'run');
-        soundSuccess();
-      } catch (err) {
-        console.error(err);
-        setState('Ошибка запуска: ' + (err.name || 'нет доступа'), 'err');
-        soundError();
-      } finally {
-        scanBtn.disabled = false;
-      }
-    }
-
-    function stopCamera() {
+    function stopCameraStream() {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
@@ -301,41 +254,100 @@
       video.srcObject = null;
       video.classList.remove('active');
       placeholder.style.display = 'block';
-      isCameraRunning = false;
-
-      scanBtn.textContent = 'СКАНИРОВАТЬ';
-      scanBtn.classList.remove('active');
-      setState('Камера выключена', 'idle');
     }
 
-    async function handleToggleCamera() {
-      const now = Date.now();
-      if (now - lastTriggerAt < COOLDOWN_MS) return;
-      lastTriggerAt = now;
+    async function startCameraWhileHeld() {
+      if (isStarting || !isHolding) return;
 
-      if (isCameraRunning) {
-        stopCamera();
-      } else {
-        await startCamera();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        isHolding = false;
+        scanBtn.classList.remove('holding');
+        setState('Нет доступа к камере или нет HTTPS', 'err');
+        soundError();
+        return;
+      }
+
+      isStarting = true;
+      setState('Запуск камеры...', 'run');
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+
+        // Если палец отпустили пока запрашивалась камера — сразу гасим
+        if (!isHolding) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        currentStream = stream;
+        video.srcObject = currentStream;
+        await video.play();
+
+        if (!isHolding) {
+          stopCameraStream();
+          return;
+        }
+
+        video.classList.add('active');
+        placeholder.style.display = 'none';
+        setState('Камера работает (удерживайте)', 'run');
+        soundSuccess();
+      } catch (err) {
+        console.error(err);
+        isHolding = false;
+        scanBtn.classList.remove('holding');
+        setState('Ошибка: ' + (err.name || 'нет доступа'), 'err');
+        soundError();
+      } finally {
+        isStarting = false;
       }
     }
 
-    scanBtn.addEventListener('click', handleToggleCamera);
+    function handleHoldStart(e) {
+      e.preventDefault();
+      if (isHolding) return;
+
+      isHolding = true;
+      scanBtn.classList.add('holding');
+      startCameraWhileHeld();
+    }
+
+    function handleHoldEnd(e) {
+      if (e) e.preventDefault();
+      if (!isHolding && !currentStream) return;
+
+      isHolding = false;
+      scanBtn.classList.remove('holding');
+      stopCameraStream();
+      setState('Камера выключена', 'idle');
+    }
+
+    scanBtn.addEventListener('pointerdown', handleHoldStart);
+    scanBtn.addEventListener('pointerup', handleHoldEnd);
+    scanBtn.addEventListener('pointercancel', handleHoldEnd);
+    scanBtn.addEventListener('pointerleave', handleHoldEnd);
+    scanBtn.addEventListener('contextmenu', e => e.preventDefault());
 
     testOkBtn.addEventListener('click', () => {
       soundSuccess();
-      if (!isCameraRunning) setState('Тест мягкого звука успеха', 'ok');
+      if (!isHolding) setState('Тест мягкого звука успеха', 'ok');
     });
 
     testErrBtn.addEventListener('click', () => {
       soundError();
-      if (!isCameraRunning) setState('Тест мягкого звука ошибки', 'err');
+      if (!isHolding) setState('Тест мягкого звука ошибки', 'err');
     });
 
-    // Автоматически гасим камеру при сворачивании вкладки
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && isCameraRunning) {
-        stopCamera();
+      if (document.hidden) {
+        handleHoldEnd();
       }
     });
   </script>
