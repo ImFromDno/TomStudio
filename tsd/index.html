@@ -1,355 +1,1452 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Тестовый билд — камера по удержанию и звук</title>
-  <style>
-    :root {
-      --bg: #121417;
-      --card: #1c2026;
-      --text: #eef1f4;
-      --muted: #9aa4b2;
-      --ok: #2ea043;
-      --err: #d9534f;
-      --active: #2f81f7;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
-      padding: 16px;
-    }
-
-    .panel {
-      width: 100%;
-      max-width: 440px;
-      background: var(--card);
-      border-radius: 16px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-    }
-
-    .status-box {
-      padding: 11px 14px;
-      border-radius: 10px;
-      background: #14181d;
-      border: 1px solid #2b313a;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 14px;
-    }
-
-    .badge {
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      background: #2b313a;
-      color: var(--text);
-      white-space: nowrap;
-    }
-
-    .badge.ok { background: rgba(46, 160, 67, 0.2); color: #56d364; }
-    .badge.err { background: rgba(217, 83, 79, 0.2); color: #ff7b72; }
-    .badge.run { background: rgba(47, 129, 247, 0.2); color: #79c0ff; }
-
-    .viewport {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      background: #0d1014;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #2b313a;
-      display: grid;
-      place-items: center;
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: none;
-    }
-
-    video.active {
-      display: block;
-    }
-
-    .placeholder {
-      color: var(--muted);
-      font-size: 13px;
-      text-align: center;
-      padding: 16px;
-    }
-
-    .scan-btn {
-      width: 100%;
-      min-height: 92px;
-      border: 0;
-      border-radius: 14px;
-      background: var(--active);
-      color: #fff;
-      font-size: 18px;
-      font-weight: 600;
-      cursor: pointer;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      transition: transform 0.08s ease, background 0.15s ease, opacity 0.15s ease;
-    }
-
-    .scan-btn.holding {
-      background: #c93c37;
-      transform: scale(0.98);
-    }
-
-    .test-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .mini-btn {
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #2f3640;
-      background: #222730;
-      color: var(--text);
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    .hint {
-      margin: 0;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.45;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сканер маркировки — Честный ЗНАК / SSCC</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23059669'/><path fill='none' stroke='%23ffffff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' d='M16 22v-6h6M42 16h6v6M48 42v6h-6M22 48h-6v-6M24 32h16M32 24v16'/></svg>">
+    <!-- Tailwind CSS для адаптивного и чистого интерфейса -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Библиотека html5-qrcode для распознавания DataMatrix и Code 128 через камеру -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- Шрифт Inter и JetBrains Mono для кодов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Переопределение стилей контейнера видео сканера */
+        #reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 0.75rem;
+        }
+        #reader {
+            border: none !important;
+        }
+        /* Анимация вспышки при успешном сканировании */
+        @keyframes scanFlash {
+            0% { background-color: rgba(34, 197, 94, 0.45); }
+            100% { background-color: transparent; }
+        }
+        .flash-success {
+            animation: scanFlash 0.45s ease-out;
+        }
+        @keyframes scanWarn {
+            0% { background-color: rgba(245, 158, 11, 0.45); }
+            100% { background-color: transparent; }
+        }
+        .flash-warn {
+            animation: scanWarn 0.45s ease-out;
+        }
+        /* Скрытие полосы прокрутки в горизонтальных блоках */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
-<body>
-  <main class="panel">
-    <div class="status-box">
-      <span id="statusText">Камера выключена</span>
-      <span id="statusBadge" class="badge">ОЖИДАНИЕ</span>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col select-none">
+
+    <!-- Оверлей визуальной обратной связи на весь экран (тонкая рамка/вспышка) -->
+    <div id="flashOverlay" class="fixed inset-0 pointer-events-none z-50 transition-colors"></div>
+
+    <!-- Всплывающее уведомление (Toast) вместо alert() -->
+    <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none flex flex-col gap-2"></div>
+
+    <!-- Модальное окно подтверждения очистки (вместо confirm()) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
+            <div class="flex items-center gap-3 text-red-600 mb-3">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Очистить весь список?</h3>
+            </div>
+            <p class="text-sm text-slate-600 mb-6">
+                Будут удалены все отсканированные коды (<span id="modalCount" class="font-semibold text-slate-800">0</span> шт.). Это действие нельзя отменить.
+            </p>
+            <div class="flex gap-3">
+                <button id="cancelClearBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] transition">
+                    Отмена
+                </button>
+                <button id="confirmClearBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] transition shadow-sm">
+                    Удалить всё
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="viewport">
-      <video id="video" playsinline muted></video>
-      <div id="placeholder" class="placeholder">Удерживайте кнопку «СКАНИРОВАТЬ» для работы камеры</div>
-    </div>
+    <!-- Шапка приложения -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-inner">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold leading-tight">Сканер маркировки</h1>
+                    <p class="text-[11px] text-slate-400 leading-tight">DataMatrix (ЧЗ) • SSCC / Подбор и Агрегация</p>
+                </div>
+            </div>
 
-    <button id="scanBtn" class="scan-btn" type="button">
-      УДЕРЖИВАЙТЕ ДЛЯ СКАНИРОВАНИЯ
-    </button>
+            <!-- Счётчик кодов -->
+            <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                <span class="text-xs text-slate-400">Всего:</span>
+                <span id="totalCounter" class="text-lg font-bold text-emerald-400 leading-none">0</span>
+            </div>
+        </div>
+    </header>
 
-    <div class="test-row">
-      <button id="testOkBtn" class="mini-btn" type="button">Звук: успех</button>
-      <button id="testErrBtn" class="mini-btn" type="button">Звук: ошибка</button>
-    </div>
+    <!-- Основной контент -->
+    <main class="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 flex flex-col gap-4">
 
-    <p class="hint">
-      Камера работает только пока палец удерживает кнопку. При отпускании поток сразу останавливается.
-    </p>
-  </main>
+        <!-- Режим работы (Подбор / Агрегация), Имя отправки и Мост в таблицу -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200/70">
+                <button type="button" id="workModePickBtn" class="py-2.5 px-3 rounded-lg text-sm font-bold bg-emerald-600 text-white shadow-xs transition">
+                    Подбор (лист «Подбор»)
+                </button>
+                <button type="button" id="workModeAggBtn" class="py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
+                    Агрегация (КИЗ + Коробка)
+                </button>
+            </div>
 
-  <script>
-    let audioCtx = null;
-    let currentStream = null;
-    let isHolding = false;
-    let isStarting = false;
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                    <label for="shipmentNameInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Имя отправки / реализации
+                    </label>
+                    <input
+                        type="text"
+                        id="shipmentNameInput"
+                        placeholder="Например: Реализация №14"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                    >
+                </div>
 
-    const video = document.getElementById('video');
-    const placeholder = document.getElementById('placeholder');
-    const scanBtn = document.getElementById('scanBtn');
-    const testOkBtn = document.getElementById('testOkBtn');
-    const testErrBtn = document.getElementById('testErrBtn');
-    const statusText = document.getElementById('statusText');
-    const statusBadge = document.getElementById('statusBadge');
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Текущая коробка для агрегации
+                    </label>
+                    <div class="flex items-center gap-1.5">
+                        <input
+                            type="text"
+                            id="activeBoxInput"
+                            readonly
+                            placeholder="Не задана — отсканируйте (00)..."
+                            class="flex-1 min-w-0 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono-code text-slate-700 placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
+                        >
+                        <button type="button" id="clearBoxBtn" title="Сбросить коробку" class="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 text-xs font-semibold transition shrink-0">
+                            Сброс
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-    function getAudioContext() {
-      if (!audioCtx) {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (Ctx) audioCtx = new Ctx();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-      }
-      return audioCtx;
-    }
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="syncBridgeToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                    <span class="font-medium text-slate-700">Отправлять в Google Таблицу (мост)</span>
+                </label>
+                <span id="bridgeStatusText" class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/70">
+                    Мост готов
+                </span>
+            </div>
+        </section>
 
-    function playSoftTone({ freqStart, freqEnd, duration, peakGain = 0.075, type = 'sine' }) {
-      const ctx = getAudioContext();
-      if (!ctx) return;
+        <!-- Блок камеры и управления сканером -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4">
+            <!-- Область видоискателя -->
+            <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center mb-3">
+                <div id="reader" class="w-full h-full"></div>
+                
+                <!-- Заглушка, когда камера выключена -->
+                <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-4 text-center bg-slate-900">
+                    <svg class="w-12 h-12 mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <p class="text-sm font-medium text-slate-300">Камера остановлена</p>
+                    <p class="text-xs text-slate-500 mt-1">Нажмите «Запустить камеру» для сканирования</p>
+                </div>
 
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+                <!-- Прицел поверх активной камеры -->
+                <div id="scanTargetOverlay" class="hidden absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div class="w-56 h-56 sm:w-64 sm:h-64 border-2 border-emerald-400/80 rounded-2xl relative shadow-[0_0_0_9999px_rgba(15,23,42,0.45)]">
+                        <div class="absolute -top-0.5 -left-0.5 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl"></div>
+                        <div class="absolute -top-0.5 -right-0.5 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl"></div>
+                        <div class="absolute -bottom-0.5 -left-0.5 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl"></div>
+                        <div class="absolute -bottom-0.5 -right-0.5 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-xl"></div>
+                    </div>
+                </div>
+            </div>
 
-      osc.type = type;
-      osc.frequency.setValueAtTime(freqStart, now);
-      if (freqEnd !== freqStart) {
-        osc.frequency.exponentialRampToValueAtTime(freqEnd, now + duration);
-      }
+            <!-- Панель управления камерой -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <!-- Кнопка Старт / Стоп -->
+                <button id="toggleCameraBtn" class="w-full py-3 px-4 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-sm">
+                    <svg id="camBtnIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="camBtnText">Запустить камеру</span>
+                </button>
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(peakGain, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+                <!-- Вторая колонка: Выбор камеры и Фонарик -->
+                <div class="flex gap-2">
+                    <select id="cameraSelect" aria-label="Выбор камеры" class="flex-1 min-w-0 bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 truncate">
+                        <option value="">Основная камера (авто)</option>
+                    </select>
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+                    <button id="torchBtn" disabled title="Фонарик" class="px-3.5 py-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
-      osc.start(now);
-      osc.stop(now + duration + 0.02);
-    }
+            <!-- Переключатель дубликатов, фильтра ШК и звука -->
+            <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2.5 text-sm">
+                <!-- Режим форматирования для 1С -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Формат вывода:</span>
+                    <div class="grid grid-cols-2 gap-1.5 bg-slate-200/70 p-1 rounded-lg">
+                        <button type="button" id="modeShortBtn" class="py-1.5 px-2.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-xs transition">
+                            (01)...(21)...
+                        </button>
+                        <button type="button" id="modeFullBtn" class="py-1.5 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+                            Полный КИЗ
+                        </button>
+                    </div>
+                </div>
 
-    function soundSuccess() {
-      playSoftTone({ freqStart: 523.25, freqEnd: 659.25, duration: 0.14, peakGain: 0.075, type: 'sine' });
-    }
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer py-1">
+                        <input type="checkbox" id="ssccBracketsToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-700 font-medium">SSCC со скобками <code class="text-xs bg-slate-100 px-1 rounded">(00)</code></span>
+                    </label>
 
-    function soundError() {
-      playSoftTone({ freqStart: 310, freqEnd: 235, duration: 0.18, peakGain: 0.08, type: 'triangle' });
-    }
+                    <label class="flex items-center gap-2 cursor-pointer py-1">
+                        <input type="checkbox" id="filterRetailBarcodeToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-700 font-medium">Отсекать обычный ШК</span>
+                    </label>
 
-    function setState(text, mode) {
-      statusText.textContent = text;
-      statusBadge.className = 'badge';
+                    <label class="flex items-center gap-2 cursor-pointer py-1">
+                        <input type="checkbox" id="allowDuplicatesToggle" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-700 font-medium">Дубликаты</span>
+                    </label>
 
-      if (mode === 'ok') {
-        statusBadge.textContent = 'УСПЕХ';
-        statusBadge.classList.add('ok');
-      } else if (mode === 'err') {
-        statusBadge.textContent = 'ОШИБКА';
-        statusBadge.classList.add('err');
-      } else if (mode === 'run') {
-        statusBadge.textContent = 'УДЕРЖАНИЕ';
-        statusBadge.classList.add('run');
-      } else {
-        statusBadge.textContent = 'ОЖИДАНИЕ';
-      }
-    }
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer py-1">
+                            <input type="checkbox" id="soundToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                            <span class="text-slate-700 font-medium">Звук и вибро</span>
+                        </label>
+                        <button type="button" id="testBeepBtn" title="Проверить звук кассового сканера и вибрацию" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold active:scale-95 transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                            </svg>
+                            <span>Тест пика</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="audioStatusHint" class="text-[11px] text-slate-500 flex items-center justify-between bg-slate-50/80 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                    <span id="audioLockStatus">Нажмите «Запустить камеру» или «Тест пика» для активации звука</span>
+                    <span id="vibrateSupportStatus" class="font-medium text-slate-400"></span>
+                </div>
+            </div>
+        </section>
 
-    function stopCameraStream() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-        currentStream = null;
-      }
+        <!-- Ручной ввод / Аппаратный Bluetooth или USB сканер -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4">
+            <form id="manualForm" class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="manualInput" 
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    placeholder="Ручной ввод или 2D-сканер (Enter)..." 
+                    class="flex-1 min-w-0 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-3 text-sm font-mono-code text-slate-800 placeholder:font-sans placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                >
+                <button type="submit" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm active:scale-[0.98] transition shrink-0">
+                    Добавить
+                </button>
+            </form>
+        </section>
 
-      video.pause();
-      video.srcObject = null;
-      video.classList.remove('active');
-      placeholder.style.display = 'block';
-    }
+        <!-- Кнопки экспорта для 1С и очистки -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <button id="copyListBtn" class="col-span-2 sm:col-span-1 py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                </svg>
+                <span>Копировать списком</span>
+            </button>
 
-    async function startCameraWhileHeld() {
-      if (isStarting || !isHolding) return;
+            <button id="downloadCsvBtn" class="py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Скачать CSV</span>
+            </button>
 
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        isHolding = false;
-        scanBtn.classList.remove('holding');
-        setState('Нет доступа к камере или нет HTTPS', 'err');
-        soundError();
-        return;
-      }
+            <button id="clearAllBtn" class="py-3.5 px-4 rounded-xl bg-white hover:bg-red-50 text-red-600 border border-red-200 font-semibold text-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                <span>Очистить всё</span>
+            </button>
+        </section>
 
-      isStarting = true;
-      setState('Запуск камеры...', 'run');
+        <!-- Список отсканированных кодов -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex-1 flex flex-col">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2">
+                <h2 class="text-sm font-bold text-slate-700">Отсканированные коды</h2>
+                <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
+                    <input type="checkbox" id="csvHeaderToggle" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                    <span>Заголовок в CSV</span>
+                </label>
+            </div>
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
+            <!-- Пустое состояние -->
+            <div id="emptyState" class="py-12 px-4 text-center text-slate-400">
+                <svg class="w-10 h-10 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p class="text-sm font-medium text-slate-500">Список пока пуст</p>
+                <p class="text-xs mt-1">Наведите камеру на код DataMatrix или SSCC</p>
+            </div>
+
+            <!-- Таблица / Список строк -->
+            <div id="codesListContainer" class="divide-y divide-slate-100 max-h-[50vh] overflow-y-auto select-text">
+                <!-- Строки добавляются динамически -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Подвал с обязательной подписью -->
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200/60 mt-auto">
+        Tom studio
+    </footer>
+
+    <script>
+        /**
+         * Состояние приложения и константы
+         */
+        const STORAGE_KEY = 'chestny_znak_sscc_scans_v2';
+        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v2';
+        const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxy0U15bAlmCoYqqj6N-51YWa6OEejevu8_qCx6gnoRaZYHpfgRjpLnV4p7YyXgTc0r/exec';
+
+        let scannedItems = []; // Массив объектов: { id, raw, formatted, boxCode, workMode, shipmentName, type, timestamp }
+        let outputMode = 'short'; // 'short' -> (01)...(21)... / (00)... | 'full' -> исходный КИЗ
+        let workMode = 'pick'; // 'pick' -> Подбор | 'aggregate' -> Агрегация
+        let activeBoxCode = ''; // Текущий код коробки (00)... для режима агрегации
+        let html5QrCode = null;
+        let isScanning = false;
+        let isTorchOn = false;
+        let lastScanTime = 0;
+        let lastScannedNormalized = '';
+        let audioCtx = null;
+
+        // Элементы DOM
+        const workModePickBtn = document.getElementById('workModePickBtn');
+        const workModeAggBtn = document.getElementById('workModeAggBtn');
+        const shipmentNameInput = document.getElementById('shipmentNameInput');
+        const activeBoxInput = document.getElementById('activeBoxInput');
+        const clearBoxBtn = document.getElementById('clearBoxBtn');
+        const syncBridgeToggle = document.getElementById('syncBridgeToggle');
+        const bridgeStatusText = document.getElementById('bridgeStatusText');
+
+        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+        const camBtnText = document.getElementById('camBtnText');
+        const camBtnIcon = document.getElementById('camBtnIcon');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const torchBtn = document.getElementById('torchBtn');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const scanTargetOverlay = document.getElementById('scanTargetOverlay');
+        const modeShortBtn = document.getElementById('modeShortBtn');
+        const modeFullBtn = document.getElementById('modeFullBtn');
+        const ssccBracketsToggle = document.getElementById('ssccBracketsToggle');
+        const filterRetailBarcodeToggle = document.getElementById('filterRetailBarcodeToggle');
+        const csvHeaderToggle = document.getElementById('csvHeaderToggle');
+        const allowDuplicatesToggle = document.getElementById('allowDuplicatesToggle');
+        const soundToggle = document.getElementById('soundToggle');
+        const testBeepBtn = document.getElementById('testBeepBtn');
+        const audioLockStatus = document.getElementById('audioLockStatus');
+        const vibrateSupportStatus = document.getElementById('vibrateSupportStatus');
+        const manualForm = document.getElementById('manualForm');
+        const manualInput = document.getElementById('manualInput');
+        const totalCounter = document.getElementById('totalCounter');
+        const codesListContainer = document.getElementById('codesListContainer');
+        const emptyState = document.getElementById('emptyState');
+        const copyListBtn = document.getElementById('copyListBtn');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const confirmModal = document.getElementById('confirmModal');
+        const modalCount = document.getElementById('modalCount');
+        const cancelClearBtn = document.getElementById('cancelClearBtn');
+        const confirmClearBtn = document.getElementById('confirmClearBtn');
+        const flashOverlay = document.getElementById('flashOverlay');
+        const toastContainer = document.getElementById('toastContainer');
+
+        /**
+         * Инициализация при загрузке страницы
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updateWorkModeUI();
+            updateModeUI();
+            updateActiveBoxUI();
+            updateHardwareFeedbackStatus();
+            renderList();
+            initCamerasList();
         });
 
-        // Если палец отпустили пока запрашивалась камера — сразу гасим
-        if (!isHolding) {
-          stream.getTracks().forEach(track => track.stop());
-          return;
+        /**
+         * Проверка поддержки Vibration API (на iOS Safari недоступен на уровне ОС)
+         */
+        function updateHardwareFeedbackStatus() {
+            const hasVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function';
+            if (hasVibrate) {
+                vibrateSupportStatus.textContent = 'Вибро: доступно';
+                vibrateSupportStatus.className = 'font-medium text-emerald-600 shrink-0';
+            } else {
+                vibrateSupportStatus.textContent = 'Вибро: не поддерживается ОС';
+                vibrateSupportStatus.className = 'font-medium text-amber-600 shrink-0';
+            }
         }
 
-        currentStream = stream;
-        video.srcObject = currentStream;
-        await video.play();
+        /**
+         * Инициализация и разблокировка Web Audio API при любом касании экрана
+         * (обход политики автоплея в Mobile Chrome и iOS Safari)
+         */
+        function unlockAudioEngine() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
 
-        if (!isHolding) {
-          stopCameraStream();
-          return;
+                if (!audioCtx) {
+                    audioCtx = new AudioContextClass();
+                }
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        updateAudioBadge();
+                    }).catch(() => {});
+                } else {
+                    updateAudioBadge();
+                }
+
+                // Проигрываем микро-буфер тишины (1 семпл), чтобы iOS Safari окончательно разблокировал аудиоканал
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                if (source.start) {
+                    source.start(0);
+                }
+            } catch (e) {
+                console.warn('Ошибка инициализации AudioContext:', e);
+            }
         }
 
-        video.classList.add('active');
-        placeholder.style.display = 'none';
-        setState('Камера работает (удерживайте)', 'run');
-        soundSuccess();
-      } catch (err) {
-        console.error(err);
-        isHolding = false;
-        scanBtn.classList.remove('holding');
-        setState('Ошибка: ' + (err.name || 'нет доступа'), 'err');
-        soundError();
-      } finally {
-        isStarting = false;
-      }
-    }
+        function updateAudioBadge() {
+            if (!audioLockStatus) return;
+            if (audioCtx && audioCtx.state === 'running') {
+                audioLockStatus.innerHTML = '<span class="text-emerald-600 font-semibold">● Звук сканера активен</span> (проверьте громкость мультимедиа)';
+            } else {
+                audioLockStatus.textContent = 'Нажмите «Запустить камеру» или «Тест пика» для активации звука';
+            }
+        }
 
-    function handleHoldStart(e) {
-      e.preventDefault();
-      if (isHolding) return;
+        // Разблокируем аудио при первом пользовательском жесте на странице
+        ['touchstart', 'pointerdown', 'click'].forEach(evtName => {
+            document.addEventListener(evtName, unlockAudioEngine, { passive: true, once: false });
+        });
 
-      isHolding = true;
-      scanBtn.classList.add('holding');
-      startCameraWhileHeld();
-    }
+        /**
+         * Синтез звука «как у кассового сканера в Магните» (Honeywell / Datalogic / Zebra)
+         * Плотный, звонкий импульс ~2720 Гц с легкой гармоникой для пробивного звучания на телефоне
+         */
+        function playScannerTone(freq = 2720, durationSec = 0.082, delaySec = 0, volume = 0.55) {
+            if (!soundToggle || !soundToggle.checked) return;
 
-    function handleHoldEnd(e) {
-      if (e) e.preventDefault();
-      if (!isHolding && !currentStream) return;
+            try {
+                unlockAudioEngine();
+                if (!audioCtx) return;
 
-      isHolding = false;
-      scanBtn.classList.remove('holding');
-      stopCameraStream();
-      setState('Камера выключена', 'idle');
-    }
+                const now = audioCtx.currentTime + delaySec;
 
-    scanBtn.addEventListener('pointerdown', handleHoldStart);
-    scanBtn.addEventListener('pointerup', handleHoldEnd);
-    scanBtn.addEventListener('pointercancel', handleHoldEnd);
-    scanBtn.addEventListener('pointerleave', handleHoldEnd);
-    scanBtn.addEventListener('contextmenu', e => e.preventDefault());
+                // Основной тон кассового бипера (2720 Гц — классический пьезоизлучатель Honeywell/Datalogic)
+                const oscMain = audioCtx.createOscillator();
+                oscMain.type = 'triangle';
+                oscMain.frequency.setValueAtTime(freq, now);
 
-    testOkBtn.addEventListener('click', () => {
-      soundSuccess();
-      if (!isHolding) setState('Тест мягкого звука успеха', 'ok');
-    });
+                // Легкий верхний обертон (2-я гармоника) для характерной «кассовой» звонкости динамика смартфона
+                const oscHarmonic = audioCtx.createOscillator();
+                oscHarmonic.type = 'sine';
+                oscHarmonic.frequency.setValueAtTime(freq * 2, now);
 
-    testErrBtn.addEventListener('click', () => {
-      soundError();
-      if (!isHolding) setState('Тест мягкого звука ошибки', 'err');
-    });
+                const gainMain = audioCtx.createGain();
+                const gainHarmonic = audioCtx.createGain();
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        handleHoldEnd();
-      }
-    });
-  </script>
+                // Огибающая кассового сканера: мгновенная атака (3 мс), плотное плато и резкий спад без щелчка
+                gainMain.gain.setValueAtTime(0.0001, now);
+                gainMain.gain.linearRampToValueAtTime(volume, now + 0.003);
+                gainMain.gain.setValueAtTime(volume, now + durationSec - 0.012);
+                gainMain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+
+                gainHarmonic.gain.setValueAtTime(0.0001, now);
+                gainHarmonic.gain.linearRampToValueAtTime(volume * 0.22, now + 0.003);
+                gainHarmonic.gain.exponentialRampToValueAtTime(0.0001, now + durationSec * 0.85);
+
+                oscMain.connect(gainMain);
+                oscHarmonic.connect(gainHarmonic);
+                gainMain.connect(audioCtx.destination);
+                gainHarmonic.connect(audioCtx.destination);
+
+                oscMain.start(now);
+                oscHarmonic.start(now);
+                oscMain.stop(now + durationSec + 0.01);
+                oscHarmonic.stop(now + durationSec + 0.01);
+            } catch (e) {
+                console.warn('Не удалось воспроизвести звук:', e);
+            }
+        }
+
+        function playFeedbackSound(type = 'success') {
+            if (!soundToggle || !soundToggle.checked) return;
+
+            if (type === 'success') {
+                // Одиночный звонкий «ПИК!» как на кассе Магнита
+                playScannerTone(2720, 0.085, 0, 0.6);
+            } else if (type === 'warning') {
+                // Двойной низкий «бип-бип» при повторном сканировании (дубле) или ошибке
+                playScannerTone(920, 0.075, 0, 0.5);
+                playScannerTone(740, 0.11, 0.105, 0.5);
+            }
+        }
+
+        /**
+         * Безопасный вызов виброотклика на смартфоне
+         */
+        function triggerVibration(pattern) {
+            if (!soundToggle || !soundToggle.checked) return;
+            try {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                    navigator.vibrate(pattern);
+                }
+            } catch (e) {
+                // Игнорируем блокировку вибрации браузером до взаимодействия
+            }
+        }
+
+        /**
+         * Визуальная вспышка экрана (зеленая при успехе, янтарная при дубле)
+         */
+        function triggerFlash(type = 'success') {
+            if (!flashOverlay) return;
+            flashOverlay.classList.remove('flash-success', 'flash-warn');
+            void flashOverlay.offsetWidth; // Сброс CSS-анимации для повторного запуска
+            flashOverlay.classList.add(type === 'warn' ? 'flash-warn' : 'flash-success');
+        }
+
+        /**
+         * Всплывающие уведомления (Toast) вместо alert()
+         */
+        function showToast(message, type = 'info') {
+            if (!toastContainer) return;
+
+            const styles = {
+                success: 'bg-emerald-600 text-white border-emerald-500',
+                warning: 'bg-amber-500 text-slate-950 border-amber-400 font-semibold',
+                error: 'bg-red-600 text-white border-red-500',
+                info: 'bg-slate-800 text-white border-slate-700'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2.5 rounded-xl shadow-lg border text-xs sm:text-sm text-center transition-all duration-300 transform translate-y-0 opacity-100 ${styles[type] || styles.info}`;
+            toast.textContent = message;
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2200);
+        }
+
+        function setBridgeStatus(text, tone = 'ready') {
+            if (!bridgeStatusText) return;
+            bridgeStatusText.textContent = text;
+            const map = {
+                ready: 'text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/70',
+                sync: 'text-[11px] font-medium text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/70',
+                warn: 'text-[11px] font-medium text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/70',
+                err: 'text-[11px] font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-lg border border-red-200/70',
+                off: 'text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200'
+            };
+            bridgeStatusText.className = map[tone] || map.ready;
+        }
+
+        // Кнопка «Тест пика»: разблокирует звук, проигрывает кассовый «пик» и запускает вибро
+        testBeepBtn.addEventListener('click', () => {
+            unlockAudioEngine();
+            playFeedbackSound('success');
+            triggerVibration([70]);
+            triggerFlash('success');
+            showToast('Тест: звук кассового сканера и вибро', 'success');
+        });
+
+        /**
+         * Загрузка данных и настроек из localStorage
+         */
+        function loadFromStorage() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    if (Array.isArray(parsed)) {
+                        scannedItems = parsed;
+                    }
+                }
+                const savedSettings = localStorage.getItem(SETTINGS_KEY);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    outputMode = settings.outputMode === 'full' ? 'full' : 'short';
+                    workMode = settings.workMode === 'aggregate' ? 'aggregate' : 'pick';
+                    activeBoxCode = String(settings.activeBoxCode || '').trim();
+                    shipmentNameInput.value = String(settings.shipmentName || '');
+                    ssccBracketsToggle.checked = settings.ssccBrackets !== false;
+                    filterRetailBarcodeToggle.checked = settings.filterRetailBarcode !== false;
+                    csvHeaderToggle.checked = Boolean(settings.csvHeader);
+                    allowDuplicatesToggle.checked = Boolean(settings.allowDuplicates);
+                    soundToggle.checked = settings.sound !== false;
+                    syncBridgeToggle.checked = settings.syncBridge !== false;
+                }
+            } catch (e) {
+                console.error('Ошибка чтения localStorage:', e);
+            }
+            if (!syncBridgeToggle.checked) {
+                setBridgeStatus('Мост выключен', 'off');
+            }
+        }
+
+        /**
+         * Сохранение данных и настроек в localStorage
+         */
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(scannedItems));
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+                    outputMode,
+                    workMode,
+                    activeBoxCode,
+                    shipmentName: shipmentNameInput.value.trim(),
+                    ssccBrackets: ssccBracketsToggle.checked,
+                    filterRetailBarcode: filterRetailBarcodeToggle.checked,
+                    csvHeader: csvHeaderToggle.checked,
+                    allowDuplicates: allowDuplicatesToggle.checked,
+                    sound: soundToggle.checked,
+                    syncBridge: syncBridgeToggle.checked
+                }));
+            } catch (e) {
+                console.error('Ошибка записи в localStorage:', e);
+            }
+        }
+
+        function updateWorkModeUI() {
+            if (workMode === 'pick') {
+                workModePickBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-bold bg-emerald-600 text-white shadow-xs transition';
+                workModeAggBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
+            } else {
+                workModeAggBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-bold bg-blue-600 text-white shadow-xs transition';
+                workModePickBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
+            }
+        }
+
+        function updateActiveBoxUI() {
+            activeBoxInput.value = activeBoxCode || '';
+        }
+
+        workModePickBtn.addEventListener('click', () => {
+            workMode = 'pick';
+            updateWorkModeUI();
+            saveToStorage();
+            showToast('Режим: Подбор (лист «Подбор»)', 'info');
+        });
+
+        workModeAggBtn.addEventListener('click', () => {
+            workMode = 'aggregate';
+            updateWorkModeUI();
+            saveToStorage();
+            showToast('Режим: Агрегация (сначала коробка (00)..., затем КИЗы)', 'info');
+        });
+
+        shipmentNameInput.addEventListener('input', saveToStorage);
+
+        clearBoxBtn.addEventListener('click', () => {
+            activeBoxCode = '';
+            updateActiveBoxUI();
+            saveToStorage();
+            showToast('Текущая коробка сброшена', 'info');
+        });
+
+        syncBridgeToggle.addEventListener('change', () => {
+            saveToStorage();
+            if (syncBridgeToggle.checked) {
+                setBridgeStatus('Мост готов', 'ready');
+            } else {
+                setBridgeStatus('Мост выключен', 'off');
+            }
+        });
+
+        function updateModeUI() {
+            if (outputMode === 'short') {
+                modeShortBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-xs transition';
+                modeFullBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+            } else {
+                modeFullBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-xs transition';
+                modeShortBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+            }
+        }
+
+        modeShortBtn.addEventListener('click', () => {
+            outputMode = 'short';
+            updateModeUI();
+            recalculateAllFormatted();
+            saveToStorage();
+            renderList();
+        });
+
+        modeFullBtn.addEventListener('click', () => {
+            outputMode = 'full';
+            updateModeUI();
+            recalculateAllFormatted();
+            saveToStorage();
+            renderList();
+        });
+
+        ssccBracketsToggle.addEventListener('change', () => {
+            if (activeBoxCode) {
+                const parsedBox = parseAndNormalizeCode(activeBoxCode, 'CODE_128');
+                if (parsedBox.type === 'SSCC') {
+                    activeBoxCode = parsedBox.shortCode;
+                    updateActiveBoxUI();
+                }
+            }
+            recalculateAllFormatted();
+            saveToStorage();
+            renderList();
+        });
+
+        filterRetailBarcodeToggle.addEventListener('change', saveToStorage);
+        csvHeaderToggle.addEventListener('change', saveToStorage);
+        allowDuplicatesToggle.addEventListener('change', saveToStorage);
+        soundToggle.addEventListener('change', saveToStorage);
+
+        /**
+         * Определение обычного товарного штрих-кода (EAN-8, EAN-13, UPC-A, ITF-14 без AI 00/01)
+         */
+        function isRetailBarcode(cleaned, formatName = '') {
+            const upperFormat = (formatName || '').toUpperCase();
+            if (upperFormat.includes('EAN') || upperFormat.includes('UPC') || upperFormat.includes('EAN_13') || upperFormat.includes('EAN_8')) {
+                return true;
+            }
+            // Чистый цифровой код 8, 12, 13 или 14 цифр (не SSCC 00+18 и не GS1 01+14)
+            if (/^\d{8}$/.test(cleaned) || /^\d{12}$/.test(cleaned) || /^\d{13}$/.test(cleaned)) {
+                return true;
+            }
+            if (/^\d{14}$/.test(cleaned) && !cleaned.startsWith('00')) {
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Парсинг и нормализация кодов DataMatrix (Честный ЗНАК) и SSCC (коробки)
+         * Возвращает объект: { type, shortCode, fullCode, activeCode, isRetail }
+         */
+        function parseAndNormalizeCode(rawInput, formatName = '') {
+            // Удаляем только ведущие управляющие символы FNC1/GS (, , ]d2, ]C1) и пробелы по краям
+            let cleaned = rawInput
+                .replace(/^(\]d2|\]C1|\]e0|+|+)/gi, '')
+                .replace(/[
+]+/g, '')
+                .trim();
+
+            const upperFormat = (formatName || '').toUpperCase();
+            const useSsccBrackets = ssccBracketsToggle ? ssccBracketsToggle.checked : true;
+
+            if (isRetailBarcode(cleaned, formatName)) {
+                return {
+                    type: 'ШК товара',
+                    shortCode: cleaned,
+                    fullCode: cleaned,
+                    activeCode: cleaned,
+                    isRetail: true
+                };
+            }
+
+            // 1. Проверка на SSCC код коробки: (00) + 18 цифр или 00 + 18 цифр (всего 20 цифр) или 18 цифр при формате Code 128
+            const ssccMatchWithAi = cleaned.match(/^\(?00\)?(\d{18})(?:.*)?$/);
+            if (ssccMatchWithAi) {
+                const sscc18 = ssccMatchWithAi[1];
+                const shortSscc = useSsccBrackets ? `(00)${sscc18}` : `00${sscc18}`;
+                return {
+                    type: 'SSCC',
+                    shortCode: shortSscc,
+                    fullCode: cleaned,
+                    activeCode: outputMode === 'short' ? shortSscc : cleaned,
+                    isRetail: false
+                };
+            }
+            if ((upperFormat.includes('CODE_128') || upperFormat.includes('128')) && /^\d{18}$/.test(cleaned)) {
+                const shortSscc = useSsccBrackets ? `(00)${cleaned}` : `00${cleaned}`;
+                return {
+                    type: 'SSCC',
+                    shortCode: shortSscc,
+                    fullCode: cleaned,
+                    activeCode: outputMode === 'short' ? shortSscc : cleaned,
+                    isRetail: false
+                };
+            }
+
+            // 2. Парсинг DataMatrix (Честный ЗНАК): AI 01 (14 цифр GTIN) + AI 21 (Серийный номер)
+            const dmMatch = cleaned.match(/^\(?01\)?(\d{14})\(?21\)?([^]+)(?:(.*))?$/);
+            if (dmMatch) {
+                const gtin = dmMatch[1];
+                let serial = dmMatch[2];
+                const hasExplicitGs = typeof dmMatch[3] !== 'undefined';
+
+                if (!hasExplicitGs) {
+                    const fallbackTailMatch = serial.match(/^(.+?)(?:91[0-9A-Za-z]{4}92[0-9A-Za-z+/=]{16,}|93[0-9A-Za-z+/=]{4})$/);
+                    if (fallbackTailMatch && fallbackTailMatch[1].length >= 5) {
+                        serial = fallbackTailMatch[1];
+                    }
+                }
+
+                const shortDm = `(01)${gtin}(21)${serial}`;
+                return {
+                    type: 'DataMatrix',
+                    shortCode: shortDm,
+                    fullCode: cleaned,
+                    activeCode: outputMode === 'short' ? shortDm : cleaned,
+                    isRetail: false
+                };
+            }
+
+            // 3. Другой штрихкод / QR
+            return {
+                type: upperFormat.includes('QR') ? 'QR' : 'Другой',
+                shortCode: cleaned,
+                fullCode: cleaned,
+                activeCode: cleaned,
+                isRetail: false
+            };
+        }
+
+        /**
+         * Отправка записи в Google Apps Script (мост в Google Таблицу)
+         */
+        async function sendToGoogleSheetBridge(payload) {
+            if (!syncBridgeToggle || !syncBridgeToggle.checked || !BRIDGE_URL) {
+                return;
+            }
+
+            setBridgeStatus('Отправка в таблицу...', 'sync');
+
+            try {
+                // Используем text/plain, чтобы избежать preflight CORS на Google Apps Script Web App
+                const response = await fetch(BRIDGE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                const text = await response.text();
+                let data = null;
+                try {
+                    data = JSON.parse(text);
+                } catch (_) {}
+
+                if (data && data.ok === false) {
+                    if (data.code && String(data.code).startsWith('DUPLICATE')) {
+                        setBridgeStatus('Дубль в таблице: ' + (data.message || 'уже есть'), 'warn');
+                        showToast(data.message || 'Дубликат в таблице', 'warning');
+                    } else {
+                        setBridgeStatus('Ошибка таблицы: ' + (data.message || data.code), 'err');
+                        showToast('Таблица: ' + (data.message || 'ошибка записи'), 'error');
+                    }
+                } else {
+                    setBridgeStatus('Записано в таблицу', 'ready');
+                }
+            } catch (err) {
+                console.warn('Ошибка отправки в Google Таблицу:', err);
+                setBridgeStatus('Нет связи с таблицей', 'err');
+                showToast('Не удалось отправить в Google Таблицу', 'warning');
+            }
+        }
+
+        /**
+         * Пересчет активной строки для всех элементов при смене режима вывода
+         */
+        function recalculateAllFormatted() {
+            scannedItems = scannedItems.map(item => {
+                const parsed = parseAndNormalizeCode(item.raw, item.formatName || '');
+                return {
+                    ...item,
+                    type: parsed.type,
+                    formatted: parsed.activeCode
+                };
+            });
+        }
+
+        /**
+         * Форматирование строки для безопасного отображения в HTML
+         */
+        function formatDisplayCode(codeStr) {
+            const escapeHtml = (str) => str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            const parts = codeStr.split('');
+            const escaped = parts.map(part => {
+                return escapeHtml(part)
+                    .replace(/^\(01\)(\d{14})\(21\)/, '<span class="text-emerald-700 font-bold">(01)</span><span class="text-slate-900 font-semibold">$1</span><span class="text-emerald-700 font-bold">(21)</span>')
+                    .replace(/^\(00\)(\d{18})$/, '<span class="text-blue-700 font-bold">(00)</span><span class="text-slate-900 font-semibold">$1</span>');
+            });
+
+            return escaped.join('<span class="inline-block mx-0.5 px-1 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-sans font-bold align-middle" title="Group Separator (ASCII 29)">GS</span>');
+        }
+
+        /**
+         * Добавление отсканированного или введенного кода в список и отправка в мост
+         */
+        function processScannedCode(rawCode, formatName = '', isManual = false) {
+            if (!rawCode) return;
+
+            const parsed = parseAndNormalizeCode(rawCode, formatName);
+
+            // Фильтр обычных товарных штрих-кодов (EAN-13/8 и т.п.)
+            if (parsed.isRetail && filterRetailBarcodeToggle && filterRetailBarcodeToggle.checked) {
+                playFeedbackSound('warning');
+                triggerFlash('warn');
+                triggerVibration([45, 50, 45]);
+                showToast(`Обычный ШК отклонён: ${parsed.shortCode}`, 'warning');
+                return;
+            }
+
+            const normalizedForCompare = `${workMode}:${parsed.shortCode}`;
+
+            // Защита от дребезга камеры (повторное считывание того же кода быстрее чем за 1.5 сек)
+            const now = Date.now();
+            if (!isManual && normalizedForCompare === lastScannedNormalized && (now - lastScanTime) < 1500) {
+                return;
+            }
+            lastScannedNormalized = normalizedForCompare;
+            lastScanTime = now;
+
+            const shipmentName = shipmentNameInput ? shipmentNameInput.value.trim() : '';
+
+            // В режиме Агрегации: если отсканирован SSCC коробки — запоминаем её как активную коробку
+            if (workMode === 'aggregate' && parsed.type === 'SSCC') {
+                const boxFormatted = parsed.shortCode.startsWith('(00)')
+                    ? parsed.shortCode
+                    : `(00)${parsed.shortCode.replace(/^00/, '')}`;
+                activeBoxCode = boxFormatted;
+                updateActiveBoxUI();
+                saveToStorage();
+
+                playFeedbackSound('success');
+                triggerFlash('success');
+                triggerVibration([70]);
+                showToast(`Коробка выбрана: ${activeBoxCode}`, 'success');
+                return;
+            }
+
+            // В режиме Агрегации для КИЗа/кода товара требуется активная коробка
+            if (workMode === 'aggregate' && !activeBoxCode) {
+                playFeedbackSound('warning');
+                triggerFlash('warn');
+                triggerVibration([45, 50, 45]);
+                showToast('Сначала отсканируйте код коробки (00)...', 'warning');
+                return;
+            }
+
+            // Проверка на дубликаты
+            const isDuplicate = scannedItems.some(item => {
+                if (item.workMode !== workMode) return false;
+                const existingShort = parseAndNormalizeCode(item.raw, item.formatName || '').shortCode;
+                if (workMode === 'pick' && shipmentName) {
+                    return existingShort === parsed.shortCode && (item.shipmentName || '') === shipmentName;
+                }
+                return existingShort === parsed.shortCode;
+            });
+
+            if (isDuplicate && !allowDuplicatesToggle.checked) {
+                playFeedbackSound('warning');
+                triggerFlash('warn');
+                triggerVibration([45, 50, 45]);
+                showToast('Этот код уже отсканирован!', 'warning');
+                return;
+            }
+
+            const newItem = {
+                id: now + '_' + Math.random().toString(36).substring(2, 7),
+                raw: rawCode,
+                formatted: parsed.activeCode,
+                boxCode: workMode === 'aggregate' ? activeBoxCode : '',
+                workMode: workMode,
+                shipmentName: shipmentName,
+                formatName: formatName,
+                type: parsed.type,
+                timestamp: now
+            };
+
+            scannedItems.unshift(newItem);
+            saveToStorage();
+            renderList();
+
+            playFeedbackSound('success');
+            triggerFlash('success');
+            triggerVibration([70]);
+
+            if (isDuplicate) {
+                showToast(`Добавлен дубликат (${parsed.type})`, 'info');
+            }
+
+            // Отправка в Google Apps Script по выбранному режиму
+            if (workMode === 'pick') {
+                sendToGoogleSheetBridge({
+                    mode: 'pick',
+                    code: parsed.activeCode,
+                    shipmentName: shipmentName,
+                    deviceId: 'web-tsd'
+                });
+            } else if (workMode === 'aggregate') {
+                sendToGoogleSheetBridge({
+                    mode: 'aggregate',
+                    itemCode: parsed.activeCode,
+                    boxCode: activeBoxCode,
+                    shipmentName: shipmentName,
+                    deviceId: 'web-tsd'
+                });
+            }
+        }
+
+        /**
+         * Отрисовка списка кодов и обновление счетчика
+         */
+        function renderList() {
+            totalCounter.textContent = scannedItems.length;
+
+            if (scannedItems.length === 0) {
+                emptyState.classList.remove('hidden');
+                codesListContainer.innerHTML = '';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const total = scannedItems.length;
+
+            codesListContainer.innerHTML = scannedItems.map((item, idx) => {
+                const itemNumber = total - idx;
+                const displayValue = item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+                const itemModeLabel = item.workMode === 'aggregate' ? 'Агрегация' : 'Подбор';
+
+                let badgeStyle = 'bg-slate-100 text-slate-700 border-slate-200';
+                if (item.type === 'DataMatrix') {
+                    badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                } else if (item.type === 'SSCC') {
+                    badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+                }
+
+                return `
+                    <div class="p-3 sm:px-4 flex items-center gap-3 hover:bg-slate-50 transition group">
+                        <!-- Порядковый номер -->
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
+                            ${itemNumber}
+                        </div>
+
+                        <!-- Тип, режим, коробка и значение кода -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeStyle}">
+                                    ${item.type}
+                                </span>
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    ${itemModeLabel}
+                                </span>
+                                ${item.shipmentName ? `<span class="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/70 truncate max-w-[140px]">${item.shipmentName.replace(/</g, '&lt;')}</span>` : ''}
+                                <span class="text-[11px] text-slate-400">
+                                    ${new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </span>
+                            </div>
+                            <div class="font-mono-code text-xs sm:text-sm text-slate-800 break-all leading-relaxed">
+                                ${formatDisplayCode(displayValue)}
+                            </div>
+                            ${item.boxCode ? `<div class="mt-0.5 font-mono-code text-[11px] text-blue-700">Коробка: ${item.boxCode.replace(/</g, '&lt;')}</div>` : ''}
+                        </div>
+
+                        <!-- Кнопка удаления строки -->
+                        <button 
+                            onclick="deleteItem('${item.id}')" 
+                            title="Удалить строку"
+                            class="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition shrink-0 active:scale-95"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Удаление отдельной записи
+         */
+        window.deleteItem = function(id) {
+            scannedItems = scannedItems.filter(item => item.id !== id);
+            saveToStorage();
+            renderList();
+        };
+
+        /**
+         * Получение списка доступных камер устройства
+         */
+        async function initCamerasList() {
+            try {
+                const devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length > 0) {
+                    cameraSelect.innerHTML = '';
+                    let preferredCameraId = devices[0].id;
+
+                    devices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.id;
+                        const label = device.label || `Камера ${index + 1}`;
+                        option.textContent = label;
+                        cameraSelect.appendChild(option);
+
+                        // Ищем основную заднюю камеру по умолчанию
+                        if (/back|rear|environment|задн|основн/i.test(label)) {
+                            preferredCameraId = device.id;
+                        }
+                    });
+
+                    cameraSelect.value = preferredCameraId;
+                }
+            } catch (err) {
+                console.warn('Не удалось получить список камер до запуска:', err);
+            }
+        }
+
+        /**
+         * Запуск сканера камеры (DataMatrix + Code 128 + QR)
+         */
+        async function startScanner() {
+            if (isScanning) return;
+
+            try {
+                if (!html5QrCode) {
+                    const formatsToSupport = [
+                        Html5QrcodeSupportedFormats.DATA_MATRIX,
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.QR_CODE,
+                        Html5QrcodeSupportedFormats.EAN_13
+                    ];
+                    html5QrCode = new Html5Qrcode("reader", {
+                        formatsToSupport: formatsToSupport,
+                        useBarCodeDetectorIfSupported: true,
+                        verbose: false
+                    });
+                }
+
+                const selectedCameraId = cameraSelect.value;
+                const cameraConfig = selectedCameraId
+                    ? { deviceId: { exact: selectedCameraId } }
+                    : { facingMode: "environment" };
+
+                const scanConfig = {
+                    fps: 15,
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                        const boxSize = Math.floor(minEdge * 0.72);
+                        return { width: boxSize, height: boxSize };
+                    },
+                    aspectRatio: 1.333334
+                };
+
+                await html5QrCode.start(
+                    cameraConfig,
+                    scanConfig,
+                    (decodedText, decodedResult) => {
+                        const formatName = decodedResult?.result?.format?.formatName || '';
+                        processScannedCode(decodedText, formatName, false);
+                    },
+                    () => {
+                        // Ошибки отсутствия кода в кадре игнорируем
+                    }
+                );
+
+                isScanning = true;
+                cameraPlaceholder.classList.add('hidden');
+                scanTargetOverlay.classList.remove('hidden');
+
+                // Обновляем кнопку в режим "Остановить"
+                toggleCameraBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                toggleCameraBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                camBtnText.textContent = 'Остановить камеру';
+                camBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>`;
+
+                // Проверяем список камер еще раз (теперь разрешения точно выданы)
+                if (cameraSelect.options.length <= 1 && !cameraSelect.value) {
+                    await initCamerasList();
+                }
+
+                // Проверка поддержки фонарика
+                checkTorchSupport();
+
+            } catch (err) {
+                console.error('Ошибка запуска камеры:', err);
+                showToast('Не удалось открыть камеру. Проверьте разрешения HTTPS.', 'error');
+            }
+        }
+
+        /**
+         * Остановка сканера камеры
+         */
+        async function stopScanner() {
+            if (!isScanning || !html5QrCode) return;
+
+            try {
+                if (isTorchOn) {
+                    await toggleTorch(false);
+                }
+                await html5QrCode.stop();
+            } catch (err) {
+                console.error('Ошибка остановки камеры:', err);
+            } finally {
+                isScanning = false;
+                torchBtn.disabled = true;
+                torchBtn.classList.remove('bg-amber-400', 'text-slate-900', 'border-amber-500');
+                torchBtn.classList.add('bg-slate-100', 'text-slate-400');
+
+                cameraPlaceholder.classList.remove('hidden');
+                scanTargetOverlay.classList.add('hidden');
+
+                toggleCameraBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                toggleCameraBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                camBtnText.textContent = 'Запустить камеру';
+                camBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            }
+        }
+
+        /**
+         * Проверка и переключение фонарика (Torch)
+         */
+        function checkTorchSupport() {
+            try {
+                const track = html5QrCode.getRunningTrackCameraCapabilities();
+                if (track && track.torchFeature && track.torchFeature().isSupported()) {
+                    torchBtn.disabled = false;
+                    torchBtn.classList.remove('text-slate-400');
+                    torchBtn.classList.add('text-slate-700', 'hover:bg-slate-200');
+                } else {
+                    torchBtn.disabled = true;
+                }
+            } catch (e) {
+                torchBtn.disabled = true;
+            }
+        }
+
+        async function toggleTorch(forceState = null) {
+            if (!isScanning || !html5QrCode) return;
+            try {
+                const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+                const torch = capabilities.torchFeature();
+                if (!torch.isSupported()) return;
+
+                const nextState = forceState !== null ? forceState : !isTorchOn;
+                await torch.apply(nextState);
+                isTorchOn = nextState;
+
+                if (isTorchOn) {
+                    torchBtn.classList.remove('bg-slate-100', 'text-slate-700');
+                    torchBtn.classList.add('bg-amber-400', 'text-slate-900', 'border-amber-500');
+                } else {
+                    torchBtn.classList.remove('bg-amber-400', 'text-slate-900', 'border-amber-500');
+                    torchBtn.classList.add('bg-slate-100', 'text-slate-700');
+                }
+            } catch (err) {
+                console.warn('Ошибка переключения фонарика:', err);
+            }
+        }
+
+        toggleCameraBtn.addEventListener('click', () => {
+            unlockAudioEngine();
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
+        });
+
+        cameraSelect.addEventListener('change', async () => {
+            if (isScanning) {
+                await stopScanner();
+                await startScanner();
+            }
+        });
+
+        torchBtn.addEventListener('click', () => toggleTorch());
+
+        /**
+         * Ручной ввод или прием данных с USB/Bluetooth 2D-сканера
+         */
+        manualForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = manualInput.value.trim();
+            if (!val) return;
+            processScannedCode(val, '', true);
+            manualInput.value = '';
+            manualInput.focus();
+        });
+
+        /**
+         * Копирование списком в буфер обмена (для прямой вставки в колонку 1С)
+         */
+        copyListBtn.addEventListener('click', () => {
+            if (scannedItems.length === 0) {
+                showToast('Список пуст — нечего копировать', 'warning');
+                return;
+            }
+
+            const orderedCodes = [...scannedItems].reverse().map(item => {
+                return item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+            });
+            const textToCopy = orderedCodes.join('
+');
+
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = textToCopy;
+            tempTextarea.style.position = 'fixed';
+            tempTextarea.style.left = '-9999px';
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast(`Скопировано кодов: ${orderedCodes.length} шт.`, 'success');
+                } else {
+                    showToast('Не удалось скопировать список', 'error');
+                }
+            } catch (err) {
+                console.error('Ошибка копирования:', err);
+                showToast('Ошибка доступа к буферу обмена', 'error');
+            } finally {
+                document.body.removeChild(tempTextarea);
+            }
+        });
+
+        /**
+         * Скачивание одноколоночного CSV с UTF-8 BOM (для Excel и 1С без разбивки по запятым)
+         */
+        downloadCsvBtn.addEventListener('click', () => {
+            if (scannedItems.length === 0) {
+                showToast('Список пуст — нечего выгружать', 'warning');
+                return;
+            }
+
+            const orderedCodes = [...scannedItems].reverse().map(item => {
+                return item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+            });
+
+            const csvLines = orderedCodes.map(code => `"${code.replace(/"/g, '""')}"`);
+            if (csvHeaderToggle.checked) {
+                csvLines.unshift('"КодМаркировки"');
+            }
+
+            const csvContent = '﻿' + csvLines.join('
+'); // ﻿ — UTF-8 BOM
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10);
+            const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
+            const filename = `codes_${dateStr}_${timeStr}.csv`;
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast(`Файл ${filename} скачан`, 'success');
+        });
+
+        /**
+         * Очистка списка с модальным подтверждением
+         */
+        clearAllBtn.addEventListener('click', () => {
+            if (scannedItems.length === 0) {
+                showToast('Список уже пуст', 'info');
+                return;
+            }
+            modalCount.textContent = scannedItems.length;
+            confirmModal.classList.remove('hidden');
+            confirmModal.classList.add('flex');
+        });
+
+        cancelClearBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+        });
+
+        confirmClearBtn.addEventListener('click', () => {
+            scannedItems = [];
+            lastScannedNormalized = '';
+            saveToStorage();
+            renderList();
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+            showToast('Список полностью очищен', 'info');
+        });
+
+        // Закрытие модального окна по клику на фон
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) {
+                confirmModal.classList.add('hidden');
+                confirmModal.classList.remove('flex');
+            }
+        });
+    </script>
 </body>
 </html>
