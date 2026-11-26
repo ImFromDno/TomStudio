@@ -772,7 +772,6 @@
             if (upperFormat.includes('EAN') || upperFormat.includes('UPC') || upperFormat.includes('EAN_13') || upperFormat.includes('EAN_8')) {
                 return true;
             }
-            // Чистый цифровой код 8, 12, 13 или 14 цифр (не SSCC 00+18 и не GS1 01+14)
             if (/^\d{8}$/.test(cleaned) || /^\d{12}$/.test(cleaned) || /^\d{13}$/.test(cleaned)) {
                 return true;
             }
@@ -784,14 +783,11 @@
 
         /**
          * Парсинг и нормализация кодов DataMatrix (Честный ЗНАК) и SSCC (коробки)
-         * Возвращает объект: { type, shortCode, fullCode, activeCode, isRetail }
          */
         function parseAndNormalizeCode(rawInput, formatName = '') {
-            // Удаляем только ведущие управляющие символы FNC1/GS (, , ]d2, ]C1) и пробелы по краям
             let cleaned = rawInput
-                .replace(/^(\]d2|\]C1|\]e0|+|+)/gi, '')
-                .replace(/[
-]+/g, '')
+                .replace(/^(\]d2|\]C1|\]e0|\x1d+|\u001d+)/gi, '')
+                .replace(/[\r\n]+/g, '')
                 .trim();
 
             const upperFormat = (formatName || '').toUpperCase();
@@ -807,8 +803,8 @@
                 };
             }
 
-            // 1. Проверка на SSCC код коробки: (00) + 18 цифр или 00 + 18 цифр (всего 20 цифр) или 18 цифр при формате Code 128
-            const ssccMatchWithAi = cleaned.match(/^\(?00\)?(\d{18})(?:.*)?$/);
+            // 1. Проверка на SSCC код коробки: (00) + 18 цифр или 00 + 18 цифр или 18 цифр при Code 128
+            const ssccMatchWithAi = cleaned.match(/^\(?00\)?(\d{18})(?:\x1d.*)?$/);
             if (ssccMatchWithAi) {
                 const sscc18 = ssccMatchWithAi[1];
                 const shortSscc = useSsccBrackets ? `(00)${sscc18}` : `00${sscc18}`;
@@ -832,7 +828,7 @@
             }
 
             // 2. Парсинг DataMatrix (Честный ЗНАК): AI 01 (14 цифр GTIN) + AI 21 (Серийный номер)
-            const dmMatch = cleaned.match(/^\(?01\)?(\d{14})\(?21\)?([^]+)(?:(.*))?$/);
+            const dmMatch = cleaned.match(/^\(?01\)?(\d{14})\(?21\)?([^\x1d]+)(?:\x1d(.*))?$/);
             if (dmMatch) {
                 const gtin = dmMatch[1];
                 let serial = dmMatch[2];
@@ -876,7 +872,6 @@
             setBridgeStatus('Отправка в таблицу...', 'sync');
 
             try {
-                // Используем text/plain, чтобы избежать preflight CORS на Google Apps Script Web App
                 const response = await fetch(BRIDGE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -930,7 +925,7 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
 
-            const parts = codeStr.split('');
+            const parts = codeStr.split('\x1d');
             const escaped = parts.map(part => {
                 return escapeHtml(part)
                     .replace(/^\(01\)(\d{14})\(21\)/, '<span class="text-emerald-700 font-bold">(01)</span><span class="text-slate-900 font-semibold">$1</span><span class="text-emerald-700 font-bold">(21)</span>')
@@ -1347,8 +1342,7 @@
             const orderedCodes = [...scannedItems].reverse().map(item => {
                 return item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
             });
-            const textToCopy = orderedCodes.join('
-');
+            const textToCopy = orderedCodes.join('\n');
 
             const tempTextarea = document.createElement('textarea');
             tempTextarea.value = textToCopy;
@@ -1390,8 +1384,7 @@
                 csvLines.unshift('"КодМаркировки"');
             }
 
-            const csvContent = '﻿' + csvLines.join('
-'); // ﻿ — UTF-8 BOM
+            const csvContent = '\uFEFF' + csvLines.join('\r\n');
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
