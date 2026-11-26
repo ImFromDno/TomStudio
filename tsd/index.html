@@ -59,13 +59,13 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col select-none">
 
-    <!-- Оверлей визуальной обратной связи на весь экран (тонкая рамка/вспышка) -->
+    <!-- Оверлей визуальной обратной связи на весь экран -->
     <div id="flashOverlay" class="fixed inset-0 pointer-events-none z-50 transition-colors"></div>
 
     <!-- Всплывающее уведомление (Toast) вместо alert() -->
     <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none flex flex-col gap-2"></div>
 
-    <!-- Модальное окно подтверждения очистки (вместо confirm()) -->
+    <!-- Модальное окно подтверждения очистки -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
             <div class="flex items-center gap-3 text-red-600 mb-3">
@@ -90,6 +90,66 @@
         </div>
     </div>
 
+    <!-- Модальное окно отправки данных в Google Таблицу с вводом номера реализации -->
+    <div id="sendBridgeModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex items-center gap-3 text-emerald-700 mb-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Отправить данные в таблицу</h3>
+                    <p class="text-xs text-slate-500">Укажите номер реализации перед выгрузкой</p>
+                </div>
+            </div>
+
+            <form id="sendBridgeForm" class="flex flex-col gap-4 mt-4">
+                <div>
+                    <label for="modalShipmentInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Номер реализации / отправки
+                    </label>
+                    <input
+                        type="text"
+                        id="modalShipmentInput"
+                        required
+                        autocomplete="off"
+                        placeholder="Например: Реализация №14"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                    >
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-600 flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between">
+                        <span>К отправке в очередь:</span>
+                        <span id="modalPendingCount" class="font-bold text-slate-900">0 шт.</span>
+                    </div>
+                    <div id="modalBreakdownText" class="text-[11px] text-slate-500"></div>
+                </div>
+
+                <div id="sendProgressWrap" class="hidden flex-col gap-1.5">
+                    <div class="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span id="sendProgressLabel">Отправка...</span>
+                        <span id="sendProgressCounter">0 / 0</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="sendProgressBar" class="h-full bg-emerald-600 transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-1">
+                    <button type="button" id="cancelSendModalBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] transition">
+                        Отмена
+                    </button>
+                    <button type="submit" id="confirmSendModalBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition shadow-sm flex items-center justify-center gap-2">
+                        <span>Выгрузить</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Шапка приложения -->
     <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
         <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -101,14 +161,20 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold leading-tight">Сканер маркировки</h1>
-                    <p class="text-[11px] text-slate-400 leading-tight">DataMatrix (ЧЗ) • SSCC / Подбор и Агрегация</p>
+                    <p class="text-[11px] text-slate-400 leading-tight">Офлайн-накопление • Подбор и Агрегация</p>
                 </div>
             </div>
 
-            <!-- Счётчик кодов -->
-            <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
-                <span class="text-xs text-slate-400">Всего:</span>
-                <span id="totalCounter" class="text-lg font-bold text-emerald-400 leading-none">0</span>
+            <!-- Счётчики кодов -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700" title="Ожидают отправки в таблицу">
+                    <span class="text-[11px] text-slate-400">В очереди:</span>
+                    <span id="unsentCounter" class="text-base font-bold text-amber-400 leading-none">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700" title="Всего в списке">
+                    <span class="text-[11px] text-slate-400">Всего:</span>
+                    <span id="totalCounter" class="text-base font-bold text-emerald-400 leading-none">0</span>
+                </div>
             </div>
         </div>
     </header>
@@ -116,7 +182,7 @@
     <!-- Основной контент -->
     <main class="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 flex flex-col gap-4">
 
-        <!-- Режим работы (Подбор / Агрегация), Имя отправки и Мост в таблицу -->
+        <!-- Режим работы (Подбор / Агрегация) и кнопка отправки пачки -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col gap-3">
             <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200/70">
                 <button type="button" id="workModePickBtn" class="py-2.5 px-3 rounded-lg text-sm font-bold bg-emerald-600 text-white shadow-xs transition">
@@ -127,46 +193,43 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                    <label for="shipmentNameInput" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                        Имя отправки / реализации
-                    </label>
+            <!-- Поле текущей коробки (показывается всегда или подсвечивается в режиме агрегации) -->
+            <div id="boxControlBlock" class="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Текущая коробка для агрегации
+                </label>
+                <div class="flex items-center gap-1.5">
                     <input
                         type="text"
-                        id="shipmentNameInput"
-                        placeholder="Например: Реализация №14"
-                        class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                        id="activeBoxInput"
+                        readonly
+                        placeholder="Не задана — отсканируйте (00)..."
+                        class="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono-code text-slate-700 placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
                     >
-                </div>
-
-                <div>
-                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                        Текущая коробка для агрегации
-                    </label>
-                    <div class="flex items-center gap-1.5">
-                        <input
-                            type="text"
-                            id="activeBoxInput"
-                            readonly
-                            placeholder="Не задана — отсканируйте (00)..."
-                            class="flex-1 min-w-0 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono-code text-slate-700 placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
-                        >
-                        <button type="button" id="clearBoxBtn" title="Сбросить коробку" class="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 text-xs font-semibold transition shrink-0">
-                            Сброс
-                        </button>
-                    </div>
+                    <button type="button" id="clearBoxBtn" title="Сбросить коробку" class="px-3 py-2 rounded-xl bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 text-xs font-semibold transition shrink-0">
+                        Сброс
+                    </button>
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="syncBridgeToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                    <span class="font-medium text-slate-700">Отправлять в Google Таблицу (мост)</span>
-                </label>
-                <span id="bridgeStatusText" class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/70">
-                    Мост готов
-                </span>
+            <!-- Главная кнопка выгрузки накопленных данных -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                <div class="flex flex-col gap-0.5">
+                    <span id="bridgeStatusText" class="text-xs font-semibold text-slate-700">
+                        Режим офлайн-накопления: сканируйте без интернета
+                    </span>
+                    <span id="lastShipmentHint" class="text-[11px] text-slate-400">
+                        Номер реализации запрашивается при нажатии «Отправить данные»
+                    </span>
+                </div>
+
+                <button type="button" id="openSendModalBtn" class="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2 shrink-0">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <span>Отправить данные</span>
+                    <span id="sendBtnBadge" class="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </button>
             </div>
         </section>
 
@@ -199,7 +262,6 @@
 
             <!-- Панель управления камерой -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <!-- Кнопка Старт / Стоп -->
                 <button id="toggleCameraBtn" class="w-full py-3 px-4 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-sm">
                     <svg id="camBtnIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
@@ -208,7 +270,6 @@
                     <span id="camBtnText">Запустить камеру</span>
                 </button>
 
-                <!-- Вторая колонка: Выбор камеры и Фонарик -->
                 <div class="flex gap-2">
                     <select id="cameraSelect" aria-label="Выбор камеры" class="flex-1 min-w-0 bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 truncate">
                         <option value="">Основная камера (авто)</option>
@@ -224,7 +285,6 @@
 
             <!-- Переключатель дубликатов, фильтра ШК и звука -->
             <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2.5 text-sm">
-                <!-- Режим форматирования для 1С -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Формат вывода:</span>
                     <div class="grid grid-cols-2 gap-1.5 bg-slate-200/70 p-1 rounded-lg">
@@ -301,7 +361,7 @@
                 <span>Копировать списком</span>
             </button>
 
-            <button id="downloadCsvBtn" class="py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+            <button id="downloadCsvBtn" class="py-3.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
@@ -319,7 +379,7 @@
         <!-- Список отсканированных кодов -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex-1 flex flex-col">
             <div class="px-4 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2">
-                <h2 class="text-sm font-bold text-slate-700">Отсканированные коды</h2>
+                <h2 class="text-sm font-bold text-slate-700">Накопленные коды</h2>
                 <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
                     <input type="checkbox" id="csvHeaderToggle" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
                     <span>Заголовок в CSV</span>
@@ -352,14 +412,18 @@
         /**
          * Состояние приложения и константы
          */
-        const STORAGE_KEY = 'chestny_znak_sscc_scans_v2';
-        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v2';
+        const STORAGE_KEY = 'chestny_znak_sscc_scans_v3';
+        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v3';
         const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxy0U15bAlmCoYqqj6N-51YWa6OEejevu8_qCx6gnoRaZYHpfgRjpLnV4p7YyXgTc0r/exec';
 
-        let scannedItems = []; // Массив объектов: { id, raw, formatted, boxCode, workMode, shipmentName, type, timestamp }
+        // Элемент списка: { id, raw, formatted, boxCode, workMode, type, timestamp, syncStatus: 'pending'|'sent'|'duplicate'|'error', syncNote, sentShipmentName }
+        let scannedItems = [];
         let outputMode = 'short'; // 'short' -> (01)...(21)... / (00)... | 'full' -> исходный КИЗ
         let workMode = 'pick'; // 'pick' -> Подбор | 'aggregate' -> Агрегация
         let activeBoxCode = ''; // Текущий код коробки (00)... для режима агрегации
+        let lastShipmentName = ''; // Последний введённый номер реализации в модалке
+        let isSendingBatch = false;
+
         let html5QrCode = null;
         let isScanning = false;
         let isTorchOn = false;
@@ -370,11 +434,27 @@
         // Элементы DOM
         const workModePickBtn = document.getElementById('workModePickBtn');
         const workModeAggBtn = document.getElementById('workModeAggBtn');
-        const shipmentNameInput = document.getElementById('shipmentNameInput');
+        const boxControlBlock = document.getElementById('boxControlBlock');
         const activeBoxInput = document.getElementById('activeBoxInput');
         const clearBoxBtn = document.getElementById('clearBoxBtn');
-        const syncBridgeToggle = document.getElementById('syncBridgeToggle');
         const bridgeStatusText = document.getElementById('bridgeStatusText');
+        const lastShipmentHint = document.getElementById('lastShipmentHint');
+        const openSendModalBtn = document.getElementById('openSendModalBtn');
+        const sendBtnBadge = document.getElementById('sendBtnBadge');
+        const unsentCounter = document.getElementById('unsentCounter');
+
+        // Модалка отправки
+        const sendBridgeModal = document.getElementById('sendBridgeModal');
+        const sendBridgeForm = document.getElementById('sendBridgeForm');
+        const modalShipmentInput = document.getElementById('modalShipmentInput');
+        const modalPendingCount = document.getElementById('modalPendingCount');
+        const modalBreakdownText = document.getElementById('modalBreakdownText');
+        const sendProgressWrap = document.getElementById('sendProgressWrap');
+        const sendProgressLabel = document.getElementById('sendProgressLabel');
+        const sendProgressCounter = document.getElementById('sendProgressCounter');
+        const sendProgressBar = document.getElementById('sendProgressBar');
+        const cancelSendModalBtn = document.getElementById('cancelSendModalBtn');
+        const confirmSendModalBtn = document.getElementById('confirmSendModalBtn');
 
         const toggleCameraBtn = document.getElementById('toggleCameraBtn');
         const camBtnText = document.getElementById('camBtnText');
@@ -422,7 +502,7 @@
         });
 
         /**
-         * Проверка поддержки Vibration API (на iOS Safari недоступен на уровне ОС)
+         * Проверка поддержки Vibration API
          */
         function updateHardwareFeedbackStatus() {
             const hasVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function';
@@ -437,7 +517,6 @@
 
         /**
          * Инициализация и разблокировка Web Audio API при любом касании экрана
-         * (обход политики автоплея в Mobile Chrome и iOS Safari)
          */
         function unlockAudioEngine() {
             try {
@@ -456,7 +535,6 @@
                     updateAudioBadge();
                 }
 
-                // Проигрываем микро-буфер тишины (1 семпл), чтобы iOS Safari окончательно разблокировал аудиоканал
                 const buffer = audioCtx.createBuffer(1, 1, 22050);
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
@@ -478,14 +556,12 @@
             }
         }
 
-        // Разблокируем аудио при первом пользовательском жесте на странице
         ['touchstart', 'pointerdown', 'click'].forEach(evtName => {
             document.addEventListener(evtName, unlockAudioEngine, { passive: true, once: false });
         });
 
         /**
-         * Синтез звука «как у кассового сканера в Магните» (Honeywell / Datalogic / Zebra)
-         * Плотный, звонкий импульс ~2720 Гц с легкой гармоникой для пробивного звучания на телефоне
+         * Синтез звука «как у кассового сканера»
          */
         function playScannerTone(freq = 2720, durationSec = 0.082, delaySec = 0, volume = 0.55) {
             if (!soundToggle || !soundToggle.checked) return;
@@ -496,12 +572,10 @@
 
                 const now = audioCtx.currentTime + delaySec;
 
-                // Основной тон кассового бипера (2720 Гц — классический пьезоизлучатель Honeywell/Datalogic)
                 const oscMain = audioCtx.createOscillator();
                 oscMain.type = 'triangle';
                 oscMain.frequency.setValueAtTime(freq, now);
 
-                // Легкий верхний обертон (2-я гармоника) для характерной «кассовой» звонкости динамика смартфона
                 const oscHarmonic = audioCtx.createOscillator();
                 oscHarmonic.type = 'sine';
                 oscHarmonic.frequency.setValueAtTime(freq * 2, now);
@@ -509,7 +583,6 @@
                 const gainMain = audioCtx.createGain();
                 const gainHarmonic = audioCtx.createGain();
 
-                // Огибающая кассового сканера: мгновенная атака (3 мс), плотное плато и резкий спад без щелчка
                 gainMain.gain.setValueAtTime(0.0001, now);
                 gainMain.gain.linearRampToValueAtTime(volume, now + 0.003);
                 gainMain.gain.setValueAtTime(volume, now + durationSec - 0.012);
@@ -537,42 +610,29 @@
             if (!soundToggle || !soundToggle.checked) return;
 
             if (type === 'success') {
-                // Одиночный звонкий «ПИК!» как на кассе Магнита
                 playScannerTone(2720, 0.085, 0, 0.6);
             } else if (type === 'warning') {
-                // Двойной низкий «бип-бип» при повторном сканировании (дубле) или ошибке
                 playScannerTone(920, 0.075, 0, 0.5);
                 playScannerTone(740, 0.11, 0.105, 0.5);
             }
         }
 
-        /**
-         * Безопасный вызов виброотклика на смартфоне
-         */
         function triggerVibration(pattern) {
             if (!soundToggle || !soundToggle.checked) return;
             try {
                 if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
                     navigator.vibrate(pattern);
                 }
-            } catch (e) {
-                // Игнорируем блокировку вибрации браузером до взаимодействия
-            }
+            } catch (e) {}
         }
 
-        /**
-         * Визуальная вспышка экрана (зеленая при успехе, янтарная при дубле)
-         */
         function triggerFlash(type = 'success') {
             if (!flashOverlay) return;
             flashOverlay.classList.remove('flash-success', 'flash-warn');
-            void flashOverlay.offsetWidth; // Сброс CSS-анимации для повторного запуска
+            void flashOverlay.offsetWidth;
             flashOverlay.classList.add(type === 'warn' ? 'flash-warn' : 'flash-success');
         }
 
-        /**
-         * Всплывающие уведомления (Toast) вместо alert()
-         */
         function showToast(message, type = 'info') {
             if (!toastContainer) return;
 
@@ -592,23 +652,9 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0', '-translate-y-2');
                 setTimeout(() => toast.remove(), 300);
-            }, 2200);
+            }, 2400);
         }
 
-        function setBridgeStatus(text, tone = 'ready') {
-            if (!bridgeStatusText) return;
-            bridgeStatusText.textContent = text;
-            const map = {
-                ready: 'text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/70',
-                sync: 'text-[11px] font-medium text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/70',
-                warn: 'text-[11px] font-medium text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/70',
-                err: 'text-[11px] font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-lg border border-red-200/70',
-                off: 'text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200'
-            };
-            bridgeStatusText.className = map[tone] || map.ready;
-        }
-
-        // Кнопка «Тест пика»: разблокирует звук, проигрывает кассовый «пик» и запускает вибро
         testBeepBtn.addEventListener('click', () => {
             unlockAudioEngine();
             playFeedbackSound('success');
@@ -626,7 +672,12 @@
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (Array.isArray(parsed)) {
-                        scannedItems = parsed;
+                        scannedItems = parsed.map(item => ({
+                            ...item,
+                            syncStatus: item.syncStatus || 'pending',
+                            syncNote: item.syncNote || '',
+                            sentShipmentName: item.sentShipmentName || ''
+                        }));
                     }
                 }
                 const savedSettings = localStorage.getItem(SETTINGS_KEY);
@@ -635,20 +686,17 @@
                     outputMode = settings.outputMode === 'full' ? 'full' : 'short';
                     workMode = settings.workMode === 'aggregate' ? 'aggregate' : 'pick';
                     activeBoxCode = String(settings.activeBoxCode || '').trim();
-                    shipmentNameInput.value = String(settings.shipmentName || '');
+                    lastShipmentName = String(settings.lastShipmentName || '').trim();
                     ssccBracketsToggle.checked = settings.ssccBrackets !== false;
                     filterRetailBarcodeToggle.checked = settings.filterRetailBarcode !== false;
                     csvHeaderToggle.checked = Boolean(settings.csvHeader);
                     allowDuplicatesToggle.checked = Boolean(settings.allowDuplicates);
                     soundToggle.checked = settings.sound !== false;
-                    syncBridgeToggle.checked = settings.syncBridge !== false;
                 }
             } catch (e) {
                 console.error('Ошибка чтения localStorage:', e);
             }
-            if (!syncBridgeToggle.checked) {
-                setBridgeStatus('Мост выключен', 'off');
-            }
+            updateShipmentHint();
         }
 
         /**
@@ -661,16 +709,24 @@
                     outputMode,
                     workMode,
                     activeBoxCode,
-                    shipmentName: shipmentNameInput.value.trim(),
+                    lastShipmentName,
                     ssccBrackets: ssccBracketsToggle.checked,
                     filterRetailBarcode: filterRetailBarcodeToggle.checked,
                     csvHeader: csvHeaderToggle.checked,
                     allowDuplicates: allowDuplicatesToggle.checked,
-                    sound: soundToggle.checked,
-                    syncBridge: syncBridgeToggle.checked
+                    sound: soundToggle.checked
                 }));
             } catch (e) {
                 console.error('Ошибка записи в localStorage:', e);
+            }
+        }
+
+        function updateShipmentHint() {
+            if (!lastShipmentHint) return;
+            if (lastShipmentName) {
+                lastShipmentHint.textContent = `Последняя реализация: ${lastShipmentName}`;
+            } else {
+                lastShipmentHint.textContent = 'Номер реализации запрашивается при нажатии «Отправить данные»';
             }
         }
 
@@ -678,9 +734,11 @@
             if (workMode === 'pick') {
                 workModePickBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-bold bg-emerald-600 text-white shadow-xs transition';
                 workModeAggBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
+                boxControlBlock.classList.add('opacity-70');
             } else {
                 workModeAggBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-bold bg-blue-600 text-white shadow-xs transition';
                 workModePickBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
+                boxControlBlock.classList.remove('opacity-70');
             }
         }
 
@@ -702,22 +760,11 @@
             showToast('Режим: Агрегация (сначала коробка (00)..., затем КИЗы)', 'info');
         });
 
-        shipmentNameInput.addEventListener('input', saveToStorage);
-
         clearBoxBtn.addEventListener('click', () => {
             activeBoxCode = '';
             updateActiveBoxUI();
             saveToStorage();
             showToast('Текущая коробка сброшена', 'info');
-        });
-
-        syncBridgeToggle.addEventListener('change', () => {
-            saveToStorage();
-            if (syncBridgeToggle.checked) {
-                setBridgeStatus('Мост готов', 'ready');
-            } else {
-                setBridgeStatus('Мост выключен', 'off');
-            }
         });
 
         function updateModeUI() {
@@ -803,7 +850,7 @@
                 };
             }
 
-            // 1. Проверка на SSCC код коробки: (00) + 18 цифр или 00 + 18 цифр или 18 цифр при Code 128
+            // 1. Проверка на SSCC код коробки
             const ssccMatchWithAi = cleaned.match(/^\(?00\)?(\d{18})(?:\x1d.*)?$/);
             if (ssccMatchWithAi) {
                 const sscc18 = ssccMatchWithAi[1];
@@ -827,7 +874,7 @@
                 };
             }
 
-            // 2. Парсинг DataMatrix (Честный ЗНАК): AI 01 (14 цифр GTIN) + AI 21 (Серийный номер)
+            // 2. Парсинг DataMatrix (Честный ЗНАК): AI 01 + AI 21
             const dmMatch = cleaned.match(/^\(?01\)?(\d{14})\(?21\)?([^\x1d]+)(?:\x1d(.*))?$/);
             if (dmMatch) {
                 const gtin = dmMatch[1];
@@ -859,47 +906,6 @@
                 activeCode: cleaned,
                 isRetail: false
             };
-        }
-
-        /**
-         * Отправка записи в Google Apps Script (мост в Google Таблицу)
-         */
-        async function sendToGoogleSheetBridge(payload) {
-            if (!syncBridgeToggle || !syncBridgeToggle.checked || !BRIDGE_URL) {
-                return;
-            }
-
-            setBridgeStatus('Отправка в таблицу...', 'sync');
-
-            try {
-                const response = await fetch(BRIDGE_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-
-                const text = await response.text();
-                let data = null;
-                try {
-                    data = JSON.parse(text);
-                } catch (_) {}
-
-                if (data && data.ok === false) {
-                    if (data.code && String(data.code).startsWith('DUPLICATE')) {
-                        setBridgeStatus('Дубль в таблице: ' + (data.message || 'уже есть'), 'warn');
-                        showToast(data.message || 'Дубликат в таблице', 'warning');
-                    } else {
-                        setBridgeStatus('Ошибка таблицы: ' + (data.message || data.code), 'err');
-                        showToast('Таблица: ' + (data.message || 'ошибка записи'), 'error');
-                    }
-                } else {
-                    setBridgeStatus('Записано в таблицу', 'ready');
-                }
-            } catch (err) {
-                console.warn('Ошибка отправки в Google Таблицу:', err);
-                setBridgeStatus('Нет связи с таблицей', 'err');
-                showToast('Не удалось отправить в Google Таблицу', 'warning');
-            }
         }
 
         /**
@@ -936,7 +942,7 @@
         }
 
         /**
-         * Добавление отсканированного или введенного кода в список и отправка в мост
+         * Офлайн-накопление отсканированного или введенного кода в локальный список
          */
         function processScannedCode(rawCode, formatName = '', isManual = false) {
             if (!rawCode) return;
@@ -961,8 +967,6 @@
             }
             lastScannedNormalized = normalizedForCompare;
             lastScanTime = now;
-
-            const shipmentName = shipmentNameInput ? shipmentNameInput.value.trim() : '';
 
             // В режиме Агрегации: если отсканирован SSCC коробки — запоминаем её как активную коробку
             if (workMode === 'aggregate' && parsed.type === 'SSCC') {
@@ -989,13 +993,10 @@
                 return;
             }
 
-            // Проверка на дубликаты
+            // Проверка на дубликаты в локальном списке
             const isDuplicate = scannedItems.some(item => {
                 if (item.workMode !== workMode) return false;
                 const existingShort = parseAndNormalizeCode(item.raw, item.formatName || '').shortCode;
-                if (workMode === 'pick' && shipmentName) {
-                    return existingShort === parsed.shortCode && (item.shipmentName || '') === shipmentName;
-                }
                 return existingShort === parsed.shortCode;
             });
 
@@ -1003,7 +1004,7 @@
                 playFeedbackSound('warning');
                 triggerFlash('warn');
                 triggerVibration([45, 50, 45]);
-                showToast('Этот код уже отсканирован!', 'warning');
+                showToast('Этот код уже есть в списке!', 'warning');
                 return;
             }
 
@@ -1013,10 +1014,12 @@
                 formatted: parsed.activeCode,
                 boxCode: workMode === 'aggregate' ? activeBoxCode : '',
                 workMode: workMode,
-                shipmentName: shipmentName,
                 formatName: formatName,
                 type: parsed.type,
-                timestamp: now
+                timestamp: now,
+                syncStatus: 'pending',
+                syncNote: '',
+                sentShipmentName: ''
             };
 
             scannedItems.unshift(newItem);
@@ -1030,31 +1033,227 @@
             if (isDuplicate) {
                 showToast(`Добавлен дубликат (${parsed.type})`, 'info');
             }
-
-            // Отправка в Google Apps Script по выбранному режиму
-            if (workMode === 'pick') {
-                sendToGoogleSheetBridge({
-                    mode: 'pick',
-                    code: parsed.activeCode,
-                    shipmentName: shipmentName,
-                    deviceId: 'web-tsd'
-                });
-            } else if (workMode === 'aggregate') {
-                sendToGoogleSheetBridge({
-                    mode: 'aggregate',
-                    itemCode: parsed.activeCode,
-                    boxCode: activeBoxCode,
-                    shipmentName: shipmentName,
-                    deviceId: 'web-tsd'
-                });
-            }
         }
 
         /**
-         * Отрисовка списка кодов и обновление счетчика
+         * Получение элементов, ожидающих отправки в таблицу
+         */
+        function getUnsentItems() {
+            return scannedItems.filter(item => item.syncStatus !== 'sent');
+        }
+
+        /**
+         * Открытие модального окна «Отправить данные» с запросом номера реализации
+         */
+        function openSendBridgeModal() {
+            const unsent = getUnsentItems();
+            if (unsent.length === 0) {
+                showToast('Нет неотправленных кодов для выгрузки', 'info');
+                return;
+            }
+
+            const pickCount = unsent.filter(i => i.workMode === 'pick').length;
+            const aggCount = unsent.filter(i => i.workMode === 'aggregate').length;
+
+            modalPendingCount.textContent = `${unsent.length} шт.`;
+            const parts = [];
+            if (pickCount > 0) parts.push(`Подбор: ${pickCount} шт.`);
+            if (aggCount > 0) parts.push(`Агрегация: ${aggCount} шт.`);
+            modalBreakdownText.textContent = parts.join(' • ');
+
+            modalShipmentInput.value = lastShipmentName;
+            sendProgressWrap.classList.add('hidden');
+            sendProgressWrap.classList.remove('flex');
+            sendProgressBar.style.width = '0%';
+            confirmSendModalBtn.disabled = false;
+            cancelSendModalBtn.disabled = false;
+            modalShipmentInput.disabled = false;
+
+            sendBridgeModal.classList.remove('hidden');
+            sendBridgeModal.classList.add('flex');
+
+            setTimeout(() => {
+                modalShipmentInput.focus();
+                modalShipmentInput.select();
+            }, 50);
+        }
+
+        function closeSendBridgeModal() {
+            if (isSendingBatch) return;
+            sendBridgeModal.classList.add('hidden');
+            sendBridgeModal.classList.remove('flex');
+        }
+
+        openSendModalBtn.addEventListener('click', openSendBridgeModal);
+        cancelSendModalBtn.addEventListener('click', closeSendBridgeModal);
+
+        sendBridgeModal.addEventListener('click', (e) => {
+            if (e.target === sendBridgeModal) {
+                closeSendBridgeModal();
+            }
+        });
+
+        /**
+         * Отправка одной строки в Google Apps Script
+         */
+        async function sendSingleItemToBridge(item, shipmentName) {
+            const activeCode = item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+            const payload = item.workMode === 'aggregate'
+                ? {
+                    mode: 'aggregate',
+                    itemCode: activeCode,
+                    boxCode: item.boxCode,
+                    shipmentName: shipmentName,
+                    deviceId: 'web-tsd'
+                }
+                : {
+                    mode: 'pick',
+                    code: activeCode,
+                    shipmentName: shipmentName,
+                    deviceId: 'web-tsd'
+                };
+
+            const response = await fetch(BRIDGE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const text = await response.text();
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (_) {
+                throw new Error('Некорректный ответ скрипта');
+            }
+
+            return data;
+        }
+
+        /**
+         * Пакетная последовательная выгрузка накопленных кодов в таблицу по номеру реализации
+         */
+        sendBridgeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isSendingBatch) return;
+
+            const shipmentName = modalShipmentInput.value.trim();
+            if (!shipmentName) {
+                showToast('Введите номер реализации', 'warning');
+                modalShipmentInput.focus();
+                return;
+            }
+
+            // Отправляем в хронологическом порядке сканирования (от старых к новым)
+            const queue = [...getUnsentItems()].reverse();
+            if (queue.length === 0) {
+                closeSendBridgeModal();
+                return;
+            }
+
+            lastShipmentName = shipmentName;
+            saveToStorage();
+            updateShipmentHint();
+
+            isSendingBatch = true;
+            confirmSendModalBtn.disabled = true;
+            cancelSendModalBtn.disabled = true;
+            modalShipmentInput.disabled = true;
+
+            sendProgressWrap.classList.remove('hidden');
+            sendProgressWrap.classList.add('flex');
+            sendProgressLabel.textContent = 'Отправка в Google Таблицу...';
+            bridgeStatusText.textContent = 'Идёт выгрузка в таблицу...';
+            bridgeStatusText.className = 'text-xs font-semibold text-blue-700';
+
+            let sentOk = 0;
+            let duplicatesCount = 0;
+            let errorsCount = 0;
+
+            for (let i = 0; i < queue.length; i++) {
+                const targetItem = queue[i];
+                sendProgressCounter.textContent = `${i + 1} / ${queue.length}`;
+                sendProgressBar.style.width = `${Math.round(((i + 1) / queue.length) * 100)}%`;
+
+                try {
+                    const data = await sendSingleItemToBridge(targetItem, shipmentName);
+                    const idx = scannedItems.findIndex(x => x.id === targetItem.id);
+                    if (idx !== -1) {
+                        if (data && data.ok === false) {
+                            const isDup = data.code && String(data.code).startsWith('DUPLICATE');
+                            scannedItems[idx].syncStatus = isDup ? 'duplicate' : 'error';
+                            scannedItems[idx].syncNote = data.message || data.code || 'Ошибка таблицы';
+                            if (isDup) duplicatesCount++;
+                            else errorsCount++;
+                        } else {
+                            scannedItems[idx].syncStatus = 'sent';
+                            scannedItems[idx].syncNote = '';
+                            scannedItems[idx].sentShipmentName = shipmentName;
+                            sentOk++;
+                        }
+                        saveToStorage();
+                    }
+                } catch (err) {
+                    console.warn('Ошибка отправки элемента в таблицу:', err);
+                    const idx = scannedItems.findIndex(x => x.id === targetItem.id);
+                    if (idx !== -1) {
+                        scannedItems[idx].syncStatus = 'error';
+                        scannedItems[idx].syncNote = 'Нет связи с таблицей (проверьте интернет / VPN)';
+                        saveToStorage();
+                    }
+                    errorsCount++;
+                    // Прерываем цикл при обрыве сети, чтобы не ждать таймауты на каждом коде
+                    break;
+                }
+            }
+
+            isSendingBatch = false;
+            confirmSendModalBtn.disabled = false;
+            cancelSendModalBtn.disabled = false;
+            modalShipmentInput.disabled = false;
+            renderList();
+
+            if (errorsCount === 0 && duplicatesCount === 0) {
+                bridgeStatusText.textContent = `Выгружено: ${sentOk} шт. (${shipmentName})`;
+                bridgeStatusText.className = 'text-xs font-semibold text-emerald-700';
+                playFeedbackSound('success');
+                showToast(`Успешно выгружено: ${sentOk} шт.`, 'success');
+                closeSendBridgeModal();
+            } else if (errorsCount === 0 && duplicatesCount > 0) {
+                bridgeStatusText.textContent = `Выгружено: ${sentOk} шт., дублей в таблице: ${duplicatesCount}`;
+                bridgeStatusText.className = 'text-xs font-semibold text-amber-700';
+                playFeedbackSound('warning');
+                showToast(`Отправлено: ${sentOk}, дубликатов: ${duplicatesCount}`, 'warning');
+                closeSendBridgeModal();
+            } else {
+                bridgeStatusText.textContent = `Ошибка связи (отправлено ${sentOk} из ${queue.length}). Выключите VPN и повторите`;
+                bridgeStatusText.className = 'text-xs font-semibold text-red-600';
+                playFeedbackSound('warning');
+                showToast('Нет связи с таблицей. Проверьте Wi-Fi / отключите VPN и нажмите «Выгрузить» снова', 'error');
+                modalPendingCount.textContent = `${getUnsentItems().length} шт.`;
+            }
+        });
+
+        /**
+         * Отрисовка списка кодов и обновление счетчиков
          */
         function renderList() {
+            const unsentCount = getUnsentItems().length;
             totalCounter.textContent = scannedItems.length;
+            unsentCounter.textContent = unsentCount;
+            sendBtnBadge.textContent = unsentCount;
+
+            if (unsentCount === 0) {
+                openSendModalBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                openSendModalBtn.classList.add('bg-slate-400', 'hover:bg-slate-500');
+            } else {
+                openSendModalBtn.classList.remove('bg-slate-400', 'hover:bg-slate-500');
+                openSendModalBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+            }
 
             if (scannedItems.length === 0) {
                 emptyState.classList.remove('hidden');
@@ -1077,14 +1276,23 @@
                     badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
                 }
 
+                let syncBadgeHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">В очереди</span>';
+                if (item.syncStatus === 'sent') {
+                    syncBadgeHtml = `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Отправлено${item.sentShipmentName ? ': ' + item.sentShipmentName.replace(/</g, '&lt;') : ''}</span>`;
+                } else if (item.syncStatus === 'duplicate') {
+                    syncBadgeHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">Дубль в таблице</span>';
+                } else if (item.syncStatus === 'error') {
+                    syncBadgeHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">Ошибка отправки</span>';
+                }
+
                 return `
-                    <div class="p-3 sm:px-4 flex items-center gap-3 hover:bg-slate-50 transition group">
+                    <div class="p-3 sm:px-4 flex items-center gap-3 hover:bg-slate-50 transition group ${item.syncStatus === 'sent' ? 'bg-slate-50/60' : ''}">
                         <!-- Порядковый номер -->
                         <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
                             ${itemNumber}
                         </div>
 
-                        <!-- Тип, режим, коробка и значение кода -->
+                        <!-- Тип, режим, статус и значение кода -->
                         <div class="flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-1.5 mb-1">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeStyle}">
@@ -1093,7 +1301,7 @@
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                     ${itemModeLabel}
                                 </span>
-                                ${item.shipmentName ? `<span class="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/70 truncate max-w-[140px]">${item.shipmentName.replace(/</g, '&lt;')}</span>` : ''}
+                                ${syncBadgeHtml}
                                 <span class="text-[11px] text-slate-400">
                                     ${new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </span>
@@ -1102,6 +1310,7 @@
                                 ${formatDisplayCode(displayValue)}
                             </div>
                             ${item.boxCode ? `<div class="mt-0.5 font-mono-code text-[11px] text-blue-700">Коробка: ${item.boxCode.replace(/</g, '&lt;')}</div>` : ''}
+                            ${item.syncNote ? `<div class="mt-0.5 text-[11px] text-red-600">${item.syncNote.replace(/</g, '&lt;')}</div>` : ''}
                         </div>
 
                         <!-- Кнопка удаления строки -->
@@ -1119,9 +1328,6 @@
             }).join('');
         }
 
-        /**
-         * Удаление отдельной записи
-         */
         window.deleteItem = function(id) {
             scannedItems = scannedItems.filter(item => item.id !== id);
             saveToStorage();
@@ -1145,7 +1351,6 @@
                         option.textContent = label;
                         cameraSelect.appendChild(option);
 
-                        // Ищем основную заднюю камеру по умолчанию
                         if (/back|rear|environment|задн|основн/i.test(label)) {
                             preferredCameraId = device.id;
                         }
@@ -1159,7 +1364,7 @@
         }
 
         /**
-         * Запуск сканера камеры (DataMatrix + Code 128 + QR)
+         * Запуск сканера камеры
          */
         async function startScanner() {
             if (isScanning) return;
@@ -1201,27 +1406,22 @@
                         const formatName = decodedResult?.result?.format?.formatName || '';
                         processScannedCode(decodedText, formatName, false);
                     },
-                    () => {
-                        // Ошибки отсутствия кода в кадре игнорируем
-                    }
+                    () => {}
                 );
 
                 isScanning = true;
                 cameraPlaceholder.classList.add('hidden');
                 scanTargetOverlay.classList.remove('hidden');
 
-                // Обновляем кнопку в режим "Остановить"
                 toggleCameraBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
                 toggleCameraBtn.classList.add('bg-red-600', 'hover:bg-red-700');
                 camBtnText.textContent = 'Остановить камеру';
                 camBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>`;
 
-                // Проверяем список камер еще раз (теперь разрешения точно выданы)
                 if (cameraSelect.options.length <= 1 && !cameraSelect.value) {
                     await initCamerasList();
                 }
 
-                // Проверка поддержки фонарика
                 checkTorchSupport();
 
             } catch (err) {
@@ -1230,9 +1430,6 @@
             }
         }
 
-        /**
-         * Остановка сканера камеры
-         */
         async function stopScanner() {
             if (!isScanning || !html5QrCode) return;
 
@@ -1259,9 +1456,6 @@
             }
         }
 
-        /**
-         * Проверка и переключение фонарика (Torch)
-         */
         function checkTorchSupport() {
             try {
                 const track = html5QrCode.getRunningTrackCameraCapabilities();
@@ -1318,9 +1512,6 @@
 
         torchBtn.addEventListener('click', () => toggleTorch());
 
-        /**
-         * Ручной ввод или прием данных с USB/Bluetooth 2D-сканера
-         */
         manualForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const val = manualInput.value.trim();
@@ -1330,9 +1521,6 @@
             manualInput.focus();
         });
 
-        /**
-         * Копирование списком в буфер обмена (для прямой вставки в колонку 1С)
-         */
         copyListBtn.addEventListener('click', () => {
             if (scannedItems.length === 0) {
                 showToast('Список пуст — нечего копировать', 'warning');
@@ -1366,9 +1554,6 @@
             }
         });
 
-        /**
-         * Скачивание одноколоночного CSV с UTF-8 BOM (для Excel и 1С без разбивки по запятым)
-         */
         downloadCsvBtn.addEventListener('click', () => {
             if (scannedItems.length === 0) {
                 showToast('Список пуст — нечего выгружать', 'warning');
@@ -1405,9 +1590,6 @@
             showToast(`Файл ${filename} скачан`, 'success');
         });
 
-        /**
-         * Очистка списка с модальным подтверждением
-         */
         clearAllBtn.addEventListener('click', () => {
             if (scannedItems.length === 0) {
                 showToast('Список уже пуст', 'info');
@@ -1433,7 +1615,6 @@
             showToast('Список полностью очищен', 'info');
         });
 
-        // Закрытие модального окна по клику на фон
         confirmModal.addEventListener('click', (e) => {
             if (e.target === confirmModal) {
                 confirmModal.classList.add('hidden');
