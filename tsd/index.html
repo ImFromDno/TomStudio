@@ -412,8 +412,8 @@
         /**
          * Состояние приложения и константы
          */
-        const STORAGE_KEY = 'chestny_znak_sscc_scans_v3';
-        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v3';
+        const STORAGE_KEY = 'chestny_znak_sscc_scans_v4';
+        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v4';
         const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxy0U15bAlmCoYqqj6N-51YWa6OEejevu8_qCx6gnoRaZYHpfgRjpLnV4p7YyXgTc0r/exec';
 
         // Элемент списка: { id, raw, formatted, boxCode, workMode, type, timestamp, syncStatus: 'pending'|'sent'|'duplicate'|'error', syncNote, sentShipmentName }
@@ -1094,29 +1094,26 @@
         });
 
         /**
-         * Отправка одной строки в Google Apps Script
+         * Отправка всей пачки неотправленных кодов одним POST-запросом в Google Apps Script
          */
-        async function sendSingleItemToBridge(item, shipmentName) {
-            const activeCode = item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
-            const payload = item.workMode === 'aggregate'
-                ? {
-                    mode: 'aggregate',
-                    itemCode: activeCode,
-                    boxCode: item.boxCode,
-                    shipmentName: shipmentName,
-                    deviceId: 'web-tsd'
-                }
-                : {
-                    mode: 'pick',
-                    code: activeCode,
-                    shipmentName: shipmentName,
-                    deviceId: 'web-tsd'
-                };
+        async function sendBatchToBridge(queueItems, shipmentName) {
+            const batchPayload = {
+                mode: 'batch',
+                shipmentName: shipmentName,
+                deviceId: 'web-tsd',
+                items: queueItems.map(item => ({
+                    id: item.id,
+                    mode: item.workMode === 'aggregate' ? 'aggregate' : 'pick',
+                    code: item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode,
+                    itemCode: item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode,
+                    boxCode: item.boxCode || ''
+                }))
+            };
 
             const response = await fetch(BRIDGE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(batchPayload)
             });
 
             if (!response.ok) {
@@ -1135,7 +1132,7 @@
         }
 
         /**
-         * Пакетная последовательная выгрузка накопленных кодов в таблицу по номеру реализации
+         * Пакетная выгрузка накопленных кодов в таблицу одним запросом по номеру реализации
          */
         sendBridgeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1166,49 +1163,65 @@
 
             sendProgressWrap.classList.remove('hidden');
             sendProgressWrap.classList.add('flex');
-            sendProgressLabel.textContent = 'Отправка в Google Таблицу...';
-            bridgeStatusText.textContent = 'Идёт выгрузка в таблицу...';
+            sendProgressLabel.textContent = 'Отправка пачки в Google Таблицу...';
+            sendProgressCounter.textContent = `0 / ${queue.length}`;
+            sendProgressBar.style.width = '45%';
+            bridgeStatusText.textContent = `Идёт пакетная выгрузка (${queue.length} шт.)...`;
             bridgeStatusText.className = 'text-xs font-semibold text-blue-700';
 
             let sentOk = 0;
             let duplicatesCount = 0;
             let errorsCount = 0;
 
-            for (let i = 0; i < queue.length; i++) {
-                const targetItem = queue[i];
-                sendProgressCounter.textContent = `${i + 1} / ${queue.length}`;
-                sendProgressBar.style.width = `${Math.round(((i + 1) / queue.length) * 100)}%`;
+            try {
+                const data = await sendBatchToBridge(queue, shipmentName);
+                sendProgressBar.style.width = '100%';
 
-                try {
-                    const data = await sendSingleItemToBridge(targetItem, shipmentName);
-                    const idx = scannedItems.findIndex(x => x.id === targetItem.id);
-                    if (idx !== -1) {
-                        if (data && data.ok === false) {
-                            const isDup = data.code && String(data.code).startsWith('DUPLICATE');
-                            scannedItems[idx].syncStatus = isDup ? 'duplicate' : 'error';
-                            scannedItems[idx].syncNote = data.message || data.code || 'Ошибка таблицы';
-                            if (isDup) duplicatesCount++;
-                            else errorsCount++;
-                        } else {
-                            scannedItems[idx].syncStatus = 'sent';
-                            scannedItems[idx].syncNote = '';
-                            scannedItems[idx].sentShipmentName = shipmentName;
-                            sentOk++;
-                        }
-                        saveToStorage();
-                    }
-                } catch (err) {
-                    console.warn('Ошибка отправки элемента в таблицу:', err);
-                    const idx = scannedItems.findIndex(x => x.id === targetItem.id);
-                    if (idx !== -1) {
-                        scannedItems[idx].syncStatus = 'error';
-                        scannedItems[idx].syncNote = 'Нет связи с таблицей (проверьте интернет / VPN)';
-                        saveToStorage();
-                    }
-                    errorsCount++;
-                    // Прерываем цикл при обрыве сети, чтобы не ждать таймауты на каждом коде
-                    break;
+                if (!data || data.ok === false) {
+                    throw new Error((data && data.message) || 'Ошибка обработки пачки скриптом');
                 }
+
+                const resultsMap = new Map();
+                if (Array.isArray(data.results)) {
+                    data.results.forEach(res => {
+                        if (res && res.id) {
+                            resultsMap.set(String(res.id), res);
+                        }
+                    });
+                }
+
+                queue.forEach((targetItem, idx) => {
+                    const storeIdx = scannedItems.findIndex(x => x.id === targetItem.id);
+                    if (storeIdx === -1) return;
+
+                    const res = resultsMap.get(String(targetItem.id)) || (Array.isArray(data.results) ? data.results[idx] : null);
+                    if (res && res.ok === false) {
+                        const isDup = res.code && String(res.code).startsWith('DUPLICATE');
+                        scannedItems[storeIdx].syncStatus = isDup ? 'duplicate' : 'error';
+                        scannedItems[storeIdx].syncNote = res.message || res.code || 'Ошибка записи';
+                        if (isDup) duplicatesCount++;
+                        else errorsCount++;
+                    } else {
+                        scannedItems[storeIdx].syncStatus = 'sent';
+                        scannedItems[storeIdx].syncNote = '';
+                        scannedItems[storeIdx].sentShipmentName = shipmentName;
+                        sentOk++;
+                    }
+                });
+
+                sendProgressCounter.textContent = `${queue.length} / ${queue.length}`;
+                saveToStorage();
+            } catch (err) {
+                console.warn('Ошибка пакетной отправки в таблицу:', err);
+                queue.forEach(targetItem => {
+                    const storeIdx = scannedItems.findIndex(x => x.id === targetItem.id);
+                    if (storeIdx !== -1 && scannedItems[storeIdx].syncStatus !== 'sent') {
+                        scannedItems[storeIdx].syncStatus = 'error';
+                        scannedItems[storeIdx].syncNote = err && err.message ? err.message : 'Нет связи с таблицей (проверьте интернет / VPN)';
+                    }
+                });
+                errorsCount = queue.length;
+                saveToStorage();
             }
 
             isSendingBatch = false;
@@ -1218,7 +1231,7 @@
             renderList();
 
             if (errorsCount === 0 && duplicatesCount === 0) {
-                bridgeStatusText.textContent = `Выгружено: ${sentOk} шт. (${shipmentName})`;
+                bridgeStatusText.textContent = `Выгружено пачкой: ${sentOk} шт. (${shipmentName})`;
                 bridgeStatusText.className = 'text-xs font-semibold text-emerald-700';
                 playFeedbackSound('success');
                 showToast(`Успешно выгружено: ${sentOk} шт.`, 'success');
@@ -1230,10 +1243,10 @@
                 showToast(`Отправлено: ${sentOk}, дубликатов: ${duplicatesCount}`, 'warning');
                 closeSendBridgeModal();
             } else {
-                bridgeStatusText.textContent = `Ошибка связи (отправлено ${sentOk} из ${queue.length}). Выключите VPN и повторите`;
+                bridgeStatusText.textContent = `Ошибка выгрузки (отправлено ${sentOk} из ${queue.length}). Проверьте связь / VPN и повторите`;
                 bridgeStatusText.className = 'text-xs font-semibold text-red-600';
                 playFeedbackSound('warning');
-                showToast('Нет связи с таблицей. Проверьте Wi-Fi / отключите VPN и нажмите «Выгрузить» снова', 'error');
+                showToast('Ошибка при пакетной отправке. Проверьте Wi-Fi / VPN и нажмите «Выгрузить» снова', 'error');
                 modalPendingCount.textContent = `${getUnsentItems().length} шт.`;
             }
         });
