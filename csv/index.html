@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF → CSV Маркировка | Tom studio</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Crect x='14' y='14' width='14' height='14' fill='%2338bdf8'/%3E%3Crect x='36' y='14' width='14' height='14' fill='%23f8fafc'/%3E%3Crect x='14' y='36' width='14' height='14' fill='%23f8fafc'/%3E%3Crect x='36' y='36' width='6' height='6' fill='%2338bdf8'/%3E%3Crect x='44' y='44' width='6' height='6' fill='%2338bdf8'/%3E%3C/svg%3E" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .title-block h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .title-block p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .dropzone input[type="file"] { display: none; }
+    .dropzone-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .dropzone-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #082f49;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #7dd3fc;
+    }
+    .btn-success {
+      background: var(--ok);
+      color: #052e16;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #4ade80;
+    }
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .stat-val {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .progress-wrap {
+      margin-top: 14px;
+      display: none;
+    }
+    .progress-bar {
+      height: 8px;
+      background: var(--surface-2);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s;
+    }
+    .status-text {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 460px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--surface-2);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .code-cell {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .gs-tag {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+      padding: 0 4px;
+      margin: 0 2px;
+      font-size: 11px;
+    }
+    .pill-ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    .pill-warn {
+      color: var(--warn);
+      font-weight: 600;
+    }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .page-thumb {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .page-thumb canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      background: #fff;
+      display: block;
+      margin-bottom: 6px;
+    }
+    footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-block">
+        <h1>PDF Маркировка → CSV для 1С</h1>
+        <p>Извлечение DataMatrix из PDF выгрузок «Честного ЗНАКа» в CSV (UTF-8 BOM, 1 колонка)</p>
+      </div>
+      <div class="brand-badge">Подпись: Tom studio</div>
+    </header>
+
+    <div class="card">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="pdfInput" accept="application/pdf" />
+        <div class="dropzone-title">Нажмите или перетащите PDF-файл из «Честного ЗНАКа»</div>
+        <div class="dropzone-sub">Поддерживаются одно- и многостраничные PDF с любым заполнением этикеток на листе</div>
+      </label>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="status-text" id="statusText">Ожидание файла...</div>
+      </div>
+
+      <div class="controls">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" id="clearBtn" disabled>Очистить</button>
+        </div>
+        <button class="btn btn-success" id="downloadBtn" disabled>Скачать CSV для 1С</button>
+      </div>
+    </div>
+
+    <div class="card" id="resultsCard" style="display:none;">
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-label">Страниц в PDF</div>
+          <div class="stat-val" id="statPages">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Найдено кодов</div>
+          <div class="stat-val" id="statCodes">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Совпало с текстом PDF</div>
+          <div class="stat-val" id="statMatched">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Не прочитано / расхождений</div>
+          <div class="stat-val" id="statMissed">0</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:54px;">№</th>
+              <th style="width:70px;">Стр.</th>
+              <th>Код маркировки (визуализация GS \x1d)</th>
+              <th style="width:150px;">Проверка</th>
+            </tr>
+          </thead>
+          <tbody id="codesTableBody"></tbody>
+        </table>
+      </div>
+
+      <details style="margin-top:16px;">
+        <summary style="cursor:pointer; color:var(--muted); font-size:13px;">Показать миниатюры страниц и найденные зоны кодов</summary>
+        <div class="preview-grid" id="previewGrid"></div>
+      </details>
+    </div>
+
+    <footer>
+      <div>Локальная обработка в браузере (без передачи файлов на сервер)</div>
+      <div>Подпись: <strong>Tom studio</strong></div>
+    </footer>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const dropzone = document.getElementById('dropzone');
+    const pdfInput = document.getElementById('pdfInput');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const statusText = document.getElementById('statusText');
+    const resultsCard = document.getElementById('resultsCard');
+    const codesTableBody = document.getElementById('codesTableBody');
+    const previewGrid = document.getElementById('previewGrid');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    let extractedCodes = [];
+    let currentFileName = 'marks';
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+    pdfInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      extractedCodes = [];
+      pdfInput.value = '';
+      codesTableBody.innerHTML = '';
+      previewGrid.innerHTML = '';
+      resultsCard.style.display = 'none';
+      progressWrap.style.display = 'none';
+      downloadBtn.disabled = true;
+      clearBtn.disabled = true;
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!extractedCodes.length) return;
+      const csvContent = buildCsv(extractedCodes.map(x => x.raw));
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentFileName.replace(/\.pdf$/i, '') + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // RFC-4180 CSV with UTF-8 BOM, 1 column "Код маркировки"
+    function buildCsv(codes) {
+      const BOM = '\uFEFF';
+      const lines = ['Код маркировки'];
+      for (const code of codes) {
+        if (/[",\r\n]/.test(code)) {
+          lines.push('"' + code.replace(/"/g, '""') + '"');
+        } else {
+          lines.push(code);
+        }
+      }
+      return BOM + lines.join('\n') + '\n';
+    }
+
+    // Find dark rectangular blocks (DataMatrix regions) on rendered canvas
+    function detectDataMatrixBoxes(canvas) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const imgData = ctx.getImageData(0, 0, w, h).data;
+
+      // Downsample into coarse grid (step = 4px) to locate dense dark blocks
+      const step = 4;
+      const gw = Math.ceil(w / step);
+      const gh = Math.ceil(h / step);
+      const grid = new Uint8Array(gw * gh);
+
+      for (let gy = 0; gy < gh; gy++) {
+        const py = gy * step;
+        for (let gx = 0; gx < gw; gx++) {
+          const px = gx * step;
+          const idx = (py * w + px) * 4;
+          const lum = (imgData[idx] + imgData[idx + 1] + imgData[idx + 2]) / 3;
+          if (lum < 128) grid[gy * gw + gx] = 1;
+        }
+      }
+
+      // Dilate by 1 cell to bridge white modules inside DataMatrix
+      const dil = new Uint8Array(gw * gh);
+      for (let gy = 0; gy < gh; gy++) {
+        for (let gx = 0; gx < gw; gx++) {
+          let found = 0;
+          for (let dy = -2; dy <= 2 && !found; dy++) {
+            const ny = gy + dy;
+            if (ny < 0 || ny >= gh) continue;
+            for (let dx = -2; dx <= 2; dx++) {
+              const nx = gx + dx;
+              if (nx < 0 || nx >= gw) continue;
+              if (grid[ny * gw + nx]) { found = 1; break; }
+            }
+          }
+          dil[gy * gw + gx] = found;
+        }
+      }
+
+      // Connected components (BFS)
+      const visited = new Uint8Array(gw * gh);
+      const boxes = [];
+      const queue = new Int32Array(gw * gh);
+
+      for (let gy = 0; gy < gh; gy++) {
+        for (let gx = 0; gx < gw; gx++) {
+          const start = gy * gw + gx;
+          if (!dil[start] || visited[start]) continue;
+
+          let head = 0, tail = 0;
+          queue[tail++] = start;
+          visited[start] = 1;
+
+          let minX = gx, maxX = gx, minY = gy, maxY = gy, count = 0;
+          while (head < tail) {
+            const cur = queue[head++];
+            const cx = cur % gw;
+            const cy = (cur / gw) | 0;
+            count++;
+            if (cx < minX) minX = cx;
+            if (cx > maxX) maxX = cx;
+            if (cy < minY) minY = cy;
+            if (cy > maxY) maxY = cy;
+
+            const neighbors = [
+              cy > 0 ? cur - gw : -1,
+              cy + 1 < gh ? cur + gw : -1,
+              cx > 0 ? cur - 1 : -1,
+              cx + 1 < gw ? cur + 1 : -1
+            ];
+            for (let i = 0; i < 4; i++) {
+              const nb = neighbors[i];
+              if (nb >= 0 && dil[nb] && !visited[nb]) {
+                visited[nb] = 1;
+                queue[tail++] = nb;
+              }
+            }
+          }
+
+          const bw = (maxX - minX + 1) * step;
+          const bh = (maxY - minY + 1) * step;
+          const aspect = bw / bh;
+          // DataMatrix in Chestny ZNAK PDFs is square (~160-260px at scale 3)
+          if (bw >= 90 && bw <= 450 && bh >= 90 && bh <= 450 && aspect >= 0.78 && aspect <= 1.25 && count > 180) {
+            const pad = Math.round(bw * 0.22);
+            boxes.push({
+              x: Math.max(0, minX * step - pad),
+              y: Math.max(0, minY * step - pad),
+              w: Math.min(w, (maxX + 1) * step + pad) - Math.max(0, minX * step - pad),
+              h: Math.min(h, (maxY + 1) * step + pad) - Math.max(0, minY * step - pad)
+            });
+          }
+        }
+      }
+
+      // Sort reading order: top-to-bottom (row tolerance 40px), then left-to-right
+      boxes.sort((a, b) => {
+        if (Math.abs(a.y - b.y) > 40) return a.y - b.y;
+        return a.x - b.x;
+      });
+
+      return boxes;
+    }
+
+    function decodeCropWithZXing(reader, sourceCanvas, box) {
+      const crop = document.createElement('canvas');
+      crop.width = box.w;
+      crop.height = box.h;
+      const cctx = crop.getContext('2d');
+      cctx.fillStyle = '#ffffff';
+      cctx.fillRect(0, 0, crop.width, crop.height);
+      cctx.drawImage(sourceCanvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+
+      const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(crop);
+      const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.DATA_MATRIX]);
+      const result = reader.decode(binaryBitmap, hints);
+      let text = result.getText();
+      // Strip leading FNC1 character if ZXing prepends \u001d
+      if (text.startsWith('\u001d')) text = text.slice(1);
+      return text;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatCodeHtml(raw) {
+      return raw.split('\u001d').map(part => escapeHtml(part)).join('<span class="gs-tag">GS</span>');
+    }
+
+    async function handleFile(file) {
+      currentFileName = file.name;
+      extractedCodes = [];
+      codesTableBody.innerHTML = '';
+      previewGrid.innerHTML = '';
+      resultsCard.style.display = 'none';
+      progressWrap.style.display = 'block';
+      progressFill.style.width = '0%';
+      statusText.textContent = 'Загрузка PDF...';
+      downloadBtn.disabled = true;
+      clearBtn.disabled = false;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = pdf.numPages;
+
+      const dmReader = new ZXing.DataMatrixReader();
+      let totalMatchedText = 0;
+      let totalMissed = 0;
+
+      for (let p = 1; p <= numPages; p++) {
+        statusText.textContent = `Обработка страницы ${p} из ${numPages}...`;
+        progressFill.style.width = `${Math.round(((p - 1) / numPages) * 100)}%`;
+
+        const page = await pdf.getPage(p);
+        // Extract text layer for cross-verification
+        const textContent = await page.getTextContent();
+        const pageCompactText = textContent.items.map(it => it.str).join('').replace(/\s+/g, '');
+
+        const scale = 3.0;
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        const boxes = detectDataMatrixBoxes(canvas);
+        const debugCanvas = document.createElement('canvas');
+        debugCanvas.width = canvas.width;
+        debugCanvas.height = canvas.height;
+        const dctx = debugCanvas.getContext('2d');
+        dctx.drawImage(canvas, 0, 0);
+
+        for (const box of boxes) {
+          try {
+            const code = decodeCropWithZXing(dmReader, canvas, box);
+            const humanPart = code.split('\u001d')[0];
+            const isMatched = pageCompactText.includes(humanPart);
+            if (isMatched) totalMatchedText++;
+
+            extractedCodes.push({
+              page: p,
+              raw: code,
+              matched: isMatched
+            });
+
+            dctx.strokeStyle = '#22c55e';
+            dctx.lineWidth = 5;
+            dctx.strokeRect(box.x, box.y, box.w, box.h);
+          } catch (err) {
+            totalMissed++;
+            dctx.strokeStyle = '#ef4444';
+            dctx.lineWidth = 5;
+            dctx.strokeRect(box.x, box.y, box.w, box.h);
+          }
+        }
+
+        const thumb = document.createElement('div');
+        thumb.className = 'page-thumb';
+        thumb.appendChild(debugCanvas);
+        const cap = document.createElement('div');
+        cap.textContent = `Стр. ${p} (найдено зон: ${boxes.length})`;
+        thumb.appendChild(cap);
+        previewGrid.appendChild(thumb);
+      }
+
+      progressFill.style.width = '100%';
+      statusText.textContent = `Готово! Обработано страниц: ${numPages}, распознано кодов: ${extractedCodes.length}.`;
+
+      document.getElementById('statPages').textContent = numPages;
+      document.getElementById('statCodes').textContent = extractedCodes.length;
+      document.getElementById('statMatched').textContent = totalMatchedText;
+      document.getElementById('statMissed').textContent = totalMissed;
+
+      extractedCodes.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${item.page}</td>
+          <td class="code-cell">${formatCodeHtml(item.raw)}</td>
+          <td>${item.matched ? '<span class="pill-ok">✓ Сверено с текстом</span>' : '<span class="pill-warn">Прочитан DM</span>'}</td>
+        `;
+        codesTableBody.appendChild(tr);
+      });
+
+      resultsCard.style.display = 'block';
+      downloadBtn.disabled = extractedCodes.length === 0;
+    }
+  </script>
+</body>
+</html>
