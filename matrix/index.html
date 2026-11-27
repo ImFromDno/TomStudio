@@ -789,12 +789,24 @@
       shape-rendering: crispEdges;
     }
 
-    .gtin-product-name {
+    .gtin-product-name,
+    .card-product-name {
       margin-top: 8px;
       font-size: 12px;
       font-weight: 600;
       line-height: 1.3;
       color: var(--text);
+      word-break: break-word;
+    }
+
+    .card-box-sscc {
+      margin-top: 7px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--accent);
+      word-break: break-all;
     }
 
     .serial-line {
@@ -863,7 +875,7 @@
       }
 
       .page-header, .two-col, .summary-card, .io-panel, h3, .page-footer,
-      .dm-title, .dm-badge {
+      .dm-title, .dm-badge, .card-product-name, .card-box-sscc {
         display: none !important;
       }
 
@@ -2892,8 +2904,9 @@ function generateBoxMatrixViaBwip(ssccText) {
           else itemCount += 1;
 
           sizesSet.add(`${res.totalCols}×${res.totalRows}`);
+          const resolvedGtinName = res.isBox ? '' : lookupProductNameByGtin(res.gtin);
           const productTitle = showProductNameEl.checked
-            ? (res.isBox ? '' : lookupProductNameByGtin(res.gtin))
+            ? resolvedGtinName
             : '';
           const factoryCodeText = (showRawCodeEl.checked || res.isBox)
             ? (res.factoryCode || res.label || '')
@@ -2915,10 +2928,26 @@ function generateBoxMatrixViaBwip(ssccText) {
               <div class="raw-code print-raw"></div>
               <div class="gtin-product-name print-name"></div>
             </div>
+            <div class="card-product-name"></div>
+            <div class="card-box-sscc"></div>
           `;
 
           card.querySelector('.raw-code').textContent = factoryCodeText;
           card.querySelector('.gtin-product-name').textContent = productTitle;
+
+          const cardNameEl = card.querySelector('.card-product-name');
+          const cardBoxSsccEl = card.querySelector('.card-box-sscc');
+          if (!res.isBox && resolvedGtinName) {
+            cardNameEl.textContent = resolvedGtinName;
+          } else {
+            cardNameEl.style.display = 'none';
+          }
+
+          if (res.isBox && factoryCodeText) {
+            cardBoxSsccEl.textContent = factoryCodeText;
+          } else {
+            cardBoxSsccEl.style.display = 'none';
+          }
 
           if (!factoryCodeText) {
             card.querySelector('.raw-code').style.display = 'none';
