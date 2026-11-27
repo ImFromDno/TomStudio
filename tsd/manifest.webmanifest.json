@@ -1,0 +1,25 @@
+{
+  "name": "Сканер КИЗ — ТСД",
+  "short_name": "Сканер КИЗ",
+  "description": "Подбор и агрегация кодов маркировки и SSCC для ТСД",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%23059669'/%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='14' stroke-linecap='round' stroke-linejoin='round' d='M48 66v-18h18M126 48h18v18M144 126v18h-18M66 144H48v-18M72 96h48M96 72v48'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23059669'/%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='36' stroke-linecap='round' stroke-linejoin='round' d='M128 176v-48h48M336 128h48v48M384 336v48h-48M176 384h-48v-48M192 256h128M256 192v128'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
