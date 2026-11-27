@@ -1,0 +1,4142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" type="image/svg+xml" href="../assets/icons/matrix.svg">
+  <title>Tom Studio — Project Matrix · v11.10-bwip-box</title>
+
+  <!-- Библиотеки для локальной распаковки ZIP, чтения таблиц (.xlsx, .xls, .csv) и генерации коробов через bwip-js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="./bwip-js-min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --card-2: #fafafa;
+      --text: #333333;
+      --muted: #666666;
+      --border: #dddddd;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --accent: #1a73e8;
+      --accent-hover: #1557b0;
+      --success: #137333;
+      --success-bg: #e6f4ea;
+      --success-border: #ceead6;
+      --warn-text: #9a6700;
+      --warn-bg: #fef7e0;
+      --warn-border: #fde293;
+      --info-text: #174ea6;
+      --info-bg: #e8f0fe;
+      --info-border: #d2e3fc;
+      --bar-bg: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+      --bar-border: rgba(147, 197, 253, 0.28);
+      --bar-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+      --code-bg: #ffffff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-2: #0b1220;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #86efac;
+        --success-bg: rgba(34, 197, 94, 0.14);
+        --success-border: rgba(34, 197, 94, 0.35);
+        --warn-text: #fde68a;
+        --warn-bg: rgba(245, 158, 11, 0.14);
+        --warn-border: rgba(245, 158, 11, 0.35);
+        --info-text: #bfdbfe;
+        --info-bg: rgba(59, 130, 246, 0.14);
+        --info-border: rgba(59, 130, 246, 0.35);
+        --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        --bar-border: rgba(96, 165, 250, 0.32);
+        --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+        --code-bg: #ffffff;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #86efac;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-border: rgba(34, 197, 94, 0.35);
+      --warn-text: #fde68a;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --warn-border: rgba(245, 158, 11, 0.35);
+      --info-text: #bfdbfe;
+      --info-bg: rgba(59, 130, 246, 0.14);
+      --info-border: rgba(59, 130, 246, 0.35);
+      --bar-bg: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      --bar-border: rgba(96, 165, 250, 0.32);
+      --bar-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+      --code-bg: #ffffff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 8px auto 24px;
+      padding: 0 15px 15px;
+      max-width: 1080px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .page-header {
+      margin-bottom: 14px;
+    }
+
+    .ts-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: var(--bar-bg);
+      border: 1px solid var(--bar-border);
+      box-shadow: var(--bar-shadow);
+      color: #ffffff;
+    }
+
+    .ts-brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .ts-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.26);
+      flex-shrink: 0;
+    }
+
+    .page-header .ts-divider {
+      margin-left: auto;
+    }
+
+    .ts-project {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: #e2e8f0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bulb-btn {
+      appearance: none;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .bulb-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(1.05);
+    }
+
+    .bulb-btn.is-lit {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: rgba(253, 224, 71, 0.65);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      opacity: 1;
+    }
+
+    .bulb-btn.is-off {
+      opacity: 0.45;
+      filter: grayscale(0.85);
+      box-shadow: none;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 820px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .two-col .card {
+      margin-bottom: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 10px;
+      color: var(--text);
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      background: var(--card-2);
+      padding: 10px 12px;
+      text-align: center;
+      cursor: pointer;
+      min-height: 62px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s ease, background-color 0.2s ease;
+    }
+
+    .dropzone:hover,
+    .dropzone:focus-visible,
+    .dropzone.is-dragover {
+      border-color: var(--accent);
+      background: var(--info-bg);
+      outline: none;
+    }
+
+    .dropzone-main {
+      font-size: 13.5px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      color: var(--text);
+    }
+
+    .dropzone-sub {
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .dropzone-actions {
+      margin-top: 5px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .link-btn {
+      appearance: none;
+      background: none;
+      border: none;
+      padding: 2px 4px;
+      color: var(--accent);
+      text-decoration: underline;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .link-btn:hover {
+      color: var(--accent-hover);
+    }
+
+    .info-banner {
+      display: none !important;
+    }
+
+    .info-banner.warn {
+      border-color: var(--warn-border);
+      background: var(--warn-bg);
+      color: var(--warn-text);
+    }
+
+    .info-banner.success {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    label.field-label {
+      display: block;
+      margin-top: 8px;
+      font-weight: 600;
+      font-size: 11.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    label.field-label:first-child {
+      margin-top: 0;
+    }
+
+    select,
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 5px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13.5px;
+      background: var(--card-2);
+      color: var(--text);
+      outline: none;
+    }
+
+    select:focus,
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .settings-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .settings-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 560px) {
+      .settings-grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .mini-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mini-field span {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .mini-field input,
+    .mini-field select {
+      margin-top: 0;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+
+    .preset-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .preset-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .preset-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 0;
+    }
+
+    .preset-reload-icon {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .preset-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    @media (max-width: 420px) {
+      .preset-controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .preset-controls select {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .preset-controls select {
+      margin-top: 0;
+      padding: 6px 8px;
+      font-size: 12.5px;
+      min-width: 0;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fine-offset-box {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+    }
+
+    .fine-offset-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .fine-offset-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .fine-offset-row {
+      display: grid;
+      grid-template-columns: minmax(96px, 1.2fr) repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 520px) {
+      .fine-offset-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .fine-offset-cap-label {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .fine-offset-cap-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .checkbox-row {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .checkbox-sub {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .db-status-row {
+      margin-top: 6px;
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .compact-preview-box {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compact-preview-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .compact-preview-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .compact-preview-title {
+      display: inline-block;
+    }
+
+    .compact-preview-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compact-preview-controls select {
+      margin-top: 0;
+      padding: 4px 8px;
+      font-size: 12px;
+      width: auto;
+      min-width: 88px;
+    }
+
+    .compact-preview-stage {
+      flex: 1 1 auto;
+      min-height: 200px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .live-label-sheet {
+      position: relative;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #94a3b8;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .live-label-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .compact-preview-foot {
+      margin-top: 8px;
+      flex-shrink: 0;
+      font-size: 11.5px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .summary-card {
+      background: var(--card);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 900px) {
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 720px) {
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .stat-box {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      margin-top: 3px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.ok { color: var(--success); }
+    .stat-value.warn { color: var(--warn-text); }
+
+    .io-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button.action-btn {
+      padding: 8px 13px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.action-btn.small {
+      padding: 5px 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    button.action-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+    }
+
+    button.action-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    button.action-btn.primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    h3 {
+      margin: 16px 0 10px;
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 12px;
+    }
+
+    .dm-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      break-inside: avoid;
+      position: relative;
+    }
+
+    .dm-card.is-box {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), var(--shadow);
+    }
+
+    .dm-title {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 9px;
+    }
+
+    .dm-badge {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--info-bg);
+      color: var(--info-text);
+      border: 1px solid var(--info-border);
+    }
+
+    .matrix-box {
+      width: 176px;
+      height: 176px;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--code-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .matrix-box svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      shape-rendering: crispEdges;
+    }
+
+    .gtin-product-name,
+    .card-product-name {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .card-box-sscc {
+      margin-top: 7px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--accent);
+      word-break: break-all;
+    }
+
+    .serial-line {
+      margin-top: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--accent);
+      word-break: break-all;
+    }
+
+    .raw-code {
+      margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.35;
+      word-break: break-all;
+      color: var(--muted);
+    }
+
+    .err-text {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .page-footer {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 440px) {
+      .ts-bar {
+        padding: 11px 15px;
+        gap: 8px;
+      }
+
+      .ts-brand {
+        font-size: 18px;
+      }
+
+      .ts-divider {
+        height: 19px;
+      }
+
+      .ts-project {
+        font-size: 14px;
+      }
+    }
+
+    @media print {
+      @page {
+        size: var(--print-page-w, 25mm) var(--print-page-h, 43mm);
+        margin: 0;
+      }
+
+      html, body {
+        width: var(--print-page-w, 25mm) !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        max-width: none !important;
+        overflow: visible !important;
+      }
+
+      .page-header, .two-col, .summary-card, .io-panel, h3, .page-footer,
+      .dm-title, .dm-badge, .card-product-name, .card-box-sscc {
+        display: none !important;
+      }
+
+      .grid {
+        display: block !important;
+        width: var(--print-page-w, 25mm) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .dm-card {
+        display: block !important;
+        position: relative !important;
+        width: var(--print-page-w, 25mm) !important;
+        height: var(--print-page-h, 43mm) !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
+        text-align: center !important;
+      }
+
+      .dm-card:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+
+      .label-sheet-inner {
+        position: relative !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        transform: translate(var(--print-offset-x, 0mm), var(--print-offset-y, 0mm)) !important;
+        overflow: hidden !important;
+      }
+
+      .matrix-box {
+        position: absolute !important;
+        left: 50% !important;
+        top: var(--print-matrix-top, 2.75mm) !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        width: var(--print-matrix-size, 20mm) !important;
+        height: var(--print-matrix-size, 20mm) !important;
+        transform: translate(
+          calc(-50% + var(--print-matrix-dx, 0mm)),
+          var(--print-matrix-dy, 0mm)
+        ) !important;
+        overflow: hidden !important;
+      }
+
+      .matrix-box svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block !important;
+      }
+
+      .print-marker {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        left: 0.55mm !important;
+        right: 0.55mm !important;
+        top: 0.55mm !important;
+        height: 2.2mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        font-size: 6.4pt !important;
+        font-weight: 700 !important;
+        line-height: 1.1 !important;
+        color: #000000 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        transform: translate(var(--print-marker-dx, 0mm), var(--print-marker-dy, 0mm)) !important;
+      }
+
+      .print-raw {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        left: 0.55mm !important;
+        right: 0.55mm !important;
+        bottom: var(--print-code-bottom, 0.55mm) !important;
+        height: 5.4mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+        font-size: 4.6pt !important;
+        font-weight: 600 !important;
+        line-height: 1.14 !important;
+        letter-spacing: -0.02em !important;
+        color: #000000 !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-all !important;
+        overflow: hidden !important;
+        transform: translate(var(--print-serial-dx, 0mm), var(--print-serial-dy, 0mm)) !important;
+      }
+
+      .print-name {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: absolute !important;
+        left: 0.55mm !important;
+        right: 0.55mm !important;
+        bottom: 0.55mm !important;
+        height: 7.8mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        font-size: 5.4pt !important;
+        font-weight: 700 !important;
+        line-height: 1.12 !important;
+        color: #000000 !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+        overflow: hidden !important;
+        transform: translate(var(--print-bottom-dx, 0mm), var(--print-bottom-dy, 0mm)) !important;
+      }
+    }
+
+    .print-marker,
+    .print-serial,
+    .print-name,
+    .print-raw {
+      display: none;
+    }
+
+    body:not(.is-admin) .admin-only {
+      display: none !important;
+    }
+
+    body.is-admin .admin-only {
+      display: initial;
+    }
+
+    body.is-admin .admin-only.fine-offset-box,
+    body.is-admin .admin-only.checkbox-row,
+    body.is-admin .admin-only.mini-field {
+      display: flex;
+    }
+
+    body.is-admin .admin-only.settings-grid-3 {
+      display: grid;
+    }
+
+    .admin-mode-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(250, 204, 21, 0.22);
+      color: #fde047;
+      border: 1px solid rgba(253, 224, 71, 0.5);
+    }
+
+    body:not(.is-admin) .admin-mode-pill {
+      display: none !important;
+    }
+
+    body:not(.is-admin) .standard-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    body:not(.is-admin) .standard-stack .checkbox-row,
+    body:not(.is-admin) .standard-stack .mini-field {
+      margin-top: 0;
+    }
+
+    body:not(.is-admin) .two-col > .card:first-child {
+      display: flex;
+      flex-direction: column;
+    }
+
+    body:not(.is-admin) .two-col > .card:first-child .standard-stack {
+      order: 50;
+      margin-top: 10px;
+    }
+
+    body:not(.is-admin) .two-col > .card:first-child .preset-box {
+      order: 99;
+      margin-top: auto;
+    }
+
+    body:not(.is-admin) .two-col > .card:last-child {
+      display: flex;
+      flex-direction: column;
+    }
+
+    body:not(.is-admin) .two-col > .card:last-child .compact-preview-box {
+      margin-top: 0;
+      flex: 1 1 auto;
+    }
+      .db-bar {
+      margin-top: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .db-alert {
+      margin-top: 6px;
+      padding: 6px 10px;
+      border-radius: 7px;
+      font-size: 11.5px;
+      line-height: 1.3;
+      border: 1px solid var(--warn-border);
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      flex-shrink: 0;
+    }
+
+    .settings-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 2px 4px 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .setting-item--split {
+      flex-wrap: wrap;
+    }
+
+    .setting-item .checkbox-row {
+      margin-top: 0;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .mode-inline-select {
+      width: auto;
+      min-width: 132px;
+      margin-top: 0;
+      padding: 6px 10px;
+      font-size: 12.5px;
+      flex-shrink: 0;
+      transition: opacity 0.15s ease, background-color 0.15s ease;
+    }
+
+    .mode-inline-select:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      background: var(--card);
+    }
+
+    .setting-divider {
+      height: 1px;
+      background: var(--border);
+      opacity: 0.7;
+      margin: 2px 0;
+    }
+
+    body:not(.is-admin) .standard-stack {
+      gap: 6px !important;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+    }
+
+    body:not(.is-admin) .standard-stack .checkbox-row {
+      padding: 5px 4px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+    }
+
+    body:not(.is-admin) .standard-stack .checkbox-sub {
+      display: none !important;
+    }
+
+    body:not(.is-admin) .standard-stack .checkbox-text {
+      font-size: 13px;
+    }
+
+    body:not(.is-admin) .preset-box {
+      padding: 8px 10px;
+    }
+
+    body:not(.is-admin) .preset-top {
+      margin-bottom: 0;
+      gap: 8px;
+    }
+
+    body:not(.is-admin) .preset-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    body:not(.is-admin) .preset-controls select {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.10-bwip-box">
+      <span class="ts-brand">Tom Studio</span>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Matrix · v11.10-bwip-box</span>
+      <span class="admin-mode-pill" id="adminModeBadge">ADMIN</span>
+    </div>
+  </header>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="panel-title">Загрузка архива и таблиц</div>
+      <div
+        id="dropZone"
+        class="dropzone"
+        role="button"
+        tabindex="0"
+        aria-label="Перетащите ZIP-архив с таблицами или выберите файл"
+      >
+        <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" hidden />
+        <input type="file" id="tablesInput" accept=".xlsx,.xls,.csv,.txt,.tsv" multiple hidden />
+
+        <div class="dropzone-main">Перетащите ZIP или таблицы сюда или нажмите для выбора</div>
+        <div class="dropzone-actions">
+          <button type="button" class="link-btn" id="pickSingleTablesBtn">Выбрать таблицы (.xlsx / .xls / .csv)</button>
+        </div>
+      </div>
+
+      <div class="db-bar">
+        <span id="gtinDbStatus">Справочник не загружен</span>
+        <button type="button" class="action-btn small" id="refreshGtinBtn">Обновить</button>
+      </div>
+      <div class="db-alert" id="gtinAccessAlert" style="display:none;"></div>
+
+
+
+      <div class="compact-preview-box" aria-label="Предпросмотр этикетки">
+        <div class="compact-preview-head">
+          <span class="compact-preview-title">Предпросмотр этикетки</span>
+          <div class="compact-preview-controls">
+            <select id="previewIndexSelect" disabled title="Выбор этикетки">
+              <option value="0">—</option>
+            </select>
+            <select id="previewScaleSelect" title="Масштаб предпросмотра">
+              <option value="fit" selected>Авто (крупно)</option>
+              <option value="4.5">450%</option>
+              <option value="6">600%</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="compact-preview-stage" id="previewStage">
+          <div class="live-label-sheet" id="liveLabelSheet">
+            <canvas id="livePreviewCanvas" class="live-label-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="compact-preview-foot">
+          <span id="previewDimsInfo">25×43 мм · матрица 20.0 мм</span>
+          <span id="previewOffsetsInfo">dx/dy: 0</span>
+        </div>
+      </div>
+
+      <div class="preset-box" aria-label="Пресеты из TXT-файла">
+        <div class="preset-top">
+          <span class="preset-title admin-only" id="presetStatusLabel">Пресеты (.txt) · встроенный №1</span>
+          <div class="preset-controls">
+            <select id="presetSelect" title="Выбор пресета">
+              <option value="0">25×43 · матр. 20</option>
+            </select>
+            <button type="button" class="action-btn small preset-reload-icon" id="reloadPresetsBtn" title="Обновить пресеты" aria-label="Обновить пресеты">↻</button>
+            <button type="button" class="action-btn small admin-only" id="loadPresetsBtn" title="Загрузить локальный .txt файл">Загрузить</button>
+            <button type="button" class="action-btn small admin-only" id="exportPresetBtn" title="Сохранить текущие настройки в .txt">Сохранить</button>
+          </div>
+          <input type="file" id="presetsTxtInput" accept=".txt,text/plain" hidden />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="panel-title">Настройка режима и печати (1 ряд)</div>
+      <div class="admin-only">
+        <label class="field-label" for="inputMode">Режим обработки строк</label>
+        <select id="inputMode">
+          <option value="auto" selected>Авто (Base64 с GS / (01)... / 00 SSCC)</option>
+          <option value="base64">Base64 из 1С (0x1D = GS → FNC1)</option>
+          <option value="gs1_brackets">Строка со скобками (01)...(21)... / (00)...</option>
+          <option value="raw">Буквальная строка без FNC1</option>
+        </select>
+      </div>
+
+      <div class="settings-grid-3 admin-only">
+        <div class="mini-field">
+          <span>Ширина ленты (мм)</span>
+          <input type="number" id="labelWidthMm" value="25" min="15" max="150" step="0.5" />
+        </div>
+        <div class="mini-field">
+          <span>Высота этикетки (мм)</span>
+          <input type="number" id="labelHeightMm" value="43" min="10" max="150" step="0.5" />
+        </div>
+        <div class="mini-field">
+          <span>Размер матрицы (мм)</span>
+          <input type="number" id="matrixSizeMm" value="20" min="6" max="200" step="0.5" />
+        </div>
+      </div>
+
+      <div class="settings-grid-3 admin-only">
+        <div class="mini-field">
+          <span>Сдвиг X (мм)</span>
+          <input type="number" id="offsetXMm" value="0" min="-20" max="20" step="0.2" />
+        </div>
+        <div class="mini-field">
+          <span>Сдвиг Y (мм)</span>
+          <input type="number" id="offsetYMm" value="0" min="-20" max="20" step="0.2" />
+        </div>
+        <div class="mini-field">
+          <span>Номер коробки (если файл без SSCC)</span>
+          <input type="number" id="defaultBoxNum" value="1" min="1" max="99999" step="1" />
+        </div>
+      </div>
+
+      <div class="fine-offset-box admin-only" aria-label="Тонкое смещение надписей относительно текущей позиции">
+        <div class="fine-offset-header">
+          <span class="fine-offset-title">Тонкое смещение надписей (мм)</span>
+          <button type="button" class="action-btn small" id="resetCaptionOffsetsBtn">Сбросить (0)</button>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Матрица (DM)</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="matrixDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="matrixDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Нумерация</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="markerDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="markerDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Код (01)...(21)...</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="serialDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="serialDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+        </div>
+
+        <div class="fine-offset-row">
+          <span class="fine-offset-cap-label">Название / код</span>
+          <div class="mini-field">
+            <span>dx (влево/вправо)</span>
+            <input type="number" id="bottomDxMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+          <div class="mini-field">
+            <span>dy (вниз/вверх)</span>
+            <input type="number" id="bottomDyMm" value="0" min="-15" max="15" step="0.2" />
+          </div>
+        </div>
+      </div>
+
+      <label class="checkbox-row admin-only" for="skipEmptyCheck">
+        <input type="checkbox" id="skipEmptyCheck" checked />
+        <div>
+          <span class="checkbox-text">Пропускать пустые и невалидные строки</span>
+          <span class="checkbox-sub">Строки без данных или с ошибкой не попадают в итоговую сетку</span>
+        </div>
+      </label>
+
+      <div class="standard-stack">
+        <div class="settings-section-title">Настройки</div>
+
+        <div class="setting-item setting-item--split">
+          <label class="checkbox-row" for="showMarkersCheck">
+            <input type="checkbox" id="showMarkersCheck" checked />
+            <div>
+              <span class="checkbox-text">Нумерация этикеток</span>
+              <span class="checkbox-sub">Поддерживает групповую нумерацию по коробам и обычную порядковую</span>
+            </div>
+          </label>
+          <select id="numberingModeSelect" class="mode-inline-select" aria-label="Режим нумерации">
+            <option value="box_group" selected>По коробам</option>
+            <option value="sequential">Порядковая</option>
+          </select>
+        </div>
+
+        <div class="setting-divider" role="separator"></div>
+
+        <div class="setting-item">
+          <label class="checkbox-row" for="showProductNameCheck">
+            <input type="checkbox" id="showProductNameCheck" checked />
+            <div>
+              <span class="checkbox-text">Название товара</span>
+              <span class="checkbox-sub">Берётся из справочника</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="setting-divider" role="separator"></div>
+
+        <div class="setting-item">
+          <label class="checkbox-row" for="showRawCodeCheck">
+            <input type="checkbox" id="showRawCodeCheck" />
+            <div>
+              <span class="checkbox-text">КИЗ</span>
+              <span class="checkbox-sub">GTIN и серийный номер (01)...(21)...</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <div class="summary-grid">
+      <div class="stat-box">
+        <div class="stat-label">Всего строк</div>
+        <div class="stat-value" id="statTotal">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Сгенерировано</div>
+        <div class="stat-value ok" id="statOk">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Коробов (SSCC) / шт.</div>
+        <div class="stat-value accent" id="statBoxesItems">0 / 0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Размер матрицы</div>
+        <div class="stat-value accent" id="statSize">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Пропущено / ошибок</div>
+        <div class="stat-value warn" id="statSkip">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card io-panel">
+    <div class="io-header">
+      <div class="panel-title" style="margin: 0;">Строки Base64 / GS1 / SSCC (по одной на строку)</div>
+      <div class="btn-row">
+        <button type="button" class="action-btn primary" id="renderBtn">Сгенерировать коды</button>
+        <button type="button" class="action-btn primary" id="pdfBtn">Скачать PDF 25×43 мм</button>
+        <button type="button" class="action-btn" id="printBtn">Печать (1 ряд)</button>
+        <button type="button" class="action-btn" id="clearBtn">Очистить</button>
+      </div>
+    </div>
+    <textarea id="codesInput" placeholder="Вставьте строки Base64 из 1С, коды (01)...(21)... или коды транспортной упаковки 00... / (00)... / (0)0..."></textarea>
+  </div>
+
+  <h3>Матричные коды ECC200</h3>
+  <div class="grid" id="outputGrid"></div>
+
+  <footer class="page-footer">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.10-bwip-box">
+      <span class="ts-brand">Tom Studio</span>
+      <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
+      <span class="ts-divider" aria-hidden="true"></span>
+      <span class="ts-project">Project Matrix · v11.10-bwip-box</span>
+    </div>
+  </footer>
+
+  <script>
+    const DATABASES = {
+      'belsvet': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv',
+      'energodar': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=21252746&single=true&output=csv'
+    };
+
+    const GTIN_CACHE_KEY = 'tom_studio_matrix_gtin_cache_v1';
+    const PRESETS_FILE_URL = './presets.txt';
+
+    const DEFAULT_PRESETS_TXT = `[25x43 Матрица 20 (dy DM -1, код +3.2, название +2)]
+inputMode=auto
+labelWidthMm=25
+labelHeightMm=43
+matrixSizeMm=20
+offsetXMm=0
+offsetYMm=0
+defaultBoxNum=1
+
+matrixDxMm=0
+matrixDyMm=-1
+markerDxMm=0
+markerDyMm=-0.4
+serialDxMm=0
+serialDyMm=3.2
+bottomDxMm=0
+bottomDyMm=2
+
+skipEmptyCheck=true
+showMarkersCheck=true
+numberingModeSelect=box_group
+showProductNameCheck=true
+showRawCodeCheck=true
+`;
+
+    const PRESET_FIELD_META = [
+      { id: 'inputMode', type: 'select' },
+      { id: 'labelWidthMm', type: 'number' },
+      { id: 'labelHeightMm', type: 'number' },
+      { id: 'matrixSizeMm', type: 'number' },
+      { id: 'offsetXMm', type: 'number' },
+      { id: 'offsetYMm', type: 'number' },
+      { id: 'defaultBoxNum', type: 'number' },
+      { id: 'matrixDxMm', type: 'number' },
+      { id: 'matrixDyMm', type: 'number' },
+      { id: 'markerDxMm', type: 'number' },
+      { id: 'markerDyMm', type: 'number' },
+      { id: 'serialDxMm', type: 'number' },
+      { id: 'serialDyMm', type: 'number' },
+      { id: 'bottomDxMm', type: 'number' },
+      { id: 'bottomDyMm', type: 'number' },
+      { id: 'skipEmptyCheck', type: 'checkbox' },
+      { id: 'showMarkersCheck', type: 'checkbox' },
+      { id: 'numberingModeSelect', type: 'select' },
+      { id: 'showProductNameCheck', type: 'checkbox' },
+      { id: 'showRawCodeCheck', type: 'checkbox' },
+      { id: , type: 'select' }
+    ];
+
+    let loadedPresets = [];
+    let isApplyingPreset = false;
+
+    function parsePresetsTxt(text) {
+      const cleanText = String(text || '').replace(/^\uFEFF/, '');
+      const lines = cleanText.split(/\r?\n/);
+      const presets = [];
+      let current = null;
+
+      for (const rawLine of lines) {
+        const trimmed = rawLine.trim();
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith(';')) continue;
+
+        const secMatch = trimmed.match(/^\[([^\]]+)\]$/);
+        if (secMatch) {
+          current = {
+            name: secMatch[1].trim(),
+            values: {}
+          };
+          presets.push(current);
+          continue;
+        }
+
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          if (!current) {
+            current = {
+              name: 'Пресет 1',
+              values: {}
+            };
+            presets.push(current);
+          }
+          const key = trimmed.slice(0, eqIdx).trim();
+          const val = trimmed.slice(eqIdx + 1).trim();
+          if (key) {
+            current.values[key] = val;
+          }
+        }
+      }
+
+      return presets;
+    }
+
+    function applyPresetObject(preset) {
+      if (!preset || !preset.values) return;
+      isApplyingPreset = true;
+      try {
+        for (const [key, rawVal] of Object.entries(preset.values)) {
+          const el = document.getElementById(key);
+          if (!el) continue;
+
+          if (el.type === 'checkbox') {
+            const lower = String(rawVal).toLowerCase();
+            el.checked = (lower === 'true' || lower === '1' || lower === 'yes' || lower === 'on' || lower === 'да');
+          } else if (el.tagName === 'SELECT') {
+            const hasOpt = Array.from(el.options).some(o => o.value === rawVal);
+            if (hasOpt) {
+              el.value = rawVal;
+            }
+          } else {
+            const numVal = Number(String(rawVal).replace(',', '.'));
+            if (el.type === 'number') {
+              if (Number.isFinite(numVal)) {
+                el.value = String(numVal);
+              }
+            } else {
+              el.value = rawVal;
+            }
+          }
+        }
+      } finally {
+        isApplyingPreset = false;
+      }
+      renderAll();
+    }
+
+    function populatePresetSelect(presets, selectIndex = 0) {
+      const selEl = document.getElementById('presetSelect');
+      if (!Array.isArray(presets) || presets.length === 0) {
+        selEl.innerHTML = '<option value="">Нет пресетов</option>';
+        selEl.value = '';
+        return;
+      }
+      selEl.innerHTML = presets.map((p, idx) => {
+        const safeName = p.name || `Пресет ${idx + 1}`;
+        return `<option value="${idx}">${safeName}</option>`;
+      }).join('');
+      const clamped = Math.max(0, Math.min(presets.length - 1, selectIndex));
+      selEl.value = String(clamped);
+    }
+
+    function serializeCurrentSettingsToTxt(presetName = '') {
+      const now = new Date();
+      const stamp = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const w = document.getElementById('labelWidthMm').value;
+      const h = document.getElementById('labelHeightMm').value;
+      const m = document.getElementById('matrixSizeMm').value;
+      const title = (presetName || `${w}x${h} Матрица ${m} (${stamp})`).replace(/[\[\]\r\n]+/g, ' ').trim();
+
+      const lines = [`[${title}]`];
+      for (const meta of PRESET_FIELD_META) {
+        const el = document.getElementById(meta.id);
+        if (!el) continue;
+        if (meta.type === 'checkbox') {
+          lines.push(`${meta.id}=${el.checked ? 'true' : 'false'}`);
+        } else {
+          lines.push(`${meta.id}=${el.value}`);
+        }
+      }
+      return lines.join('\n') + '\n';
+    }
+
+    function downloadCurrentPresetTxt() {
+      const txt = serializeCurrentSettingsToTxt();
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'matrix_preset_v11.10-bwip-box.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setBanner('Сохранён файл пресета matrix_preset_v11.10-bwip-box.txt — можете скопировать секцию [...] в общий файл.', 'success');
+    }
+
+    async function handlePresetsTxtFile(file) {
+      if (!file) return;
+      const text = await file.text();
+      const parsed = parsePresetsTxt(text);
+      if (!parsed.length) {
+        setBanner(`В файле «${file.name}» не найдено ни одного пресета.`, 'warn');
+        return;
+      }
+      loadedPresets = parsed;
+      populatePresetSelect(loadedPresets, 0);
+      document.getElementById('presetStatusLabel').textContent = `Пресеты из «${file.name}» (${loadedPresets.length})`;
+      applyPresetObject(loadedPresets[0]);
+      setBanner(`Загружено пресетов из «${file.name}»: ${loadedPresets.length}. Выбран: «${loadedPresets[0].name}».`, 'success');
+    }
+
+    async function loadPresetsFromDirectory(reRender = true, manualRefresh = false) {
+      const prevIdx = Number(document.getElementById('presetSelect')?.value);
+      const prevName = (Number.isInteger(prevIdx) && loadedPresets[prevIdx])
+        ? loadedPresets[prevIdx].name
+        : '';
+
+      if (manualRefresh) {
+        setBanner('Перечитываем ./presets.txt из директории...');
+      }
+
+      try {
+        const cacheBustUrl = `${PRESETS_FILE_URL}?t=${Date.now()}`;
+        const res = await fetch(cacheBustUrl, { cache: 'no-store' });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const text = await res.text();
+        const parsed = parsePresetsTxt(text);
+        if (!parsed.length) {
+          if (manualRefresh) {
+            setBanner('Файл presets.txt найден, но в нём нет ни одной секции [Название пресета].', 'warn');
+          }
+          return false;
+        }
+
+        loadedPresets = parsed;
+        let targetIdx = 0;
+        if (prevName) {
+          const foundIdx = loadedPresets.findIndex((p) => p.name === prevName);
+          if (foundIdx >= 0) {
+            targetIdx = foundIdx;
+          }
+        }
+
+        populatePresetSelect(loadedPresets, targetIdx);
+        document.getElementById('presetStatusLabel').textContent = `Пресеты из presets.txt (${loadedPresets.length})`;
+        applyPresetObject(loadedPresets[targetIdx]);
+        if (reRender) {
+          renderAll();
+        }
+        if (manualRefresh) {
+          setBanner(
+            `Файл presets.txt обновлён (${loadedPresets.length} пресетов). Активен: «${loadedPresets[targetIdx].name}».`,
+            'success'
+          );
+        }
+        return true;
+      } catch (_) {
+        if (manualRefresh) {
+          setBanner(
+            'Не удалось прочитать ./presets.txt из директории (файл не найден или страница открыта локально через file://).',
+            'warn'
+          );
+        }
+        return false;
+      }
+    }
+
+    let gtinMaps = {
+      belsvet: new Map(),
+      energodar: new Map(),
+      updatedAt: null
+    };
+
+    const ECC200_SIZES = [
+      { rows: 10, cols: 10, rReg: 1, cReg: 1, dataCw: 3,   ecCw: 5,   blocks: 1 },
+      { rows: 12, cols: 12, rReg: 1, cReg: 1, dataCw: 5,   ecCw: 7,   blocks: 1 },
+      { rows: 14, cols: 14, rReg: 1, cReg: 1, dataCw: 8,   ecCw: 10,  blocks: 1 },
+      { rows: 16, cols: 16, rReg: 1, cReg: 1, dataCw: 12,  ecCw: 12,  blocks: 1 },
+      { rows: 18, cols: 18, rReg: 1, cReg: 1, dataCw: 18,  ecCw: 14,  blocks: 1 },
+      { rows: 20, cols: 20, rReg: 1, cReg: 1, dataCw: 22,  ecCw: 18,  blocks: 1 },
+      { rows: 22, cols: 22, rReg: 1, cReg: 1, dataCw: 30,  ecCw: 20,  blocks: 1 },
+      { rows: 24, cols: 24, rReg: 1, cReg: 1, dataCw: 36,  ecCw: 24,  blocks: 1 },
+      { rows: 26, cols: 26, rReg: 1, cReg: 1, dataCw: 44,  ecCw: 28,  blocks: 1 },
+      { rows: 32, cols: 32, rReg: 2, cReg: 2, dataCw: 62,  ecCw: 36,  blocks: 1 },
+      { rows: 36, cols: 36, rReg: 2, cReg: 2, dataCw: 86,  ecCw: 42,  blocks: 1 },
+      { rows: 40, cols: 40, rReg: 2, cReg: 2, dataCw: 114, ecCw: 48,  blocks: 1 },
+      { rows: 44, cols: 44, rReg: 2, cReg: 2, dataCw: 144, ecCw: 56,  blocks: 1 },
+      { rows: 48, cols: 48, rReg: 2, cReg: 2, dataCw: 174, ecCw: 68,  blocks: 1 },
+      { rows: 52, cols: 52, rReg: 4, cReg: 4, dataCw: 204, ecCw: 84,  blocks: 2 },
+      { rows: 64, cols: 64, rReg: 4, cReg: 4, dataCw: 280, ecCw: 112, blocks: 2 },
+      { rows: 72, cols: 72, rReg: 4, cReg: 4, dataCw: 368, ecCw: 144, blocks: 4 },
+      { rows: 80, cols: 80, rReg: 4, cReg: 4, dataCw: 456, ecCw: 192, blocks: 4 },
+      { rows: 88, cols: 88, rReg: 4, cReg: 4, dataCw: 576, ecCw: 224, blocks: 4 },
+      { rows: 96, cols: 96, rReg: 4, cReg: 4, dataCw: 696, ecCw: 272, blocks: 4 },
+      { rows: 104, cols: 104, rReg: 4, cReg: 4, dataCw: 816, ecCw: 336, blocks: 6 },
+      { rows: 120, cols: 120, rReg: 6, cReg: 6, dataCw: 1050, ecCw: 408, blocks: 6 },
+      { rows: 132, cols: 132, rReg: 6, cReg: 6, dataCw: 1304, ecCw: 496, blocks: 8 },
+      { rows: 144, cols: 144, rReg: 6, cReg: 6, dataCw: 1558, ecCw: 620, blocks: 10 }
+    ];
+
+    const GF_EXP = new Uint8Array(512);
+    const GF_LOG = new Uint8Array(256);
+    (function initGF() {
+      let x = 1;
+      for (let i = 0; i < 255; i++) {
+        GF_EXP[i] = x;
+        GF_LOG[x] = i;
+        x <<= 1;
+        if (x & 0x100) x ^= 0x12d;
+      }
+      for (let i = 255; i < 512; i++) {
+        GF_EXP[i] = GF_EXP[i - 255];
+      }
+    })();
+
+    function gfMul(a, b) {
+      if (a === 0 || b === 0) return 0;
+      return GF_EXP[GF_LOG[a] + GF_LOG[b]];
+    }
+
+    function calcReedSolomon(dataCw, ecLen) {
+      let poly = [1];
+      for (let k = 1; k <= ecLen; k++) {
+        const alphaK = GF_EXP[k];
+        const next = new Array(poly.length + 1).fill(0);
+        for (let i = 0; i < poly.length; i++) {
+          next[i] ^= poly[i];
+          next[i + 1] ^= gfMul(poly[i], alphaK);
+        }
+        poly = next;
+      }
+
+      const ecc = new Array(ecLen).fill(0);
+      for (let i = 0; i < dataCw.length; i++) {
+        const top = (dataCw[i] ^ ecc[0]) & 0xff;
+        for (let j = 0; j < ecLen - 1; j++) {
+          ecc[j] = ecc[j + 1] ^ gfMul(top, poly[j + 1]);
+        }
+        ecc[ecLen - 1] = gfMul(top, poly[ecLen]);
+      }
+      return ecc;
+    }
+
+    function encodeAsciiCodewords(bytes, isGs1) {
+      const cw = [];
+      if (isGs1) {
+        cw.push(232);
+      }
+
+      let i = 0;
+      while (i < bytes.length) {
+        if (
+          i + 1 < bytes.length &&
+          bytes[i] >= 48 && bytes[i] <= 57 &&
+          bytes[i + 1] >= 48 && bytes[i + 1] <= 57
+        ) {
+          const num = (bytes[i] - 48) * 10 + (bytes[i + 1] - 48);
+          cw.push(130 + num);
+          i += 2;
+        } else if (bytes[i] === 0x1d && isGs1) {
+          cw.push(232);
+          i += 1;
+        } else if (bytes[i] <= 127) {
+          cw.push(bytes[i] + 1);
+          i += 1;
+        } else {
+          cw.push(235);
+          cw.push((bytes[i] - 128) + 1);
+          i += 1;
+        }
+      }
+      return cw;
+    }
+
+    function padToCapacity(cw, targetCw) {
+      const out = cw.slice();
+      if (out.length < targetCw) {
+        out.push(129);
+      }
+      let idx = out.length + 1;
+      while (out.length < targetCw) {
+        const r253 = ((149 * idx) % 253) + 1;
+        const val = (254 + r253) % 254;
+        out.push(val === 0 ? 254 : val);
+        idx++;
+      }
+      return out.slice(0, targetCw);
+    }
+
+    function selectSymbol(cwLen) {
+      for (const sym of ECC200_SIZES) {
+        if (sym.dataCw >= cwLen) return sym;
+      }
+      throw new Error('Слишком длинные данные для поддерживаемых размеров символа');
+    }
+
+    function buildEcStream(paddedCw, sym) {
+      const blocks = sym.blocks;
+      const dataPerBlock = Math.floor(sym.dataCw / blocks);
+      const ecPerBlock = sym.ecCw;
+      const dataBlocks = [];
+      const ecBlocks = [];
+
+      for (let b = 0; b < blocks; b++) {
+        const start = b * dataPerBlock;
+        const end = (b === blocks - 1) ? sym.dataCw : start + dataPerBlock;
+        const part = paddedCw.slice(start, end);
+        dataBlocks.push(part);
+        ecBlocks.push(calcReedSolomon(part, ecPerBlock));
+      }
+
+      const stream = [];
+      const maxDataLen = Math.max(...dataBlocks.map(d => d.length));
+      for (let i = 0; i < maxDataLen; i++) {
+        for (let b = 0; b < blocks; b++) {
+          if (i < dataBlocks[b].length) {
+            stream.push(dataBlocks[b][i]);
+          }
+        }
+      }
+
+      for (let i = 0; i < ecPerBlock; i++) {
+        for (let b = 0; b < blocks; b++) {
+          stream.push(ecBlocks[b][i]);
+        }
+      }
+
+      return stream;
+    }
+
+    function placeEcc200Bits(codewords, nr, nc) {
+      const grid = Array.from({ length: nr }, () => Array(nc).fill(-1));
+
+      function moduleBit(r, c, cwIdx, bitMask) {
+        const rr = ((r % nr) + nr) % nr;
+        const cc = ((c % nc) + nc) % nc;
+        const cw = codewords[cwIdx] || 0;
+        grid[rr][cc] = (cw & bitMask) !== 0 ? 1 : 0;
+      }
+
+      function standardShape(r, c, cwIdx) {
+        moduleBit(r - 2, c - 2, cwIdx, 0x80);
+        moduleBit(r - 2, c - 1, cwIdx, 0x40);
+        moduleBit(r - 1, c - 2, cwIdx, 0x20);
+        moduleBit(r - 1, c - 1, cwIdx, 0x10);
+        moduleBit(r - 1, c,     cwIdx, 0x08);
+        moduleBit(r,     c - 2, cwIdx, 0x04);
+        moduleBit(r,     c - 1, cwIdx, 0x02);
+        moduleBit(r,     c,     cwIdx, 0x01);
+      }
+
+      function corner1(cwIdx) {
+        moduleBit(nr - 1, 0,      cwIdx, 0x80);
+        moduleBit(nr - 1, 1,      cwIdx, 0x40);
+        moduleBit(nr - 1, 2,      cwIdx, 0x20);
+        moduleBit(0,      nc - 2, cwIdx, 0x10);
+        moduleBit(0,      nc - 1, cwIdx, 0x08);
+        moduleBit(1,      nc - 1, cwIdx, 0x04);
+        moduleBit(2,      nc - 1, cwIdx, 0x02);
+        moduleBit(3,      nc - 1, cwIdx, 0x01);
+      }
+
+      function corner2(cwIdx) {
+        moduleBit(nr - 3, 0,      cwIdx, 0x80);
+        moduleBit(nr - 2, 0,      cwIdx, 0x40);
+        moduleBit(nr - 1, 0,      cwIdx, 0x20);
+        moduleBit(0,      nc - 4, cwIdx, 0x10);
+        moduleBit(0,      nc - 3, cwIdx, 0x08);
+        moduleBit(0,      nc - 2, cwIdx, 0x04);
+        moduleBit(0,      nc - 1, cwIdx, 0x02);
+        moduleBit(1,      nc - 1, cwIdx, 0x01);
+      }
+
+      function corner3(cwIdx) {
+        moduleBit(nr - 3, 0,      cwIdx, 0x80);
+        moduleBit(nr - 2, 0,      cwIdx, 0x40);
+        moduleBit(nr - 1, 0,      cwIdx, 0x20);
+        moduleBit(0,      nc - 2, cwIdx, 0x10);
+        moduleBit(0,      nc - 1, cwIdx, 0x08);
+        moduleBit(1,      nc - 1, cwIdx, 0x04);
+        moduleBit(2,      nc - 1, cwIdx, 0x02);
+        moduleBit(3,      nc - 1, cwIdx, 0x01);
+      }
+
+      function corner4(cwIdx) {
+        moduleBit(nr - 1, 0,      cwIdx, 0x80);
+        moduleBit(nr - 1, nc - 1, cwIdx, 0x40);
+        moduleBit(0,      nc - 3, cwIdx, 0x20);
+        moduleBit(0,      nc - 2, cwIdx, 0x10);
+        moduleBit(0,      nc - 1, cwIdx, 0x08);
+        moduleBit(1,      nc - 3, cwIdx, 0x04);
+        moduleBit(1,      nc - 2, cwIdx, 0x02);
+        moduleBit(1,      nc - 1, cwIdx, 0x01);
+      }
+
+      let cwIdx = 0;
+      let r = 4;
+      let c = 0;
+
+      do {
+        if (r === nr && c === 0) {
+          corner1(cwIdx++);
+        }
+        if (r === nr - 2 && c === 0 && (nc % 4) !== 0) {
+          corner2(cwIdx++);
+        }
+        if (r === nr - 2 && c === 0 && (nc % 8) === 4) {
+          corner3(cwIdx++);
+        }
+        if (r === nr + 4 && c === 2 && (nc % 8) === 0) {
+          corner4(cwIdx++);
+        }
+
+        do {
+          if (r < nr && c >= 0 && grid[r][c] < 0) {
+            standardShape(r, c, cwIdx++);
+          }
+          r -= 2;
+          c += 2;
+        } while (r >= 0 && c < nc);
+
+        r += 1;
+        c += 3;
+
+        do {
+          if (r >= 0 && c < nc && grid[r][c] < 0) {
+            standardShape(r, c, cwIdx++);
+          }
+          r += 2;
+          c -= 2;
+        } while (r < nr && c >= 0);
+
+        r += 3;
+        c += 1;
+      } while (r < nr || c < nc);
+
+      if (grid[nr - 1][nc - 1] < 0) {
+        grid[nr - 1][nc - 1] = 1;
+        grid[nr - 2][nc - 2] = 1;
+      }
+
+      return grid;
+    }
+
+    function assembleFullMatrix(dataGrid, sym) {
+      const regR = sym.rows / sym.rReg;
+      const regC = sym.cols / sym.cReg;
+      const innerR = regR - 2;
+      const innerC = regC - 2;
+
+      const totalRows = sym.rows;
+      const totalCols = sym.cols;
+      const full = Array.from({ length: totalRows }, () => Array(totalCols).fill(0));
+
+      for (let br = 0; br < sym.rReg; br++) {
+        for (let bc = 0; bc < sym.cReg; bc++) {
+          const originR = br * regR;
+          const originC = bc * regC;
+
+          for (let lr = 0; lr < regR; lr++) {
+            for (let lc = 0; lc < regC; lc++) {
+              const gr = originR + lr;
+              const gc = originC + lc;
+
+              if (lc === 0) {
+                full[gr][gc] = 1;
+              } else if (lr === regR - 1) {
+                full[gr][gc] = 1;
+              } else if (lr === 0) {
+                full[gr][gc] = (lc % 2 === 0) ? 1 : 0;
+              } else if (lc === regC - 1) {
+                full[gr][gc] = (lr % 2 === 1) ? 1 : 0;
+              } else {
+                const dr = br * innerR + (lr - 1);
+                const dc = bc * innerC + (lc - 1);
+                const val = (dataGrid[dr] && dataGrid[dr][dc] === 1) ? 1 : 0;
+                full[gr][gc] = val;
+              }
+            }
+          }
+        }
+      }
+
+      return { matrix: full, totalRows, totalCols };
+    }
+
+function generateBoxMatrixViaBwip(ssccText) {
+  if (typeof window.bwipjs === 'undefined' || typeof window.bwipjs.toCanvas !== 'function') {
+    return null;
+  }
+
+  const scale = 2;
+  const tmpCanvas = document.createElement('canvas');
+  try {
+    window.bwipjs.toCanvas(tmpCanvas, {
+      bcid: 'datamatrix',
+      text: ssccText,
+      scale,
+      paddingwidth: 0,
+      paddingheight: 0
+    });
+  } catch (_) {
+    return null;
+  }
+
+  const w = tmpCanvas.width;
+  const h = tmpCanvas.height;
+  if (!w || !h || w % scale !== 0 || h % scale !== 0) {
+    return null;
+  }
+
+  const totalCols = w / scale;
+  const totalRows = h / scale;
+  if (totalCols < 10 || totalRows < 10 || totalCols > 144 || totalRows > 144) {
+    return null;
+  }
+
+  const ctx = tmpCanvas.getContext('2d');
+  const img = ctx.getImageData(0, 0, w, h).data;
+
+  let darkCount = 0;
+  const totalCells = totalRows * totalCols;
+  const matrix = Array.from({ length: totalRows }, () => Array(totalCols).fill(0));
+
+  for (let r = 0; r < totalRows; r++) {
+    for (let c = 0; c < totalCols; c++) {
+      const px = c * scale + Math.floor(scale / 2);
+      const py = r * scale + Math.floor(scale / 2);
+      const idx = (py * w + px) * 4;
+      const alpha = img[idx + 3];
+      const lum = (img[idx] + img[idx + 1] + img[idx + 2]) / 3;
+      const isDark = alpha > 128 && lum < 128;
+      if (isDark) {
+        matrix[r][c] = 1;
+        darkCount++;
+      }
+    }
+  }
+
+  if (darkCount === 0 || darkCount === totalCells) {
+    return null;
+  }
+
+  return { matrix, totalRows, totalCols };
+}
+
+    function decodeBase64ToBytes(b64Str) {
+      const cleaned = String(b64Str || '').trim().replace(/\s+/g, '');
+      const binary = atob(cleaned);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function bytesToAscii(bytes) {
+      let s = '';
+      for (let i = 0; i < bytes.length; i++) {
+        s += String.fromCharCode(bytes[i]);
+      }
+      return s;
+    }
+
+    function normalizeSsccString(str) {
+      const s = String(str || '').trim();
+      const mParen0 = s.match(/^\(0\)0([0-9]\d{17})$/);
+      if (mParen0) {
+        return '00' + mParen0[1];
+      }
+      const mParen00 = s.match(/^\(00\)([0-9]\d{17})$/);
+      if (mParen00) {
+        return '00' + mParen00[1];
+      }
+      const mPlain = s.match(/^00([0-9]\d{17})$/);
+      if (mPlain) {
+        return '00' + mPlain[1];
+      }
+      return null;
+    }
+
+    function isSsccBytes(bytes) {
+      if (!bytes || bytes.length < 20) return false;
+      const ascii = bytesToAscii(bytes);
+      return /^00[0-9]\d{17}/.test(ascii);
+    }
+
+    function parseBracketedGs1ToBytes(str) {
+      const normalizedSscc = normalizeSsccString(str);
+      if (normalizedSscc) {
+        const out = [];
+        for (let i = 0; i < normalizedSscc.length; i++) {
+          out.push(normalizedSscc.charCodeAt(i) & 0xff);
+        }
+        return new Uint8Array(out);
+      }
+
+      const fixedLenAIs = {
+        '00': 18, '01': 14, '02': 14, '03': 14, '04': 16, '11': 6, '12': 6, '13': 6,
+        '15': 6, '16': 6, '17': 6, '20': 2, '31': 6, '32': 6, '33': 6,
+        '34': 6, '35': 6, '36': 6, '41': 14
+      };
+      const regex = /\((\d{2,4})\)/g;
+      const tokens = [];
+      let lastIndex = 0;
+      let match;
+
+      while ((match = regex.exec(str)) !== null) {
+        if (tokens.length > 0) {
+          tokens[tokens.length - 1].val = str.slice(lastIndex, match.index);
+        }
+        tokens.push({ ai: match[1], val: '' });
+        lastIndex = regex.lastIndex;
+      }
+      if (tokens.length > 0) {
+        tokens[tokens.length - 1].val = str.slice(lastIndex);
+      }
+
+      if (!tokens.length) {
+        const out = [];
+        for (let i = 0; i < str.length; i++) out.push(str.charCodeAt(i) & 0xff);
+        return new Uint8Array(out);
+      }
+
+      const out = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const { ai, val } = tokens[i];
+        if (i > 0) {
+          const prevAi = tokens[i - 1].ai;
+          const prevValLen = tokens[i - 1].val.length;
+          const isFixed = fixedLenAIs[prevAi] === prevValLen;
+          if (!isFixed) {
+            out.push(0x1d);
+          }
+        }
+        for (let k = 0; k < ai.length; k++) out.push(ai.charCodeAt(k) & 0xff);
+        for (let k = 0; k < val.length; k++) out.push(val.charCodeAt(k) & 0xff);
+      }
+      return new Uint8Array(out);
+    }
+
+    function extractGtinFromTextOrBytes(rawLine, bytes) {
+      const line = String(rawLine || '').trim();
+      const bracketMatch = line.match(/^\(01\)(\d{14})/);
+      if (bracketMatch) return bracketMatch[1];
+
+      const plainMatch = line.match(/^01(\d{14})/);
+      if (plainMatch) return plainMatch[1];
+
+      if (bytes && bytes.length >= 16 && bytes[0] === 48 && bytes[1] === 49) {
+        const g = bytesToAscii(bytes.slice(2, 16));
+        if (/^\d{14}$/.test(g)) return g;
+      }
+      return '';
+    }
+
+    function extractSerialFromTextOrBytes(rawLine, bytes) {
+      const line = String(rawLine || '').trim();
+      const parenSerial = line.match(/\(21\)([^\(\x1d<]+)/);
+      if (parenSerial && parenSerial[1]) {
+        const cleaned = parenSerial[1].replace(/<GS>/gi, '').trim();
+        if (cleaned) return cleaned;
+      }
+
+      if (bytes && bytes.length >= 18 && bytes[0] === 48 && bytes[1] === 49) {
+        const ascii = bytesToAscii(bytes);
+        if (ascii.slice(16, 18) === '21') {
+          const rest = ascii.slice(18);
+          const gsIdx = rest.indexOf('\x1d');
+          const rawSerial = gsIdx >= 0 ? rest.slice(0, gsIdx) : rest;
+          if (rawSerial) return rawSerial;
+        }
+      }
+
+      const plainSerial = line.match(/^01\d{14}21([^\x1d<]+)/);
+      if (plainSerial && plainSerial[1]) {
+        return plainSerial[1].replace(/<GS>/gi, '').trim();
+      }
+
+      return '';
+    }
+
+    function prepareBytes(rawLine, mode) {
+      const line = rawLine.trim();
+      if (mode === 'raw') {
+        const arr = [];
+        for (let i = 0; i < line.length; i++) arr.push(line.charCodeAt(i) & 0xff);
+        const bytes = new Uint8Array(arr);
+        const directSscc = normalizeSsccString(line);
+        const isBox = Boolean(directSscc) || isSsccBytes(bytes);
+        return {
+          bytes,
+          isGs1: false,
+          label: directSscc || line,
+          isBox,
+          gtin: extractGtinFromTextOrBytes(line, bytes),
+          serial: extractSerialFromTextOrBytes(line, bytes)
+        };
+      }
+
+      const directSscc = normalizeSsccString(line);
+      if (directSscc) {
+        const arr = [];
+        for (let i = 0; i < directSscc.length; i++) arr.push(directSscc.charCodeAt(i) & 0xff);
+        return {
+          bytes: new Uint8Array(arr),
+          isGs1: false,
+          label: directSscc,
+          isBox: true,
+          gtin: '',
+          serial: ''
+        };
+      }
+
+      if (mode === 'gs1_brackets' || (mode === 'auto' && /^\(\d{2,4}\)/.test(line))) {
+        const bytes = parseBracketedGs1ToBytes(line);
+        const isBox = isSsccBytes(bytes);
+        const ssccText = isBox ? bytesToAscii(bytes).slice(0, 20) : line;
+        return {
+          bytes,
+          isGs1: !isBox,
+          label: isBox ? ssccText : line,
+          isBox,
+          gtin: extractGtinFromTextOrBytes(line, bytes),
+          serial: extractSerialFromTextOrBytes(line, bytes)
+        };
+      }
+
+      if (mode === 'auto' && line.startsWith('01') && /^01\d{14}21/.test(line)) {
+        const arr = [];
+        for (let i = 0; i < line.length; i++) arr.push(line.charCodeAt(i) & 0xff);
+        const bytes = new Uint8Array(arr);
+        return {
+          bytes,
+          isGs1: true,
+          label: line,
+          isBox: false,
+          gtin: extractGtinFromTextOrBytes(line, bytes),
+          serial: extractSerialFromTextOrBytes(line, bytes)
+        };
+      }
+
+      const bytes = decodeBase64ToBytes(line);
+      let vis = '';
+      for (let i = 0; i < bytes.length; i++) {
+        vis += (bytes[i] === 0x1d) ? '<GS>' : String.fromCharCode(bytes[i]);
+      }
+      const isBox = isSsccBytes(bytes);
+      const ssccText = isBox ? bytesToAscii(bytes).slice(0, 20) : vis;
+      return {
+        bytes,
+        isGs1: !isBox,
+        label: isBox ? ssccText : vis,
+        isBox,
+        gtin: extractGtinFromTextOrBytes(vis, bytes),
+        serial: extractSerialFromTextOrBytes(vis, bytes)
+      };
+    }
+
+    function formatFactoryCodeDisplay(rawLine, bytes, label, gtin, serial, isBox) {
+      if (isBox) {
+        let sscc = '';
+        if (bytes && bytes.length >= 20) {
+          sscc = bytesToAscii(bytes).slice(0, 20);
+        } else {
+          sscc = String(label || rawLine || '').trim();
+        }
+        const digits = sscc.replace(/\D+/g, '');
+        if (digits.length === 20 && digits.startsWith('00')) {
+          return digits.slice(2);
+        }
+        return digits || sscc;
+      }
+      const cleanLine = String(rawLine || '').trim();
+      const parenMatch = cleanLine.match(/^\(01\)(\d{14})\(21\)([^\(\x1d<]+)/);
+      if (parenMatch) {
+        const cleanSerial = parenMatch[2].replace(/<GS>/gi, '').trim();
+        if (cleanSerial) {
+          return `(01)${parenMatch[1]}(21)${cleanSerial}`;
+        }
+      }
+
+      const cleanGtin = String(gtin || '').replace(/\D+/g, '');
+      const cleanSerial = String(serial || '').replace(/<GS>/gi, '').trim();
+      if (cleanGtin.length === 14 && cleanSerial) {
+        return `(01)${cleanGtin}(21)${cleanSerial}`;
+      }
+
+      if (bytes && bytes.length >= 18 && bytes[0] === 48 && bytes[1] === 49) {
+        const ascii = bytesToAscii(bytes);
+        const g14 = ascii.slice(2, 16);
+        if (/^\d{14}$/.test(g14) && ascii.slice(16, 18) === '21') {
+          const rest = ascii.slice(18);
+          const gsIdx = rest.indexOf('\x1d');
+          const sVal = gsIdx >= 0 ? rest.slice(0, gsIdx) : rest;
+          if (sVal) {
+            return `(01)${g14}(21)${sVal}`;
+          }
+        }
+      }
+
+      const plainMatch = cleanLine.match(/^01(\d{14})21([^\x1d<]+)/);
+      if (plainMatch) {
+        const sVal = plainMatch[2].replace(/<GS>/gi, '').trim();
+        if (sVal) {
+          return `(01)${plainMatch[1]}(21)${sVal}`;
+        }
+      }
+
+      return String(label || cleanLine).replace(/<GS>/gi, '').trim();
+    }
+
+    function generateMatrixForLine(rawLine, mode) {
+      const prepared = prepareBytes(rawLine, mode);
+
+      if (prepared.isBox) {
+        const ssccPayload = bytesToAscii(prepared.bytes).slice(0, 20);
+        const bwipAssembled = generateBoxMatrixViaBwip(ssccPayload);
+        if (bwipAssembled) {
+          return {
+            ...bwipAssembled,
+            label: ssccPayload,
+            factoryCode: formatFactoryCodeDisplay(
+              rawLine,
+              prepared.bytes,
+              ssccPayload,
+              '',
+              '',
+              true
+            ),
+            isBox: true,
+            gtin: '',
+            serial: ''
+          };
+        }
+      }
+
+      const rawCw = encodeAsciiCodewords(prepared.bytes, prepared.isGs1);
+      const sym = selectSymbol(rawCw.length);
+      const paddedCw = padToCapacity(rawCw, sym.dataCw);
+      const stream = buildEcStream(paddedCw, sym);
+
+      const regR = sym.rows / sym.rReg;
+      const regC = sym.cols / sym.cReg;
+      const nr = sym.rReg * (regR - 2);
+      const nc = sym.cReg * (regC - 2);
+
+      const dataGrid = placeEcc200Bits(stream, nr, nc);
+      const assembled = assembleFullMatrix(dataGrid, sym);
+
+      return {
+        ...assembled,
+        label: prepared.label,
+        factoryCode: formatFactoryCodeDisplay(
+          rawLine,
+          prepared.bytes,
+          prepared.label,
+          prepared.gtin,
+          prepared.serial,
+          prepared.isBox
+        ),
+        isBox: prepared.isBox,
+        gtin: prepared.gtin,
+        serial: prepared.serial
+      };
+    }
+
+    function matrixToSvg(matrix, totalRows, totalCols) {
+      let rects = '';
+      for (let r = 0; r < totalRows; r++) {
+        for (let c = 0; c < totalCols; c++) {
+          if (matrix[r][c] === 1) {
+            rects += `<rect x="${c}" y="${r}" width="1" height="1" fill="#000000"/>`;
+          }
+        }
+      }
+      return `<svg viewBox="0 0 ${totalCols} ${totalRows}" width="${totalCols}" height="${totalRows}" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
+    }
+
+    function setBanner(_text, _type = '') {
+      const bannerEl = document.getElementById('bannerInfo');
+      if (bannerEl) bannerEl.style.display = 'none';
+    }
+
+    function parseSimpleCsvLine(line) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === ',' && !inQuotes) {
+          result.push(cur.trim());
+          cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      result.push(cur.trim());
+      return result;
+    }
+
+    function parseGtinCsvToMap(csvText) {
+      const map = new Map();
+      const lines = String(csvText || '').split(/\r?\n/);
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i].trim();
+        if (!raw) continue;
+        const cols = parseSimpleCsvLine(raw);
+        if (cols.length < 2) continue;
+        const gtinClean = String(cols[0] || '').replace(/\D+/g, '');
+        const name = String(cols.slice(1).join(',') || '').trim();
+        if (gtinClean.length >= 12 && name) {
+          map.set(gtinClean, name);
+          if (gtinClean.length === 13) {
+            map.set('0' + gtinClean, name);
+          } else if (gtinClean.length === 14 && gtinClean.startsWith('0')) {
+            map.set(gtinClean.slice(1), name);
+          }
+        }
+      }
+      return map;
+    }
+
+    function lookupProductNameByGtin(gtin) {
+      if (!gtin) return '';
+      const clean = String(gtin).replace(/\D+/g, '');
+      const candidates = [clean];
+      if (clean.length === 14 && clean.startsWith('0')) candidates.push(clean.slice(1));
+      if (clean.length === 13) candidates.push('0' + clean);
+
+      for (const m of [gtinMaps.belsvet, gtinMaps.energodar]) {
+        for (const c of candidates) {
+          if (m && m.has(c)) {
+            return m.get(c);
+          }
+        }
+      }
+      return clean;
+    }
+
+    function setGtinAlert(msg) {
+      const el = document.getElementById('gtinAccessAlert');
+      if (!el) return;
+      if (msg) {
+        el.textContent = msg;
+        el.style.display = 'block';
+      } else {
+        el.textContent = '';
+        el.style.display = 'none';
+      }
+    }
+
+    function saveGtinCache() {
+      try {
+        const payload = {
+          updatedAt: Date.now(),
+          belsvet: Array.from(gtinMaps.belsvet.entries()),
+          energodar: Array.from(gtinMaps.energodar.entries())
+        };
+        localStorage.setItem(GTIN_CACHE_KEY, JSON.stringify(payload));
+      } catch (_) {}
+    }
+
+    function loadGtinCache() {
+      try {
+        const raw = localStorage.getItem(GTIN_CACHE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.belsvet)) gtinMaps.belsvet = new Map(data.belsvet);
+        if (Array.isArray(data.energodar)) gtinMaps.energodar = new Map(data.energodar);
+        gtinMaps.updatedAt = data.updatedAt || null;
+        updateGtinStatusText('кэш');
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function updateGtinStatusText(suffix = '') {
+      const el = document.getElementById('gtinDbStatus');
+      const total = gtinMaps.belsvet.size + gtinMaps.energodar.size;
+      if (!total) {
+        el.textContent = 'Справочник не загружен';
+        return;
+      }
+      const timeStr = gtinMaps.updatedAt
+        ? new Date(gtinMaps.updatedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      el.textContent = `Позиций в базе: ${total}${timeStr ? ` · ${timeStr}` : ''}${suffix ? ` (${suffix})` : ''}`;
+    }
+
+    async function fetchGtinDatabases(reRender = true) {
+      const statusEl = document.getElementById('gtinDbStatus');
+      statusEl.textContent = 'Обновление базы...';
+      setGtinAlert('');
+      let failedCount = 0;
+      try {
+        const [resB, resE] = await Promise.allSettled([
+          fetch(DATABASES.belsvet, { cache: 'no-store' }),
+          fetch(DATABASES.energodar, { cache: 'no-store' })
+        ]);
+
+        if (resB.status === 'fulfilled' && resB.value.ok) {
+          const txtB = await resB.value.text();
+          gtinMaps.belsvet = parseGtinCsvToMap(txtB);
+        } else {
+          failedCount++;
+        }
+        if (resE.status === 'fulfilled' && resE.value.ok) {
+          const txtE = await resE.value.text();
+          gtinMaps.energodar = parseGtinCsvToMap(txtE);
+        } else {
+          failedCount++;
+        }
+
+        if (failedCount === 2 && gtinMaps.belsvet.size === 0 && gtinMaps.energodar.size === 0) {
+          updateGtinStatusText();
+          setGtinAlert('Нет доступа к базе названий. Проверьте сеть или нажмите «Обновить».');
+          return;
+        }
+        if (failedCount > 0) {
+          setGtinAlert('Часть справочника недоступна — используются сохранённые данные.');
+        }
+
+        gtinMaps.updatedAt = Date.now();
+        saveGtinCache();
+        updateGtinStatusText();
+        if (reRender) renderAll();
+      } catch (_) {
+        updateGtinStatusText();
+        setGtinAlert('Нет доступа к базе названий. Проверьте сеть или нажмите «Обновить».');
+      }
+    }
+
+    function buildLabelAnnotations(preparedItems, defaultBoxNumber, numberingMode = 'box_group') {
+      const annotations = new Array(preparedItems.length);
+      let boxCounter = 0;
+      let itemSeqInCurrentBox = 0;
+      let globalItemSeq = 0;
+
+      for (let i = 0; i < preparedItems.length; i++) {
+        const item = preparedItems[i];
+        if (!item || !item.ok) continue;
+        const isBoxItem = Boolean(item.res ? item.res.isBox : item.isBox);
+
+        if (isBoxItem) {
+          boxCounter += 1;
+          annotations[i] = {
+            isBox: true,
+            boxNumber: boxCounter,
+            markerText: `Коробка ${boxCounter}`
+          };
+          itemSeqInCurrentBox = 0;
+        } else {
+          itemSeqInCurrentBox += 1;
+          globalItemSeq += 1;
+          const targetBoxNum = boxCounter + 1;
+          const seqNumber = numberingMode === 'sequential' ? globalItemSeq : itemSeqInCurrentBox;
+          annotations[i] = {
+            isBox: false,
+            boxNumber: targetBoxNum,
+            indexInBox: seqNumber,
+            markerText: numberingMode === 'sequential'
+              ? `${seqNumber}`
+              : `${itemSeqInCurrentBox}/${targetBoxNum}`
+          };
+        }
+      }
+
+      if (boxCounter === 0) {
+        const fallbackBox = Math.max(1, Number(defaultBoxNumber) || 1);
+        for (let i = 0; i < annotations.length; i++) {
+          if (annotations[i] && !annotations[i].isBox) {
+            annotations[i].boxNumber = fallbackBox;
+            annotations[i].markerText = numberingMode === 'sequential'
+              ? `${annotations[i].indexInBox}`
+              : `${annotations[i].indexInBox}/${fallbackBox}`;
+          }
+        }
+      }
+
+      return annotations;
+    }
+
+    function getCaptionOffsetsMm() {
+      const num = (id) => {
+        const v = Number(document.getElementById(id)?.value);
+        return Number.isFinite(v) ? v : 0;
+      };
+      return {
+        matrixDx: num('matrixDxMm'),
+        matrixDy: num('matrixDyMm'),
+        markerDx: num('markerDxMm'),
+        markerDy: num('markerDyMm'),
+        serialDx: num('serialDxMm'),
+        serialDy: num('serialDyMm'),
+        bottomDx: num('bottomDxMm'),
+        bottomDy: num('bottomDyMm')
+      };
+    }
+
+    function computeSafeLabelLayout(wMm, hMm, requestedMatrixMm, hasTop, hasCodeBlock, hasNameBlock) {
+      const edgePadMm = 0.55;
+      const topBandMm = hasTop ? 2.2 : 0;
+      const codeBandMm = hasCodeBlock ? 5.4 : 0;
+      const nameBandMm = hasNameBlock ? 7.8 : 0;
+      const topGapMm = hasTop ? 0.35 : 0;
+      const betweenBlocksGapMm = (hasCodeBlock && hasNameBlock) ? 0.35 : 0;
+      const bottomGapMm = (hasCodeBlock || hasNameBlock) ? 0.45 : 0;
+
+      const topReserve = edgePadMm + topBandMm + topGapMm;
+      const bottomReserve = edgePadMm + codeBandMm + nameBandMm + betweenBlocksGapMm + bottomGapMm;
+
+      const safeMatrixMm = Math.max(5.5, requestedMatrixMm);
+
+      return {
+        edgePadMm,
+        topBandMm,
+        codeBandMm,
+        nameBandMm,
+        betweenBlocksGapMm,
+        topGapMm,
+        bottomGapMm,
+        topReserve,
+        bottomReserve,
+        safeMatrixMm
+      };
+    }
+
+    function formatMmVal(val) {
+      const rounded = Math.round(val * 100) / 100;
+      return `${rounded}mm`;
+    }
+
+    function syncPrintCssVars() {
+      const w = Math.max(15, Number(document.getElementById('labelWidthMm').value) || 25);
+      const h = Math.max(10, Number(document.getElementById('labelHeightMm').value) || 43);
+      const reqM = Math.max(6, Number(document.getElementById('matrixSizeMm').value) || 15);
+      const showMarkers = document.getElementById('showMarkersCheck').checked;
+      const showName = document.getElementById('showProductNameCheck').checked;
+      const showRaw = document.getElementById('showRawCodeCheck').checked;
+
+      const layout = computeSafeLabelLayout(w, h, reqM, showMarkers, showRaw, showName);
+      const ox = Number(document.getElementById('offsetXMm').value) || 0;
+      const oy = Number(document.getElementById('offsetYMm').value) || 0;
+      const capOff = getCaptionOffsetsMm();
+
+      const hasCodeBlock = showRaw;
+      const hasNameBlock = showName;
+      const gapBetweenMm = (hasCodeBlock && hasNameBlock) ? layout.betweenBlocksGapMm : 0;
+      const middleTopMm = showMarkers ? (layout.edgePadMm + layout.topBandMm + layout.topGapMm) : layout.edgePadMm;
+      const middleBottomMm = h - (
+        layout.edgePadMm +
+        (hasNameBlock ? layout.nameBandMm : 0) +
+        (hasCodeBlock ? layout.codeBandMm : 0) +
+        layout.bottomGapMm
+      ) - gapBetweenMm;
+      const matrixTopMm = Math.max(
+        middleTopMm + 0.25,
+        Math.min(middleTopMm + 0.25, middleBottomMm - layout.safeMatrixMm)
+      );
+      const codeBottomMm = layout.edgePadMm + (hasNameBlock ? layout.nameBandMm : 0) + gapBetweenMm;
+
+      const rootStyle = document.documentElement.style;
+      rootStyle.setProperty('--print-page-w', `${w}mm`);
+      rootStyle.setProperty('--print-page-h', `${h}mm`);
+      rootStyle.setProperty('--print-matrix-size', `${layout.safeMatrixMm.toFixed(2)}mm`);
+      rootStyle.setProperty('--print-matrix-top', `${matrixTopMm.toFixed(2)}mm`);
+      rootStyle.setProperty('--print-code-bottom', `${codeBottomMm.toFixed(2)}mm`);
+      rootStyle.setProperty('--print-offset-x', `${ox}mm`);
+      rootStyle.setProperty('--print-offset-y', `${-oy}mm`);
+      rootStyle.setProperty('--print-matrix-dx', formatMmVal(capOff.matrixDx));
+      rootStyle.setProperty('--print-matrix-dy', formatMmVal(-capOff.matrixDy));
+      rootStyle.setProperty('--print-marker-dx', formatMmVal(capOff.markerDx));
+      rootStyle.setProperty('--print-marker-dy', formatMmVal(-capOff.markerDy));
+      rootStyle.setProperty('--print-serial-dx', formatMmVal(capOff.serialDx));
+      rootStyle.setProperty('--print-serial-dy', formatMmVal(-capOff.serialDy));
+      rootStyle.setProperty('--print-bottom-dx', formatMmVal(capOff.bottomDx));
+      rootStyle.setProperty('--print-bottom-dy', formatMmVal(-capOff.bottomDy));
+
+      const pdfBtnEl = document.getElementById('pdfBtn');
+      if (pdfBtnEl) {
+        const wStr = Number.isInteger(w) ? String(w) : String(Math.round(w * 10) / 10);
+        const hStr = Number.isInteger(h) ? String(h) : String(Math.round(h * 10) / 10);
+        pdfBtnEl.textContent = `Скачать PDF ${wStr}×${hStr} мм`;
+      }
+    }
+
+    let samplePreviewItemCache = null;
+    function getSamplePreviewItem() {
+      const showMarkers = document.getElementById('showMarkersCheck')?.checked;
+      const numberingMode = document.getElementById('numberingModeSelect')?.value || 'box_group';
+      const showName = document.getElementById('showProductNameCheck')?.checked;
+      const showRaw = document.getElementById('showRawCodeCheck')?.checked;
+
+      const sampleRawLine = '010460700000001421aBcD1234567890';
+      if (!samplePreviewItemCache) {
+        try {
+          const res = generateMatrixForLine(sampleRawLine, 'auto');
+          samplePreviewItemCache = {
+            res,
+            sampleProductName: 'Светильник светодиодный ДПО-18Вт (образец)',
+            sampleRawCode: '(01)04607000000014(21)aBcD1234567890'
+          };
+        } catch (_) {
+          return null;
+        }
+      }
+
+      const markerText = showMarkers
+        ? (numberingMode === 'sequential' ? '1' : '1/1')
+        : '';
+      const productTitle = showName ? samplePreviewItemCache.sampleProductName : '';
+      const rawText = showRaw ? samplePreviewItemCache.sampleRawCode : '';
+
+      return {
+        res: samplePreviewItemCache.res,
+        markerText,
+        productTitle,
+        rawText,
+        isSample: true
+      };
+    }
+
+    function renderLivePreview() {
+      const selectEl = document.getElementById('previewIndexSelect');
+      const scaleEl = document.getElementById('previewScaleSelect');
+      const stageEl = document.getElementById('previewStage');
+      const sheetEl = document.getElementById('liveLabelSheet');
+      const canvasEl = document.getElementById('livePreviewCanvas');
+      const dimsInfoEl = document.getElementById('previewDimsInfo');
+      const offsetsInfoEl = document.getElementById('previewOffsetsInfo');
+
+      const wMm = Math.max(15, Number(document.getElementById('labelWidthMm').value) || 25);
+      const hMm = Math.max(10, Number(document.getElementById('labelHeightMm').value) || 43);
+      const reqMatrixMm = Math.max(6, Number(document.getElementById('matrixSizeMm').value) || 15);
+      const oxMm = Number(document.getElementById('offsetXMm').value) || 0;
+      const oyMm = Number(document.getElementById('offsetYMm').value) || 0;
+      const capOff = getCaptionOffsetsMm();
+
+      const showMarkers = document.getElementById('showMarkersCheck').checked;
+      const showName = document.getElementById('showProductNameCheck').checked;
+      const showRaw = document.getElementById('showRawCodeCheck').checked;
+      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showRaw, showName);
+
+      const stageW = Math.max(160, stageEl.clientWidth - 24);
+      const stageH = Math.max(180, stageEl.clientHeight - 24);
+      const rawScaleOpt = scaleEl.value;
+      const fitScale = Math.min(stageW / wMm, stageH / hMm);
+      const pxPerMm = rawScaleOpt === 'fit'
+        ? Math.max(2.5, Math.min(8.0, fitScale))
+        : Math.max(2.0, Math.min(9.0, Number(rawScaleOpt) || fitScale));
+
+      const cssW = Math.max(48, Math.round(wMm * pxPerMm));
+      const cssH = Math.max(64, Math.round(hMm * pxPerMm));
+      sheetEl.style.width = `${cssW}px`;
+      sheetEl.style.height = `${cssH}px`;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvasEl.width = Math.max(1, Math.round(cssW * dpr));
+      canvasEl.height = Math.max(1, Math.round(cssH * dpr));
+
+      const ctx = canvasEl.getContext('2d');
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cssW, cssH);
+
+      const hasRealItems = lastRenderedCardsData.length > 0;
+      const idx = hasRealItems
+        ? Math.max(0, Math.min(lastRenderedCardsData.length - 1, Number(selectEl.value) || 0))
+        : 0;
+      const item = hasRealItems ? lastRenderedCardsData[idx] : getSamplePreviewItem();
+
+      if (!item) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Образец недоступен', cssW / 2, cssH / 2);
+        ctx.restore();
+        dimsInfoEl.textContent = `${wMm}×${hMm} мм · матр. ${layout.safeMatrixMm.toFixed(1)} мм`;
+        offsetsInfoEl.textContent = `лист (${oxMm}, ${oyMm})`;
+        return;
+      }
+
+      const shiftXPx = oxMm * pxPerMm;
+      const shiftYPx = -oyMm * pxPerMm;
+
+      const topBandTopPx = layout.edgePadMm * pxPerMm;
+      const topBandHeightPx = layout.topBandMm * pxPerMm;
+
+      const hasCodeBlock = Boolean(item.rawText);
+      const hasNameBlock = Boolean(item.productTitle);
+      const gapBetweenPx = (hasCodeBlock && hasNameBlock) ? layout.betweenBlocksGapMm * pxPerMm : 0;
+
+      const nameBandHeightPx = layout.nameBandMm * pxPerMm;
+      const nameBandTopPx = (hMm - layout.edgePadMm - layout.nameBandMm) * pxPerMm;
+
+      const codeBandHeightPx = layout.codeBandMm * pxPerMm;
+      const codeBandTopPx = (
+        hMm -
+        layout.edgePadMm -
+        (hasNameBlock ? layout.nameBandMm : 0) -
+        layout.codeBandMm
+      ) * pxPerMm - gapBetweenPx;
+
+      const middleTopPx = (showMarkers ? layout.edgePadMm + layout.topBandMm + layout.topGapMm : layout.edgePadMm) * pxPerMm;
+      const middleBottomPx = (
+        hMm -
+        layout.edgePadMm -
+        (hasNameBlock ? layout.nameBandMm : 0) -
+        (hasCodeBlock ? layout.codeBandMm : 0) -
+        layout.bottomGapMm
+      ) * pxPerMm - gapBetweenPx;
+
+      const matrixPx = layout.safeMatrixMm * pxPerMm;
+      const matrixTopPx = Math.max(
+        middleTopPx + 0.25 * pxPerMm,
+        Math.min(middleTopPx + 0.25 * pxPerMm, middleBottomPx - matrixPx)
+      );
+      const matrixShiftXPx = capOff.matrixDx * pxPerMm;
+      const matrixShiftYPx = -capOff.matrixDy * pxPerMm;
+      const matrixLeftPx = (wMm * pxPerMm - matrixPx) / 2 + shiftXPx + matrixShiftXPx;
+      const matrixFinalTopPx = matrixTopPx + shiftYPx + matrixShiftYPx;
+
+      const cols = item.res.totalCols;
+      const rows = item.res.totalRows;
+      const cellPx = matrixPx / Math.max(cols, rows);
+      const matDrawW = cols * cellPx;
+      const matDrawH = rows * cellPx;
+      const matDrawX = matrixLeftPx + (matrixPx - matDrawW) / 2;
+      const matDrawY = matrixFinalTopPx + (matrixPx - matDrawH) / 2;
+
+      if (Math.abs(oxMm) > 0.01 || Math.abs(oyMm) > 0.01) {
+        const baseX = (wMm * pxPerMm - matDrawW) / 2;
+        const baseY = matrixTopPx + (matrixPx - matDrawH) / 2;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(29, 78, 216, 0.35)';
+        ctx.setLineDash([2, 2]);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(baseX, baseY, matDrawW, matDrawH);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (item.res.matrix[r][c] === 1) {
+            ctx.fillRect(
+              matDrawX + c * cellPx,
+              matDrawY + r * cellPx,
+              Math.ceil(cellPx * 100) / 100,
+              Math.ceil(cellPx * 100) / 100
+            );
+          }
+        }
+      }
+
+      function drawPreviewCaption(text, bandTopPx, bandHeightPx, dxMm, dyMm, fontPt, bold, mono = false, maxLines = 1) {
+        if (!text) return;
+        const maxW = Math.max(16, (wMm - layout.edgePadMm * 2) * pxPerMm);
+        const maxH = Math.max(8, bandHeightPx);
+        const fontFamily = mono
+          ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+          : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, cssW, cssH);
+        ctx.clip();
+
+        const baseCx = cssW / 2 + shiftXPx;
+        const baseCy = bandTopPx + maxH / 2 + shiftYPx;
+        const cx = baseCx + dxMm * pxPerMm;
+        const cy = baseCy - dyMm * pxPerMm;
+
+        let chosenFontPx = Math.max(7.0, (fontPt * (pxPerMm * 25.4)) / 72);
+        let lines = [];
+
+        if (maxLines > 1) {
+          const minPt = 3.2;
+          let bestFits = null;
+          for (let pt = fontPt; pt >= minPt; pt -= 0.25) {
+            const px = Math.max(6.0, (pt * (pxPerMm * 25.4)) / 72);
+            ctx.font = `${bold ? '700' : '600'} ${px.toFixed(2)}px ${fontFamily}`;
+            const cand = wrapTextToLines(ctx, String(text).trim(), maxW, maxLines);
+            const lh = px * 1.14;
+            chosenFontPx = px;
+            lines = cand;
+            if (cand.length * lh <= maxH) {
+              bestFits = { px, cand };
+              if (!cand.some(l => l.endsWith('…'))) {
+                break;
+              }
+            }
+          }
+          if (bestFits) {
+            chosenFontPx = bestFits.px;
+            lines = bestFits.cand;
+          }
+        } else {
+          ctx.font = `${bold ? '700' : '600'} ${chosenFontPx.toFixed(2)}px ${fontFamily}`;
+          let displayText = String(text).trim();
+          if (ctx.measureText(displayText).width > maxW) {
+            while (displayText.length > 1 && ctx.measureText(displayText + '…').width > maxW) {
+              displayText = displayText.slice(0, -1);
+            }
+            displayText += '…';
+          }
+          lines = [displayText];
+        }
+
+        ctx.font = `${bold ? '700' : '600'} ${chosenFontPx.toFixed(2)}px ${fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (Math.abs(dxMm) > 0.01 || Math.abs(dyMm) > 0.01) {
+          ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
+          ctx.setLineDash([2, 2]);
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(baseCx - 3, baseCy);
+          ctx.lineTo(baseCx + 3, baseCy);
+          ctx.moveTo(baseCx, baseCy - 3);
+          ctx.lineTo(baseCx, baseCy + 3);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        const lineHeightPx = chosenFontPx * 1.14;
+        const blockHeight = lines.length * lineHeightPx;
+        const startY = cy - blockHeight / 2 + lineHeightPx / 2;
+
+        ctx.fillStyle = '#000000';
+        for (let i = 0; i < lines.length; i++) {
+          ctx.fillText(lines[i], cx, startY + i * lineHeightPx);
+        }
+        ctx.restore();
+      }
+
+      if (item.markerText) {
+        drawPreviewCaption(
+          item.markerText,
+          topBandTopPx,
+          topBandHeightPx,
+          capOff.markerDx,
+          capOff.markerDy,
+          6.4,
+          true,
+          false,
+          1
+        );
+      }
+
+      if (item.rawText) {
+        drawPreviewCaption(
+          item.rawText,
+          codeBandTopPx,
+          codeBandHeightPx,
+          capOff.serialDx,
+          capOff.serialDy,
+          4.6,
+          true,
+          true,
+          3
+        );
+      }
+
+      if (item.productTitle) {
+        drawPreviewCaption(
+          item.productTitle,
+          nameBandTopPx,
+          nameBandHeightPx,
+          capOff.bottomDx,
+          capOff.bottomDy,
+          5.6,
+          true,
+          false,
+          4
+        );
+      }
+
+      ctx.restore();
+
+      dimsInfoEl.textContent = item.isSample
+        ? `${wMm}×${hMm} мм · матр. ${layout.safeMatrixMm.toFixed(1)} мм · образец`
+        : `${wMm}×${hMm} мм · матр. ${layout.safeMatrixMm.toFixed(1)} мм · #${idx + 1}`;
+      offsetsInfoEl.textContent = `лист (${oxMm},${oyMm}) · DM(${capOff.matrixDx},${capOff.matrixDy}) М(${capOff.markerDx},${capOff.markerDy}) SN(${capOff.serialDx},${capOff.serialDy}) Н(${capOff.bottomDx},${capOff.bottomDy})`;
+    }
+
+    function syncPreviewSelector() {
+      const selectEl = document.getElementById('previewIndexSelect');
+      const prevVal = Number(selectEl.value) || 0;
+      if (!lastRenderedCardsData.length) {
+        selectEl.innerHTML = '<option value="0">—</option>';
+        selectEl.disabled = true;
+        return;
+      }
+      selectEl.disabled = false;
+      selectEl.innerHTML = lastRenderedCardsData.map((it, i) => {
+        const tag = it.markerText ? ` · ${it.markerText}` : '';
+        return `<option value="${i}">#${i + 1}${tag}</option>`;
+      }).join('');
+      selectEl.value = String(Math.max(0, Math.min(lastRenderedCardsData.length - 1, prevVal)));
+    }
+
+    let lastRenderedCardsData = [];
+
+    function syncNumberingModeState() {
+      const showMarkersEl = document.getElementById('showMarkersCheck');
+      const modeSelectEl = document.getElementById('numberingModeSelect');
+      if (showMarkersEl && modeSelectEl) {
+        modeSelectEl.disabled = !showMarkersEl.checked;
+      }
+    }
+
+    function renderAll(customBannerText = '') {
+      syncNumberingModeState();
+      syncPrintCssVars();
+
+      const inputEl = document.getElementById('codesInput');
+      const modeEl = document.getElementById('inputMode');
+      const skipEmptyEl = document.getElementById('skipEmptyCheck');
+      const showMarkersEl = document.getElementById('showMarkersCheck');
+      const showProductNameEl = document.getElementById('showProductNameCheck');
+      const showRawCodeEl = document.getElementById('showRawCodeCheck');
+      const defaultBoxNum = Number(document.getElementById('defaultBoxNum').value) || 1;
+      const gridEl = document.getElementById('outputGrid');
+
+      const allLines = inputEl.value.split(/\r?\n/).map(l => l.trim());
+      const nonEmptyLines = allLines.filter(Boolean);
+
+      document.getElementById('statTotal').textContent = String(nonEmptyLines.length);
+      gridEl.innerHTML = '';
+      lastRenderedCardsData = [];
+
+      const generatedEntries = nonEmptyLines.map((line, idx) => {
+        try {
+          const res = generateMatrixForLine(line, modeEl.value);
+          return { ok: true, idx, line, res };
+        } catch (err) {
+          return { ok: false, idx, line, err };
+        }
+      });
+
+      const numberingMode = document.getElementById('numberingModeSelect')
+        ? document.getElementById('numberingModeSelect').value
+        : 'box_group';
+      const annotations = buildLabelAnnotations(generatedEntries, defaultBoxNum, numberingMode);
+
+      let ok = 0;
+      let skippedOrErr = 0;
+      let boxCount = 0;
+      let itemCount = 0;
+      const sizesSet = new Set();
+
+      generatedEntries.forEach((entry, i) => {
+        if (entry.ok) {
+          const { res, idx } = entry;
+          const ann = annotations[i] || { isBox: res.isBox, markerText: '' };
+          if (res.isBox) boxCount += 1;
+          else itemCount += 1;
+
+          sizesSet.add(`${res.totalCols}×${res.totalRows}`);
+          const resolvedGtinName = res.isBox ? '' : lookupProductNameByGtin(res.gtin);
+          const productTitle = showProductNameEl.checked
+            ? resolvedGtinName
+            : '';
+          const factoryCodeText = (showRawCodeEl.checked || res.isBox)
+            ? (res.factoryCode || res.label || '')
+            : '';
+
+          const card = document.createElement('div');
+          card.className = res.isBox ? 'dm-card is-box' : 'dm-card';
+
+          const badgeHtml = showMarkersEl.checked && ann.markerText
+            ? `<div class="dm-badge">${ann.markerText}</div>`
+            : '';
+
+          card.innerHTML = `
+            <div class="dm-title">#${idx + 1} · ${res.totalCols}×${res.totalRows}</div>
+            ${badgeHtml}
+            <div class="label-sheet-inner">
+              <div class="matrix-box">${matrixToSvg(res.matrix, res.totalRows, res.totalCols)}</div>
+              <div class="print-marker">${showMarkersEl.checked ? (ann.markerText || '') : ''}</div>
+              <div class="raw-code print-raw"></div>
+              <div class="gtin-product-name print-name"></div>
+            </div>
+            <div class="card-product-name"></div>
+            <div class="card-box-sscc"></div>
+          `;
+
+          card.querySelector('.raw-code').textContent = factoryCodeText;
+          card.querySelector('.gtin-product-name').textContent = productTitle;
+
+          const cardNameEl = card.querySelector('.card-product-name');
+          const cardBoxSsccEl = card.querySelector('.card-box-sscc');
+          if (!res.isBox && resolvedGtinName) {
+            cardNameEl.textContent = resolvedGtinName;
+          } else {
+            cardNameEl.style.display = 'none';
+          }
+
+          if (res.isBox && factoryCodeText) {
+            cardBoxSsccEl.textContent = factoryCodeText;
+          } else {
+            cardBoxSsccEl.style.display = 'none';
+          }
+
+          if (!factoryCodeText) {
+            card.querySelector('.raw-code').style.display = 'none';
+          }
+          if (!productTitle) {
+            card.querySelector('.gtin-product-name').style.display = 'none';
+          }
+
+          gridEl.appendChild(card);
+          lastRenderedCardsData.push({
+            res,
+            markerText: showMarkersEl.checked ? (ann.markerText || '') : '',
+            productTitle,
+            rawText: factoryCodeText
+          });
+          ok++;
+        } else {
+          skippedOrErr++;
+          if (!skipEmptyEl.checked) {
+            const card = document.createElement('div');
+            card.className = 'dm-card';
+            card.innerHTML = `
+              <div class="dm-title">#${entry.idx + 1} · Ошибка</div>
+              <div class="err-text"></div>
+            `;
+            card.querySelector('.err-text').textContent = entry.err.message || String(entry.err);
+            gridEl.appendChild(card);
+          }
+        }
+      });
+
+      document.getElementById('statOk').textContent = String(ok);
+      const statSkipEl = document.getElementById('statSkip');
+      if (statSkipEl) statSkipEl.textContent = String(skippedOrErr);
+      document.getElementById('statBoxesItems').textContent = `${boxCount} / ${itemCount}`;
+      document.getElementById('statSize').textContent = sizesSet.size ? Array.from(sizesSet).join(', ') : '—';
+
+      syncPreviewSelector();
+      renderLivePreview();
+
+      if (customBannerText) {
+        setBanner(customBannerText, ok > 0 ? 'success' : 'warn');
+      } else if (nonEmptyLines.length > 0) {
+        setBanner(`Обработано строк: ${nonEmptyLines.length} · Успешно: ${ok} (коробов: ${boxCount}, шт.: ${itemCount}) · Пропущено/ошибок: ${skippedOrErr}.`);
+      }
+    }
+
+    function adler32(bytes) {
+      let a = 1, b = 0;
+      for (let i = 0; i < bytes.length; i++) {
+        a = (a + bytes[i]) % 65521;
+        b = (b + a) % 65521;
+      }
+      return ((b << 16) | a) >>> 0;
+    }
+
+    function zlibStoreCompress(rawBytes) {
+      const parts = [];
+      parts.push(new Uint8Array([0x78, 0x01]));
+      let offset = 0;
+      while (offset < rawBytes.length) {
+        const len = Math.min(65535, rawBytes.length - offset);
+        const isFinal = (offset + len >= rawBytes.length) ? 1 : 0;
+        const hdr = new Uint8Array(5);
+        hdr[0] = isFinal;
+        hdr[1] = len & 0xff;
+        hdr[2] = (len >>> 8) & 0xff;
+        const nlen = (~len) & 0xffff;
+        hdr[3] = nlen & 0xff;
+        hdr[4] = (nlen >>> 8) & 0xff;
+        parts.push(hdr);
+        parts.push(rawBytes.subarray(offset, offset + len));
+        offset += len;
+      }
+      if (rawBytes.length === 0) {
+        parts.push(new Uint8Array([0x01, 0x00, 0x00, 0xff, 0xff]));
+      }
+      const adler = adler32(rawBytes);
+      parts.push(new Uint8Array([
+        (adler >>> 24) & 0xff,
+        (adler >>> 16) & 0xff,
+        (adler >>> 8) & 0xff,
+        adler & 0xff
+      ]));
+
+      const totalLen = parts.reduce((s, p) => s + p.length, 0);
+      const out = new Uint8Array(totalLen);
+      let pos = 0;
+      for (const p of parts) {
+        out.set(p, pos);
+        pos += p.length;
+      }
+      return out;
+    }
+
+    function wrapSegmentToLines(ctx, text, maxPx, maxLines = 2) {
+      const clean = String(text || '').trim().replace(/\s+/g, ' ');
+      if (!clean) return [];
+      if (ctx.measureText(clean).width <= maxPx) {
+        return [clean];
+      }
+
+      const lines = [];
+      let rem = clean;
+
+      while (rem.length > 0 && lines.length < maxLines) {
+        if (ctx.measureText(rem).width <= maxPx) {
+          lines.push(rem);
+          rem = '';
+          break;
+        }
+
+        const isLastLine = lines.length === maxLines - 1;
+        let cutIdx = 0;
+        for (let i = 1; i <= rem.length; i++) {
+          const piece = rem.slice(0, i);
+          const testStr = isLastLine ? (piece + '…') : piece;
+          if (ctx.measureText(testStr).width <= maxPx) {
+            cutIdx = i;
+          } else {
+            break;
+          }
+        }
+
+        if (cutIdx <= 0) {
+          cutIdx = 1;
+        }
+
+        if (!isLastLine && cutIdx < rem.length) {
+          const windowStart = Math.max(1, cutIdx - 10);
+          const spaceIdx = rem.lastIndexOf(' ', cutIdx);
+          if (spaceIdx >= windowStart) {
+            cutIdx = spaceIdx;
+          }
+        }
+
+        let linePart = rem.slice(0, cutIdx).trim();
+        if (!linePart) {
+          linePart = rem.slice(0, Math.max(1, cutIdx));
+        }
+
+        rem = rem.slice(cutIdx).trimStart();
+
+        if (isLastLine && rem.length > 0) {
+          while (linePart.length > 1 && ctx.measureText(linePart + '…').width > maxPx) {
+            linePart = linePart.slice(0, -1);
+          }
+          linePart = linePart + '…';
+          rem = '';
+        }
+
+        lines.push(linePart);
+      }
+
+      return lines;
+    }
+
+    function wrapTextToLines(ctx, text, maxPx, maxLines = 2) {
+      const clean = String(text || '').trim().replace(/\s+/g, ' ');
+      if (!clean) return [];
+
+      // Для КИЗов вида (01)...(21)... переносим строку ровно после "(21)"
+      const marker21Idx = clean.indexOf('(21)');
+      if (marker21Idx >= 0 && maxLines >= 2) {
+        const splitPos = marker21Idx + 4;
+        const firstPart = clean.slice(0, splitPos).trim();
+        const secondPart = clean.slice(splitPos).trim();
+        if (firstPart && secondPart) {
+          const firstLines = wrapSegmentToLines(ctx, firstPart, maxPx, Math.max(1, maxLines - 1));
+          const remLines = Math.max(1, maxLines - firstLines.length);
+          const secondLines = wrapSegmentToLines(ctx, secondPart, maxPx, remLines);
+          return firstLines.concat(secondLines).slice(0, maxLines);
+        }
+      }
+
+      return wrapSegmentToLines(ctx, clean, maxPx, maxLines);
+    }
+
+    function renderTextLabelBitmap360Dpi(text, maxWidthMm, maxHeightMm, preferredFontPt, bold = true, maxLines = 2, mono = false) {
+      const dpi = 360;
+      const pxPerMm = dpi / 25.4;
+      const maxPx = Math.max(36, Math.floor(maxWidthMm * pxPerMm));
+      const maxBoxPx = Math.max(14, Math.floor(maxHeightMm * pxPerMm));
+      const fontFamily = mono
+        ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+        : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+
+      let fontPt = preferredFontPt;
+      let fontPx = Math.max(12, Math.round(fontPt * (dpi / 72)));
+      let lines = [];
+
+      const measureCanvas = document.createElement('canvas');
+      const mCtx = measureCanvas.getContext('2d');
+
+      for (let pt = preferredFontPt; pt >= 4.0; pt -= 0.4) {
+        const px = Math.max(11, Math.round(pt * (dpi / 72)));
+        mCtx.font = `${bold ? '700' : '600'} ${px}px ${fontFamily}`;
+        const candidateLines = wrapTextToLines(mCtx, text, maxPx, maxLines);
+        const lineHeightPx = Math.ceil(px * 1.15);
+        const totalLinesPx = candidateLines.length * lineHeightPx;
+
+        fontPt = pt;
+        fontPx = px;
+        lines = candidateLines;
+
+        if (!candidateLines.some(l => l.endsWith('…')) && totalLinesPx <= maxBoxPx) {
+          break;
+        }
+        if (totalLinesPx <= maxBoxPx && pt <= preferredFontPt - 0.8) {
+          break;
+        }
+      }
+
+      if (!lines.length) {
+        lines = [String(text || '').trim()];
+      }
+
+      const lineHeightPx = Math.ceil(fontPx * 1.15);
+      const canvas = document.createElement('canvas');
+      const textW = maxPx;
+      const textH = Math.max(12, Math.min(maxBoxPx, lines.length * lineHeightPx + Math.ceil(fontPx * 0.16)));
+      canvas.width = textW;
+      canvas.height = textH;
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, textW, textH);
+      ctx.font = `${bold ? '700' : '600'} ${fontPx}px ${fontFamily}`;
+      ctx.fillStyle = '#000000';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+
+      const blockHeight = lines.length * lineHeightPx;
+      const startY = (textH - blockHeight) / 2 + lineHeightPx / 2;
+
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], textW / 2, startY + i * lineHeightPx + fontPx * 0.03);
+      }
+
+      const imgData = ctx.getImageData(0, 0, textW, textH).data;
+      const rgbRaw = new Uint8Array(textW * textH * 3);
+      const alphaRaw = new Uint8Array(textW * textH);
+
+      for (let i = 0, p = 0; i < imgData.length; i += 4, p++) {
+        rgbRaw[i] = 0;
+        rgbRaw[i + 1] = 0;
+        rgbRaw[i + 2] = 0;
+        alphaRaw[p] = imgData[i + 3];
+      }
+
+      return {
+        width: textW,
+        height: textH,
+        rgbZlib: zlibStoreCompress(rgbRaw),
+        alphaZlib: zlibStoreCompress(alphaRaw),
+        widthMm: textW / pxPerMm,
+        heightMm: textH / pxPerMm
+      };
+    }
+
+    function downloadLabelsPdf43x25() {
+      if (!lastRenderedCardsData.length) {
+        renderAll();
+      }
+      if (!lastRenderedCardsData.length) {
+        setBanner('Нет сгенерированных этикеток для экспорта в PDF.', 'warn');
+        return;
+      }
+
+      const wMm = Math.max(15, Number(document.getElementById('labelWidthMm').value) || 25);
+      const hMm = Math.max(10, Number(document.getElementById('labelHeightMm').value) || 43);
+      const reqMatrixMm = Math.max(6, Number(document.getElementById('matrixSizeMm').value) || 15);
+      const oxMm = Number(document.getElementById('offsetXMm').value) || 0;
+      const oyMm = Number(document.getElementById('offsetYMm').value) || 0;
+      const capOff = getCaptionOffsetsMm();
+
+      const showMarkers = document.getElementById('showMarkersCheck').checked;
+      const showName = document.getElementById('showProductNameCheck').checked;
+      const showRaw = document.getElementById('showRawCodeCheck').checked;
+
+      const layout = computeSafeLabelLayout(wMm, hMm, reqMatrixMm, showMarkers, showRaw, showName);
+
+      const mmToPt = (mm) => (mm * 72) / 25.4;
+      const pageW = mmToPt(wMm);
+      const pageH = mmToPt(hMm);
+      const matrixPt = mmToPt(layout.safeMatrixMm);
+      const shiftXPt = mmToPt(oxMm);
+      const shiftYPt = mmToPt(oyMm);
+
+      const captionCache = new Map();
+      function getOrCreateCaptionXObject(text, maxWidthMm, maxHeightMm, fontPt, bold, maxLines, mono = false) {
+        const key = `${mono ? 'M' : 'S'}|${bold ? 'B' : 'R'}|${fontPt}|${maxLines}|${maxWidthMm.toFixed(2)}|${maxHeightMm.toFixed(2)}|${text}`;
+        if (captionCache.has(key)) {
+          return captionCache.get(key);
+        }
+
+        const bmp = renderTextLabelBitmap360Dpi(text, maxWidthMm, maxHeightMm, fontPt, bold, maxLines, mono);
+        const smaskId = addObj('');
+        objects[smaskId - 1] = {
+          binHeader: `<< /Type /XObject /Subtype /Image /Width ${bmp.width} /Height ${bmp.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${bmp.alphaZlib.length} >>\nstream\n`,
+          data: bmp.alphaZlib,
+          binFooter: `\nendstream`
+        };
+
+        const imgId = addObj('');
+        objects[imgId - 1] = {
+          binHeader: `<< /Type /XObject /Subtype /Image /Width ${bmp.width} /Height ${bmp.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /SMask ${smaskId} 0 R /Filter /FlateDecode /Length ${bmp.rgbZlib.length} >>\nstream\n`,
+          data: bmp.rgbZlib,
+          binFooter: `\nendstream`
+        };
+
+        const entry = {
+          xobjId: imgId,
+          wPt: mmToPt(bmp.widthMm),
+          hPt: mmToPt(bmp.heightMm)
+        };
+        captionCache.set(key, entry);
+        return entry;
+      }
+
+      const objects = [];
+      const addObj = (body) => {
+        objects.push(body);
+        return objects.length;
+      };
+
+      const catalogId = addObj('');
+      const pagesId = addObj('');
+      const pageIds = [];
+      const maxCaptionWidthMm = Math.max(12, wMm - layout.edgePadMm * 2);
+
+      const topBandBottomPt = pageH - mmToPt(layout.edgePadMm + layout.topBandMm);
+      const topBandHeightPt = mmToPt(layout.topBandMm);
+
+      const gapBetweenPt = (showRaw && showName) ? mmToPt(layout.betweenBlocksGapMm) : 0;
+      const nameBandBottomPt = mmToPt(layout.edgePadMm);
+      const nameBandHeightPt = mmToPt(layout.nameBandMm);
+
+      const codeBandBottomPt = mmToPt(layout.edgePadMm + (showName ? layout.nameBandMm : 0)) + gapBetweenPt;
+      const codeBandHeightPt = mmToPt(layout.codeBandMm);
+
+      const middleTopPt = showMarkers
+        ? pageH - mmToPt(layout.edgePadMm + layout.topBandMm + layout.topGapMm)
+        : pageH - mmToPt(layout.edgePadMm);
+      const middleBottomPt = mmToPt(
+        layout.edgePadMm +
+        (showName ? layout.nameBandMm : 0) +
+        (showRaw ? layout.codeBandMm : 0) +
+        layout.bottomGapMm
+      ) + gapBetweenPt;
+      const matrixTopPt = middleTopPt - mmToPt(0.25);
+      const matrixCenterYPt = Math.max(
+        middleBottomPt + matrixPt / 2,
+        matrixTopPt - matrixPt / 2
+      );
+
+      for (const item of lastRenderedCardsData) {
+        const { res, markerText, productTitle, rawText } = item;
+        const cols = res.totalCols;
+        const rows = res.totalRows;
+        const cellSize = matrixPt / Math.max(cols, rows);
+        const matrixW = cols * cellSize;
+        const matrixH = rows * cellSize;
+
+        const startX = (pageW - matrixW) / 2 + shiftXPt + mmToPt(capOff.matrixDx);
+        const startYBottom = matrixCenterYPt - matrixH / 2 + shiftYPt + mmToPt(capOff.matrixDy);
+
+        const streamCmds = [];
+        streamCmds.push('0 0 0 rg');
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (res.matrix[r][c] === 1) {
+              const rx = (startX + c * cellSize).toFixed(3);
+              const ry = (startYBottom + (rows - 1 - r) * cellSize).toFixed(3);
+              const rw = cellSize.toFixed(3);
+              const rh = cellSize.toFixed(3);
+              streamCmds.push(`${rx} ${ry} ${rw} ${rh} re f`);
+            }
+          }
+        }
+
+        const pageXObjects = [];
+
+        if (markerText) {
+          const cap = getOrCreateCaptionXObject(markerText, maxCaptionWidthMm, layout.topBandMm, 6.4, true, 1, false);
+          const xName = `ImM${cap.xobjId}`;
+          pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
+          const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.markerDx)).toFixed(3);
+          const iy = (topBandBottomPt + (topBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.markerDy)).toFixed(3);
+          streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
+        }
+
+        if (rawText) {
+          const cap = getOrCreateCaptionXObject(rawText, maxCaptionWidthMm, layout.codeBandMm, 4.6, true, 3, true);
+          const xName = `ImC${cap.xobjId}`;
+          pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
+          const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.serialDx)).toFixed(3);
+          const iy = (codeBandBottomPt + (codeBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.serialDy)).toFixed(3);
+          streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
+        }
+
+        if (productTitle) {
+          const cap = getOrCreateCaptionXObject(
+            productTitle,
+            maxCaptionWidthMm,
+            layout.nameBandMm,
+            5.6,
+            true,
+            4,
+            false
+          );
+          const xName = `ImB${cap.xobjId}`;
+          pageXObjects.push(`/${xName} ${cap.xobjId} 0 R`);
+          const ix = ((pageW - cap.wPt) / 2 + shiftXPt + mmToPt(capOff.bottomDx)).toFixed(3);
+          const iy = (nameBandBottomPt + (nameBandHeightPt - cap.hPt) / 2 + shiftYPt + mmToPt(capOff.bottomDy)).toFixed(3);
+          streamCmds.push(`q ${cap.wPt.toFixed(3)} 0 0 ${cap.hPt.toFixed(3)} ${ix} ${iy} cm /${xName} Do Q`);
+        }
+
+        const contentStr = streamCmds.join('\n');
+        const contentBytes = new TextEncoder().encode(contentStr);
+        const contentId = addObj('');
+        objects[contentId - 1] = {
+          binHeader: `<< /Length ${contentBytes.length} >>\nstream\n`,
+          data: contentBytes,
+          binFooter: `\nendstream`
+        };
+
+        const xobjRes = pageXObjects.length ? ` /XObject << ${pageXObjects.join(' ')} >>` : '';
+        const pageId = addObj(
+          `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageW.toFixed(3)} ${pageH.toFixed(3)}] /Resources <<${xobjRes} >> /Contents ${contentId} 0 R >>`
+        );
+        pageIds.push(pageId);
+      }
+
+      objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
+      objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+
+      const enc = new TextEncoder();
+      const chunks = [];
+      const offsets = [0];
+      let curOffset = 0;
+
+      const pushText = (str) => {
+        const b = enc.encode(str);
+        chunks.push(b);
+        curOffset += b.length;
+      };
+
+      pushText('%PDF-1.4\n');
+      for (let i = 0; i < objects.length; i++) {
+        offsets.push(curOffset);
+        pushText(`${i + 1} 0 obj\n`);
+        const obj = objects[i];
+        if (typeof obj === 'string') {
+          pushText(obj);
+        } else {
+          pushText(obj.binHeader);
+          chunks.push(obj.data);
+          curOffset += obj.data.length;
+          pushText(obj.binFooter);
+        }
+        pushText('\nendobj\n');
+      }
+
+      const xrefOffset = curOffset;
+      pushText(`xref\n0 ${objects.length + 1}\n`);
+      pushText('0000000000 65535 f \n');
+      for (let i = 1; i <= objects.length; i++) {
+        pushText(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+      }
+      pushText(`trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+      const blob = new Blob(chunks, { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.10-bwip-box.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setBanner(`Сформирован PDF-файл (${wMm}×${hMm} мм, матрица ${layout.safeMatrixMm.toFixed(1)} мм, страниц: ${pageIds.length}, подписей в кэше: ${captionCache.size}).`, 'success');
+    }
+
+    const TABLE_EXTENSIONS = ['.xlsx', '.xls', '.csv', '.txt', '.tsv'];
+
+    function hasSupportedExtension(filename) {
+      const lower = String(filename || '').toLowerCase();
+      return TABLE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+    }
+
+    function isIgnoredArchiveEntry(name) {
+      if (!name || name.endsWith('/')) return true;
+      const normalized = name.replace(/\\/g, '/');
+      if (normalized.startsWith('__MACOSX/')) return true;
+      const baseName = normalized.split('/').pop() || '';
+      if (baseName.startsWith('._') || baseName === '.DS_Store') return true;
+      return false;
+    }
+
+    function normalizeCell(val) {
+      if (val === null || val === undefined) return '';
+      return String(val).replace(/[\r\n\t]+/g, ' ').trim();
+    }
+
+    function isRowEmpty(row) {
+      return !Array.isArray(row) || row.every((cell) => normalizeCell(cell) === '');
+    }
+
+    function isValidGs1DataBytes(bytes) {
+      if (!bytes || bytes.length < 18) return false;
+      if (isSsccBytes(bytes)) return true;
+      if (bytes[0] !== 48 || bytes[1] !== 49) return false;
+      for (let i = 2; i < 16; i++) {
+        if (bytes[i] < 48 || bytes[i] > 57) return false;
+      }
+      for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i];
+        if (b !== 0x1d && (b < 0x20 || b > 0x7e)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function isBase64CodeString(str) {
+      if (!str || /^\(\d{2,4}\)/.test(str) || /^01\d{14}/.test(str) || /^00\d{18}/.test(str)) return false;
+      const compact = str.replace(/\s+/g, '');
+      return compact.length >= 24 && compact.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(compact);
+    }
+
+    function extractCodeFromCell(rawCell) {
+      const cell = normalizeCell(rawCell);
+      if (!cell) return null;
+
+      const normalizedSscc = normalizeSsccString(cell);
+      if (normalizedSscc) {
+        return normalizedSscc;
+      }
+
+      if (/^\(\d{2,4}\)/.test(cell) && cell.length >= 20) {
+        return cell;
+      }
+
+      if (cell.startsWith('01') && /^01\d{14}/.test(cell) && cell.length >= 20) {
+        const arr = [];
+        for (let i = 0; i < cell.length; i++) arr.push(cell.charCodeAt(i) & 0xff);
+        if (isValidGs1DataBytes(new Uint8Array(arr))) {
+          return cell;
+        }
+      }
+
+      const compact = cell.replace(/\s+/g, '');
+      if (compact.length >= 24 && compact.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(compact)) {
+        try {
+          const bytes = decodeBase64ToBytes(compact);
+          if (isValidGs1DataBytes(bytes)) {
+            return compact;
+          }
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    function extractCodesFromDataRows(dataRows) {
+      const found = [];
+      for (const row of dataRows) {
+        if (!Array.isArray(row)) continue;
+        const firstCellStr = normalizeCell(row[0] ?? '');
+        const firstCellSscc = normalizeSsccString(firstCellStr);
+
+        const rowCodes = [];
+        for (const cell of row) {
+          const code = extractCodeFromCell(cell);
+          if (code) {
+            rowCodes.push(code);
+          }
+        }
+        if (rowCodes.length === 0) continue;
+
+        if (firstCellSscc && firstCellStr.length <= 24) {
+          found.push(firstCellSscc);
+          continue;
+        }
+
+        const b64Codes = rowCodes.filter(isBase64CodeString);
+        if (b64Codes.length > 0) {
+          found.push(b64Codes[0]);
+        } else {
+          found.push(rowCodes[0]);
+        }
+      }
+      return found;
+    }
+
+    function looksLikeHeaderRow(row) {
+      if (!Array.isArray(row)) return false;
+      return row.some((cell) => extractCodeFromCell(cell) !== null);
+    }
+
+    function parseTableBufferToCodes(buffer, name) {
+      if (typeof XLSX === 'undefined') {
+        throw new Error('Библиотека чтения таблиц (SheetJS) не загрузилась.');
+      }
+
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const extracted = [];
+
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(sheet, {
+          header: 1,
+          raw: false,
+          defval: '',
+        });
+        const nonEmptyRows = Array.isArray(rawRows) ? rawRows.filter((row) => !isRowEmpty(row)) : [];
+        if (nonEmptyRows.length === 0) continue;
+
+        const rowsToScan = looksLikeHeaderRow(nonEmptyRows[0])
+          ? nonEmptyRows
+          : nonEmptyRows.slice(1);
+
+        extracted.push(...extractCodesFromDataRows(rowsToScan));
+      }
+
+      return extracted;
+    }
+
+    async function handleZipFile(file) {
+      if (typeof JSZip === 'undefined') {
+        setBanner('Библиотека JSZip не загрузилась. Проверьте подключение к сети или обновите страницу.', 'warn');
+        return;
+      }
+
+      setBanner(`Распаковываем архив «${file.name}»...`);
+      const zipData = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(zipData);
+
+      const entries = Object.keys(zip.files)
+        .filter((entryName) => !isIgnoredArchiveEntry(entryName) && hasSupportedExtension(entryName))
+        .sort((a, b) => a.localeCompare(b, 'ru', { numeric: true, sensitivity: 'base' }));
+
+      if (entries.length === 0) {
+        setBanner(`В архиве «${file.name}» не найдено таблиц (.xlsx, .xls, .csv, .txt).`, 'warn');
+        return;
+      }
+
+      const allCodes = [];
+      for (const entryName of entries) {
+        try {
+          const buf = await zip.files[entryName].async('arraybuffer');
+          allCodes.push(...parseTableBufferToCodes(buf, entryName));
+        } catch (_) {}
+      }
+
+      const tablesCount = entries.length;
+      const codesCount = allCodes.length;
+
+      if (codesCount > 0) {
+        document.getElementById('codesInput').value = allCodes.join('\n');
+        renderAll(`Архив «${file.name}» разобран: таблиц ${tablesCount}, найдено кодов: ${codesCount}.`);
+      } else {
+        setBanner(`В таблицах архива «${file.name}» не найдено кодов маркировки.`, 'warn');
+      }
+    }
+
+    async function handleDirectTableFiles(fileList) {
+      const files = Array.from(fileList || [])
+        .filter((f) => hasSupportedExtension(f.name))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru', { numeric: true, sensitivity: 'base' }));
+
+      if (files.length === 0) {
+        setBanner('Выберите файлы форматов .xlsx, .xls, .csv или .txt.', 'warn');
+        return;
+      }
+
+      setBanner(`Читаем таблицы: ${files.map((f) => f.name).join(', ')}...`);
+      const allCodes = [];
+      for (const f of files) {
+        try {
+          const buf = await f.arrayBuffer();
+          allCodes.push(...parseTableBufferToCodes(buf, f.name));
+        } catch (_) {}
+      }
+
+      const filesCount = files.length;
+      const codesCount = allCodes.length;
+
+      if (codesCount > 0) {
+        document.getElementById('codesInput').value = allCodes.join('\n');
+        renderAll(`Обработано таблиц: ${filesCount}, найдено кодов: ${codesCount}.`);
+      } else {
+        setBanner('В выбранных таблицах не найдено кодов маркировки.', 'warn');
+      }
+    }
+
+    async function handleIncomingFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (files.length === 0) return;
+
+      try {
+        const zipFile = files.find((f) => f.name.toLowerCase().endsWith('.zip'));
+        if (zipFile) {
+          await handleZipFile(zipFile);
+        } else {
+          await handleDirectTableFiles(files);
+        }
+      } catch (err) {
+        setBanner(`Ошибка чтения файла: ${err && err.message ? err.message : 'некорректный файл'}.`, 'warn');
+      }
+    }
+
+    const bulbToggleEl = document.getElementById('bulbToggle');
+    if (!document.documentElement.getAttribute('data-theme')) {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+    function isEffectiveDarkTheme() {
+      const explicit = document.documentElement.getAttribute('data-theme');
+      if (explicit === 'dark') return true;
+      if (explicit === 'light') return false;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    function syncBulbButton() {
+      if (!bulbToggleEl) return;
+      const dark = isEffectiveDarkTheme();
+      bulbToggleEl.classList.toggle('is-lit', !dark);
+      bulbToggleEl.classList.toggle('is-off', dark);
+      bulbToggleEl.title = dark ? 'Тёмная тема (лампочка потухла) — включить свет' : 'Светлая тема (лампочка горит) — выключить свет';
+    }
+    if (bulbToggleEl) {
+      bulbToggleEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextDark = !isEffectiveDarkTheme();
+        document.documentElement.setAttribute('data-theme', nextDark ? 'dark' : 'light');
+        syncBulbButton();
+      });
+    }
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (!document.documentElement.getAttribute('data-theme')) {
+          syncBulbButton();
+        }
+      });
+    }
+    syncBulbButton();
+
+    const dropZoneEl = document.getElementById('dropZone');
+    const zipInputEl = document.getElementById('zipInput');
+    const tablesInputEl = document.getElementById('tablesInput');
+    const pickSingleTablesBtnEl = document.getElementById('pickSingleTablesBtn');
+
+    dropZoneEl.addEventListener('click', () => zipInputEl.click());
+    dropZoneEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        zipInputEl.click();
+      }
+    });
+
+    pickSingleTablesBtnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      tablesInputEl.click();
+    });
+
+    zipInputEl.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleIncomingFiles(e.target.files);
+        zipInputEl.value = '';
+      }
+    });
+
+    tablesInputEl.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleDirectTableFiles(e.target.files);
+        tablesInputEl.value = '';
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      dropZoneEl.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZoneEl.classList.add('is-dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      dropZoneEl.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZoneEl.classList.remove('is-dragover');
+      });
+    });
+
+    dropZoneEl.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length > 0) {
+        handleIncomingFiles(dt.files);
+      }
+    });
+
+    const presetsTxtInputEl = document.getElementById('presetsTxtInput');
+    const presetSelectEl = document.getElementById('presetSelect');
+    document.getElementById('reloadPresetsBtn').addEventListener('click', () => loadPresetsFromDirectory(true, true));
+    document.getElementById('loadPresetsBtn').addEventListener('click', () => presetsTxtInputEl.click());
+    presetsTxtInputEl.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handlePresetsTxtFile(e.target.files[0]);
+        presetsTxtInputEl.value = '';
+      }
+    });
+    presetSelectEl.addEventListener('change', () => {
+      const idx = Number(presetSelectEl.value);
+      if (Number.isInteger(idx) && loadedPresets[idx]) {
+        applyPresetObject(loadedPresets[idx]);
+        setBanner(`Применён пресет: «${loadedPresets[idx].name}».`, 'success');
+      }
+    });
+    document.getElementById('exportPresetBtn').addEventListener('click', () => downloadCurrentPresetTxt());
+
+    document.getElementById('renderBtn').addEventListener('click', () => renderAll());
+    document.getElementById('pdfBtn').addEventListener('click', () => downloadLabelsPdf43x25());
+    document.getElementById('printBtn').addEventListener('click', () => {
+      syncPrintCssVars();
+      window.print();
+    });
+    window.addEventListener('beforeprint', () => {
+      syncPrintCssVars();
+    });
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('codesInput').value = '';
+      document.getElementById('outputGrid').innerHTML = '';
+      document.getElementById('statTotal').textContent = '0';
+      document.getElementById('statOk').textContent = '0';
+      const statSkipEl = document.getElementById('statSkip');
+      if (statSkipEl) statSkipEl.textContent = '0';
+      document.getElementById('statBoxesItems').textContent = '0 / 0';
+      document.getElementById('statSize').textContent = '—';
+      lastRenderedCardsData = [];
+      syncPreviewSelector();
+      renderLivePreview();
+      setBanner('Очищено.');
+    });
+
+    document.getElementById('resetCaptionOffsetsBtn').addEventListener('click', () => {
+      ['matrixDxMm', 'matrixDyMm', 'markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
+        document.getElementById(id).value = '0';
+      });
+      syncPrintCssVars();
+      renderLivePreview();
+    });
+
+    document.getElementById('previewIndexSelect').addEventListener('change', () => renderLivePreview());
+    document.getElementById('previewScaleSelect').addEventListener('change', () => renderLivePreview());
+    window.addEventListener('resize', () => renderLivePreview());
+
+    ['inputMode', 'numberingModeSelect', 'skipEmptyCheck', 'showMarkersCheck', 'showProductNameCheck', 'showRawCodeCheck', ].forEach((id) => {
+      document.getElementById(id).addEventListener('change', () => {
+        if (!isApplyingPreset) renderAll();
+      });
+    });
+
+    ['labelWidthMm', 'labelHeightMm', 'matrixSizeMm', 'offsetXMm', 'offsetYMm', 'defaultBoxNum', 'matrixDxMm', 'matrixDyMm', 'markerDxMm', 'markerDyMm', 'serialDxMm', 'serialDyMm', 'bottomDxMm', 'bottomDyMm'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => {
+        if (isApplyingPreset) return;
+        syncPrintCssVars();
+        renderLivePreview();
+      });
+    });
+
+    document.getElementById('refreshGtinBtn').addEventListener('click', () => fetchGtinDatabases(true));
+
+    loadedPresets = parsePresetsTxt(DEFAULT_PRESETS_TXT);
+    populatePresetSelect(loadedPresets, 0);
+    if (loadedPresets[0]) {
+      applyPresetObject(loadedPresets[0]);
+    }
+
+    const isAdminMode = new URLSearchParams(window.location.search).has('admin');
+    document.body.classList.toggle('is-admin', isAdminMode);
+
+    (function placeBlocksForMode() {
+      const presetBox = document.querySelector('.preset-box');
+      const standardStack = document.querySelector('.standard-stack');
+      const previewBox = document.querySelector('.compact-preview-box');
+      const cards = document.querySelectorAll('.two-col > .card');
+      const leftCard = cards[0];
+      const rightCard = cards[1];
+      const rightTitle = rightCard ? rightCard.querySelector('.panel-title') : null;
+      if (!leftCard || !rightCard) return;
+
+      if (isAdminMode) {
+        if (previewBox && previewBox.parentElement !== leftCard) {
+          if (presetBox && presetBox.parentElement === leftCard) {
+            leftCard.insertBefore(previewBox, presetBox);
+          } else {
+            leftCard.appendChild(previewBox);
+          }
+        }
+        if (presetBox && presetBox.parentElement !== leftCard) {
+          leftCard.appendChild(presetBox);
+        }
+        if (rightTitle) {
+          rightTitle.textContent = 'Настройка режима и печати (1 ряд)';
+        }
+        if (standardStack && standardStack.parentElement !== rightCard) {
+          rightCard.appendChild(standardStack);
+        }
+      } else {
+        if (rightTitle) {
+          rightTitle.textContent = 'Предпросмотр этикетки';
+        }
+        if (standardStack && standardStack.parentElement !== leftCard) {
+          if (presetBox && presetBox.parentElement === leftCard) {
+            leftCard.insertBefore(standardStack, presetBox);
+          } else {
+            leftCard.appendChild(standardStack);
+          }
+        }
+        if (presetBox && presetBox.parentElement !== leftCard) {
+          leftCard.appendChild(presetBox);
+        }
+        if (previewBox && previewBox.parentElement !== rightCard) {
+          if (rightTitle && rightTitle.nextSibling) {
+            rightCard.insertBefore(previewBox, rightTitle.nextSibling);
+          } else {
+            rightCard.appendChild(previewBox);
+          }
+        }
+      }
+    })();
+
+    loadGtinCache();
+    fetchGtinDatabases(false);
+    renderAll();
+    loadPresetsFromDirectory(true, false);
+  </script>
+</body>
+</html>
