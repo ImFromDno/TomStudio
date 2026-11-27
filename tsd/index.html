@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Сканер маркировки — Честный ЗНАК / SSCC</title>
+    <meta name="theme-color" content="#0f172a">
+    <title>Сканер маркировки ТСД — Честный ЗНАК / SSCC</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23059669'/><path fill='none' stroke='%23ffffff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' d='M16 22v-6h6M42 16h6v6M48 42v6h-6M22 48h-6v-6M24 32h16M32 24v16'/></svg>">
     <!-- Tailwind CSS для адаптивного и чистого интерфейса -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Библиотека html5-qrcode для распознавания DataMatrix и Code 128 через камеру -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <!-- Шрифт Inter и JetBrains Mono для кодов -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,16 +21,6 @@
         }
         .font-mono-code {
             font-family: 'JetBrains Mono', monospace;
-        }
-        /* Переопределение стилей контейнера видео сканера */
-        #reader video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-            border-radius: 0.75rem;
-        }
-        #reader {
-            border: none !important;
         }
         /* Анимация вспышки при успешном сканировании */
         @keyframes scanFlash {
@@ -160,7 +150,7 @@
                     </svg>
                 </div>
                 <div class="min-w-0">
-                    <h1 class="text-xs sm:text-sm font-bold leading-tight truncate">Сканер КИЗ</h1>
+                    <h1 class="text-xs sm:text-sm font-bold leading-tight truncate">Сканер КИЗ • ТСД</h1>
                     <p class="hidden sm:block text-[10px] text-slate-400 leading-tight truncate">Офлайн • Подбор и Агрегация</p>
                 </div>
             </div>
@@ -193,7 +183,7 @@
                 </button>
             </div>
 
-            <!-- Поле текущей коробки (показывается всегда или подсвечивается в режиме агрегации) -->
+            <!-- Поле текущей коробки -->
             <div id="boxControlBlock" class="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
                 <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Текущая коробка для агрегации
@@ -233,58 +223,36 @@
             </div>
         </section>
 
-        <!-- Блок камеры и управления сканером -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4">
-            <!-- Область видоискателя -->
-            <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center mb-3">
-                <div id="reader" class="w-full h-full"></div>
-                
-                <!-- Заглушка, когда камера выключена -->
-                <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-4 text-center bg-slate-900">
-                    <svg class="w-12 h-12 mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    <p class="text-sm font-medium text-slate-300">Камера остановлена</p>
-                    <p class="text-xs text-slate-500 mt-1">Нажмите «Запустить камеру» для сканирования</p>
-                </div>
-
-                <!-- Прицел поверх активной камеры -->
-                <div id="scanTargetOverlay" class="hidden absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div class="w-56 h-56 sm:w-64 sm:h-64 border-2 border-emerald-400/80 rounded-2xl relative shadow-[0_0_0_9999px_rgba(15,23,42,0.45)]">
-                        <div class="absolute -top-0.5 -left-0.5 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl"></div>
-                        <div class="absolute -top-0.5 -right-0.5 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl"></div>
-                        <div class="absolute -bottom-0.5 -left-0.5 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl"></div>
-                        <div class="absolute -bottom-0.5 -right-0.5 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-xl"></div>
-                    </div>
-                </div>
+        <!-- Аппаратный 2D-сканер ТСД и ручной ввод -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between gap-2 text-[11px]">
+                <span class="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    2D-сканер ТСД активен в фоне (нажимать на поле не нужно)
+                </span>
+                <span id="hidBufferBadge" class="hidden font-mono-code text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Приём кода...
+                </span>
             </div>
 
-            <!-- Панель управления камерой -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <button id="toggleCameraBtn" class="w-full py-3 px-4 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-sm">
-                    <svg id="camBtnIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span id="camBtnText">Запустить камеру</span>
+            <form id="manualForm" class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="manualInput" 
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    placeholder="Ручной ввод (тап только если нужна клавиатура)..." 
+                    class="flex-1 min-w-0 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-mono-code text-slate-800 placeholder:font-sans placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                >
+                <button type="submit" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs sm:text-sm active:scale-[0.98] transition shrink-0">
+                    Добавить
                 </button>
+            </form>
 
-                <div class="flex gap-2">
-                    <select id="cameraSelect" aria-label="Выбор камеры" class="flex-1 min-w-0 bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 truncate">
-                        <option value="">Основная камера (авто)</option>
-                    </select>
-
-                    <button id="torchBtn" disabled title="Фонарик" class="px-3.5 py-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Переключатель дубликатов, фильтра ШК и звука -->
-            <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2.5 text-sm">
+            <!-- Настройки формата, фильтров и звука -->
+            <div class="pt-2.5 border-t border-slate-100 flex flex-col gap-2.5 text-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Формат вывода:</span>
                     <div class="grid grid-cols-2 gap-1.5 bg-slate-200/70 p-1 rounded-lg">
@@ -327,43 +295,10 @@
                     </div>
                 </div>
                 <div id="audioStatusHint" class="text-[11px] text-slate-500 flex items-center justify-between bg-slate-50/80 px-2.5 py-1.5 rounded-lg border border-slate-100">
-                    <span id="audioLockStatus">Нажмите «Запустить камеру» или «Тест пика» для активации звука</span>
+                    <span id="audioLockStatus">Нажмите «Тест пика» или коснитесь экрана для активации звука</span>
                     <span id="vibrateSupportStatus" class="font-medium text-slate-400"></span>
                 </div>
             </div>
-        </section>
-
-        <!-- Ручной ввод / Аппаратный 2D-сканер ТСД (фокус держится в поле, экранная клавиатура по отдельной кнопке) -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col gap-2">
-            <form id="manualForm" class="flex gap-2">
-                <div class="relative flex-1 min-w-0 flex items-center bg-slate-50 border border-slate-300 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500 focus-within:bg-white transition pr-1">
-                    <input 
-                        type="text" 
-                        id="manualInput" 
-                        inputmode="none"
-                        autocomplete="off"
-                        autocorrect="off"
-                        autocapitalize="off"
-                        spellcheck="false"
-                        placeholder="Сканер / ввод (клавиатура по кнопке справа)..." 
-                        class="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-xs sm:text-sm font-mono-code text-slate-800 placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
-                    >
-                    <button 
-                        type="button" 
-                        id="summonKeyboardBtn" 
-                        title="Вызвать экранную клавиатуру"
-                        aria-label="Вызвать экранную клавиатуру"
-                        class="p-2 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 active:scale-95 transition shrink-0"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm4 3h.01M11 10h2m4 0h.01M7 13h.01M11 13h2m4 0h.01M8 16h8"></path>
-                        </svg>
-                    </button>
-                </div>
-                <button type="submit" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs sm:text-sm active:scale-[0.98] transition shrink-0">
-                    Добавить
-                </button>
-            </form>
         </section>
 
         <!-- Кнопки экспорта для 1С и очистки -->
@@ -456,7 +391,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
                 <p class="text-sm font-medium text-slate-500">Список пока пуст</p>
-                <p class="text-xs mt-1">Наведите камеру на код DataMatrix или SSCC</p>
+                <p class="text-xs mt-1">Нажмите курок ТСД на коде DataMatrix или SSCC</p>
             </div>
 
             <!-- Таблица / Список строк -->
@@ -479,36 +414,32 @@
 
     <script>
         /**
-         * Состояние приложения и константы
+         * Состояние приложения и константы (версия ТСД на базе V8)
          */
-        const STORAGE_KEY = 'chestny_znak_sscc_scans_v9';
-        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v9';
-        const GTIN_CACHE_KEY = 'chestny_znak_gtin_catalog_v9';
+        const STORAGE_KEY = 'chestny_znak_sscc_scans_v8_tsd';
+        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v8_tsd';
+        const GTIN_CACHE_KEY = 'chestny_znak_gtin_catalog_v8_tsd';
         const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxy0U15bAlmCoYqqj6N-51YWa6OEejevu8_qCx6gnoRaZYHpfgRjpLnV4p7YyXgTc0r/exec';
         const DATABASES = {
             belsvet: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv',
             energodar: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=21252746&single=true&output=csv'
         };
 
-        // Элемент списка: { id, raw, formatted, boxCode, workMode, type, timestamp, syncStatus: 'pending'|'sent'|'duplicate'|'error', syncNote, sentShipmentName }
         let scannedItems = [];
         let outputMode = 'short'; // 'short' -> (01)...(21)... / (00)... | 'full' -> исходный КИЗ
         let workMode = 'pick'; // 'pick' -> Подбор | 'aggregate' -> Агрегация
         let listViewMode = 'flat'; // 'flat' -> обычный список | 'gtin' -> группировка по GTIN/названиям
-        let activeBoxCode = ''; // Текущий код коробки (00)... для режима агрегации
-        let lastShipmentName = ''; // Последний введённый номер реализации в модалке
+        let activeBoxCode = '';
+        let lastShipmentName = '';
         let isSendingBatch = false;
 
         let dbUrls = {
             belsvet: DATABASES.belsvet,
             energodar: DATABASES.energodar
         };
-        let gtinNameMap = {}; // { '4810222012172': { name: '...', source: 'Белсвет' } }
+        let gtinNameMap = {};
         let gtinCatalogUpdatedAt = 0;
 
-        let html5QrCode = null;
-        let isScanning = false;
-        let isTorchOn = false;
         let lastScanTime = 0;
         let lastScannedNormalized = '';
         let audioCtx = null;
@@ -538,13 +469,6 @@
         const cancelSendModalBtn = document.getElementById('cancelSendModalBtn');
         const confirmSendModalBtn = document.getElementById('confirmSendModalBtn');
 
-        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
-        const camBtnText = document.getElementById('camBtnText');
-        const camBtnIcon = document.getElementById('camBtnIcon');
-        const cameraSelect = document.getElementById('cameraSelect');
-        const torchBtn = document.getElementById('torchBtn');
-        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
-        const scanTargetOverlay = document.getElementById('scanTargetOverlay');
         const modeShortBtn = document.getElementById('modeShortBtn');
         const modeFullBtn = document.getElementById('modeFullBtn');
         const ssccBracketsToggle = document.getElementById('ssccBracketsToggle');
@@ -592,15 +516,22 @@
             updateActiveBoxUI();
             updateHardwareFeedbackStatus();
             renderList();
-            initCamerasList();
+            registerServiceWorker();
             if ((dbUrls.belsvet || dbUrls.energodar) && (!gtinCatalogUpdatedAt || Date.now() - gtinCatalogUpdatedAt > 3600000)) {
                 syncGtinCatalog(true);
             }
         });
 
-        /**
-         * Проверка поддержки Vibration API
-         */
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch((err) => {
+                        console.warn('Service Worker не зарегистрирован:', err);
+                    });
+                });
+            }
+        }
+
         function updateHardwareFeedbackStatus() {
             const hasVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function';
             if (hasVibrate) {
@@ -612,9 +543,6 @@
             }
         }
 
-        /**
-         * Инициализация и разблокировка Web Audio API при любом касании экрана
-         */
         function unlockAudioEngine() {
             try {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -649,7 +577,7 @@
             if (audioCtx && audioCtx.state === 'running') {
                 audioLockStatus.innerHTML = '<span class="text-emerald-600 font-semibold">● Звук сканера активен</span> (проверьте громкость мультимедиа)';
             } else {
-                audioLockStatus.textContent = 'Нажмите «Запустить камеру» или «Тест пика» для активации звука';
+                audioLockStatus.textContent = 'Нажмите «Тест пика» или коснитесь экрана для активации звука';
             }
         }
 
@@ -657,9 +585,6 @@
             document.addEventListener(evtName, unlockAudioEngine, { passive: true, once: false });
         });
 
-        /**
-         * Синтез звука «как у кассового сканера»
-         */
         function playScannerTone(freq = 2720, durationSec = 0.082, delaySec = 0, volume = 0.55) {
             if (!soundToggle || !soundToggle.checked) return;
 
@@ -760,9 +685,6 @@
             showToast('Тест: звук кассового сканера и вибро', 'success');
         });
 
-        /**
-         * Загрузка данных и настроек из localStorage
-         */
         function loadFromStorage() {
             try {
                 const savedData = localStorage.getItem(STORAGE_KEY);
@@ -807,9 +729,6 @@
             updateShipmentHint();
         }
 
-        /**
-         * Сохранение данных и настроек в localStorage
-         */
         function saveToStorage() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(scannedItems));
@@ -831,9 +750,6 @@
             }
         }
 
-        /**
-         * Загрузка кэша справочника GTIN -> Название
-         */
         function loadGtinCatalogCache() {
             try {
                 const raw = localStorage.getItem(GTIN_CACHE_KEY);
@@ -877,9 +793,6 @@
             gtinCatalogMeta.textContent = `Позиций: ${count}${timeStr ? ' • обн. ' + timeStr : ''}`;
         }
 
-        /**
-         * Простой парсер CSV-строк с поддержкой кавычек и разделителей , или ;
-         */
         function parseCsvRows(csvText) {
             const cleanText = String(csvText || '').replace(/^\uFEFF/, '');
             const rows = [];
@@ -926,7 +839,6 @@
         function normalizeGtinKey(rawGtin) {
             const m = String(rawGtin || '').trim().replace(/^['"]+|['"]+$/g, '').match(/^(?:\(?01\)?)?(\d{13,14})$/);
             if (!m) return '';
-            // Приводим 13-значный GTIN/EAN к 14-значному виду с ведущим нулём, если нужно
             return m[1].length === 13 ? '0' + m[1] : m[1];
         }
 
@@ -1180,9 +1092,6 @@
         allowDuplicatesToggle.addEventListener('change', saveToStorage);
         soundToggle.addEventListener('change', saveToStorage);
 
-        /**
-         * Определение обычного товарного штрих-кода (EAN-8, EAN-13, UPC-A, ITF-14 без AI 00/01)
-         */
         function isRetailBarcode(cleaned, formatName = '') {
             const upperFormat = (formatName || '').toUpperCase();
             if (upperFormat.includes('EAN') || upperFormat.includes('UPC') || upperFormat.includes('EAN_13') || upperFormat.includes('EAN_8')) {
@@ -1197,9 +1106,6 @@
             return false;
         }
 
-        /**
-         * Парсинг и нормализация кодов DataMatrix (Честный ЗНАК) и SSCC (коробки)
-         */
         function parseAndNormalizeCode(rawInput, formatName = '') {
             let cleaned = rawInput
                 .replace(/^(\]d2|\]C1|\]e0|\x1d+|\u001d+)/gi, '')
@@ -1219,7 +1125,6 @@
                 };
             }
 
-            // 1. Проверка на SSCC код коробки
             const ssccMatchWithAi = cleaned.match(/^\(?00\)?(\d{18})(?:\x1d.*)?$/);
             if (ssccMatchWithAi) {
                 const sscc18 = ssccMatchWithAi[1];
@@ -1243,7 +1148,6 @@
                 };
             }
 
-            // 2. Парсинг DataMatrix (Честный ЗНАК): AI 01 + AI 21
             const dmMatch = cleaned.match(/^\(?01\)?(\d{14})\(?21\)?([^\x1d]+)(?:\x1d(.*))?$/);
             if (dmMatch) {
                 const gtin = dmMatch[1];
@@ -1267,7 +1171,6 @@
                 };
             }
 
-            // 3. Другой штрихкод / QR
             return {
                 type: upperFormat.includes('QR') ? 'QR' : 'Другой',
                 shortCode: cleaned,
@@ -1277,9 +1180,6 @@
             };
         }
 
-        /**
-         * Пересчет активной строки для всех элементов при смене режима вывода
-         */
         function recalculateAllFormatted() {
             scannedItems = scannedItems.map(item => {
                 const parsed = parseAndNormalizeCode(item.raw, item.formatName || '');
@@ -1291,9 +1191,6 @@
             });
         }
 
-        /**
-         * Форматирование строки для безопасного отображения в HTML
-         */
         function formatDisplayCode(codeStr) {
             const escapeHtml = (str) => str
                 .replace(/&/g, '&amp;')
@@ -1310,15 +1207,11 @@
             return escaped.join('<span class="inline-block mx-0.5 px-1 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-sans font-bold align-middle" title="Group Separator (ASCII 29)">GS</span>');
         }
 
-        /**
-         * Офлайн-накопление отсканированного или введенного кода в локальный список
-         */
         function processScannedCode(rawCode, formatName = '', isManual = false) {
             if (!rawCode) return;
 
             const parsed = parseAndNormalizeCode(rawCode, formatName);
 
-            // Фильтр обычных товарных штрих-кодов (EAN-13/8 и т.п.)
             if (parsed.isRetail && filterRetailBarcodeToggle && filterRetailBarcodeToggle.checked) {
                 playFeedbackSound('warning');
                 triggerFlash('warn');
@@ -1329,7 +1222,6 @@
 
             const normalizedForCompare = `${workMode}:${parsed.shortCode}`;
 
-            // Защита от дребезга камеры (повторное считывание того же кода быстрее чем за 1.5 сек)
             const now = Date.now();
             if (!isManual && normalizedForCompare === lastScannedNormalized && (now - lastScanTime) < 1500) {
                 return;
@@ -1337,7 +1229,6 @@
             lastScannedNormalized = normalizedForCompare;
             lastScanTime = now;
 
-            // В режиме Агрегации: если отсканирован SSCC коробки — запоминаем её как активную коробку
             if (workMode === 'aggregate' && parsed.type === 'SSCC') {
                 const boxFormatted = parsed.shortCode.startsWith('(00)')
                     ? parsed.shortCode
@@ -1353,7 +1244,6 @@
                 return;
             }
 
-            // В режиме Агрегации для КИЗа/кода товара требуется активная коробка
             if (workMode === 'aggregate' && !activeBoxCode) {
                 playFeedbackSound('warning');
                 triggerFlash('warn');
@@ -1362,7 +1252,6 @@
                 return;
             }
 
-            // Проверка на дубликаты в локальном списке
             const isDuplicate = scannedItems.some(item => {
                 if (item.workMode !== workMode) return false;
                 const existingShort = parseAndNormalizeCode(item.raw, item.formatName || '').shortCode;
@@ -1404,16 +1293,10 @@
             }
         }
 
-        /**
-         * Получение элементов, ожидающих отправки в таблицу
-         */
         function getUnsentItems() {
             return scannedItems.filter(item => item.syncStatus !== 'sent');
         }
 
-        /**
-         * Открытие модального окна «Отправить данные» с запросом номера реализации
-         */
         function openSendBridgeModal() {
             const unsent = getUnsentItems();
             if (unsent.length === 0) {
@@ -1462,9 +1345,6 @@
             }
         });
 
-        /**
-         * Отправка всей пачки неотправленных кодов одним POST-запросом в Google Apps Script
-         */
         async function sendBatchToBridge(queueItems, shipmentName) {
             const batchPayload = {
                 mode: 'batch',
@@ -1500,9 +1380,6 @@
             return data;
         }
 
-        /**
-         * Пакетная выгрузка накопленных кодов в таблицу одним запросом по номеру реализации
-         */
         sendBridgeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (isSendingBatch) return;
@@ -1514,7 +1391,6 @@
                 return;
             }
 
-            // Отправляем в хронологическом порядке сканирования (от старых к новым)
             const queue = [...getUnsentItems()].reverse();
             if (queue.length === 0) {
                 closeSendBridgeModal();
@@ -1620,9 +1496,6 @@
             }
         });
 
-        /**
-         * Отрисовка списка кодов и обновление счетчиков
-         */
         function renderList() {
             const unsentCount = getUnsentItems().length;
             totalCounter.textContent = scannedItems.length;
@@ -1753,12 +1626,10 @@
 
                 return `
                     <div class="p-3 sm:px-4 flex items-center gap-3 hover:bg-slate-50 transition group ${item.syncStatus === 'sent' ? 'bg-slate-50/60' : ''}">
-                        <!-- Порядковый номер -->
                         <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
                             ${itemNumber}
                         </div>
 
-                        <!-- Тип, режим, статус и значение кода -->
                         <div class="flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-1.5 mb-1">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeStyle}">
@@ -1779,7 +1650,6 @@
                             ${item.syncNote ? `<div class="mt-0.5 text-[11px] text-red-600">${item.syncNote.replace(/</g, '&lt;')}</div>` : ''}
                         </div>
 
-                        <!-- Кнопка удаления строки -->
                         <button 
                             onclick="deleteItem('${item.id}')" 
                             title="Удалить строку"
@@ -1800,203 +1670,42 @@
             renderList();
         };
 
-        /**
-         * Получение списка доступных камер устройства
-         */
-        async function initCamerasList() {
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length > 0) {
-                    cameraSelect.innerHTML = '';
-                    let preferredCameraId = devices[0].id;
-
-                    devices.forEach((device, index) => {
-                        const option = document.createElement('option');
-                        option.value = device.id;
-                        const label = device.label || `Камера ${index + 1}`;
-                        option.textContent = label;
-                        cameraSelect.appendChild(option);
-
-                        if (/back|rear|environment|задн|основн/i.test(label)) {
-                            preferredCameraId = device.id;
-                        }
-                    });
-
-                    cameraSelect.value = preferredCameraId;
-                }
-            } catch (err) {
-                console.warn('Не удалось получить список камер до запуска:', err);
-            }
-        }
-
-        /**
-         * Запуск сканера камеры
-         */
-        async function startScanner() {
-            if (isScanning) return;
-
-            try {
-                if (!html5QrCode) {
-                    const formatsToSupport = [
-                        Html5QrcodeSupportedFormats.DATA_MATRIX,
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.QR_CODE,
-                        Html5QrcodeSupportedFormats.EAN_13
-                    ];
-                    html5QrCode = new Html5Qrcode("reader", {
-                        formatsToSupport: formatsToSupport,
-                        useBarCodeDetectorIfSupported: true,
-                        verbose: false
-                    });
-                }
-
-                const selectedCameraId = cameraSelect.value;
-                const cameraConfig = selectedCameraId
-                    ? { deviceId: { exact: selectedCameraId } }
-                    : { facingMode: "environment" };
-
-                const scanConfig = {
-                    fps: 15,
-                    qrbox: function(viewfinderWidth, viewfinderHeight) {
-                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                        const boxSize = Math.floor(minEdge * 0.72);
-                        return { width: boxSize, height: boxSize };
-                    },
-                    aspectRatio: 1.333334
-                };
-
-                await html5QrCode.start(
-                    cameraConfig,
-                    scanConfig,
-                    (decodedText, decodedResult) => {
-                        const formatName = decodedResult?.result?.format?.formatName || '';
-                        processScannedCode(decodedText, formatName, false);
-                    },
-                    () => {}
-                );
-
-                isScanning = true;
-                cameraPlaceholder.classList.add('hidden');
-                scanTargetOverlay.classList.remove('hidden');
-
-                toggleCameraBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-                toggleCameraBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-                camBtnText.textContent = 'Остановить камеру';
-                camBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>`;
-
-                if (cameraSelect.options.length <= 1 && !cameraSelect.value) {
-                    await initCamerasList();
-                }
-
-                checkTorchSupport();
-
-            } catch (err) {
-                console.error('Ошибка запуска камеры:', err);
-                showToast('Не удалось открыть камеру. Проверьте разрешения HTTPS.', 'error');
-            }
-        }
-
-        async function stopScanner() {
-            if (!isScanning || !html5QrCode) return;
-
-            try {
-                if (isTorchOn) {
-                    try {
-                        await toggleTorch(false);
-                    } catch (_) {}
-                }
-                await html5QrCode.stop();
-            } catch (err) {
-                console.error('Ошибка остановки камеры:', err);
-            }
-
-            try {
-                await html5QrCode.clear();
-            } catch (_) {}
-
-            // Принудительно останавливаем зависшие видео-треки на случай если драйвер/браузер не освободил камеру
-            try {
-                const videoEl = document.querySelector('#reader video');
-                if (videoEl && videoEl.srcObject && typeof videoEl.srcObject.getTracks === 'function') {
-                    videoEl.srcObject.getTracks().forEach(track => {
-                        try { track.stop(); } catch (_) {}
-                    });
-                    videoEl.srcObject = null;
-                }
-            } catch (_) {}
-
-            // Пересоздаём экземпляр html5QrCode, чтобы при следующем запуске не оставалось «залипшего» состояния
-            html5QrCode = null;
-            isScanning = false;
-            isTorchOn = false;
-            torchBtn.disabled = true;
-            torchBtn.classList.remove('bg-amber-400', 'text-slate-900', 'border-amber-500');
-            torchBtn.classList.add('bg-slate-100', 'text-slate-400');
-
-            cameraPlaceholder.classList.remove('hidden');
-            scanTargetOverlay.classList.add('hidden');
-
-            toggleCameraBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-            toggleCameraBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
-            camBtnText.textContent = 'Запустить камеру';
-            camBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
-        }
-
-        function checkTorchSupport() {
-            try {
-                const track = html5QrCode.getRunningTrackCameraCapabilities();
-                if (track && track.torchFeature && track.torchFeature().isSupported()) {
-                    torchBtn.disabled = false;
-                    torchBtn.classList.remove('text-slate-400');
-                    torchBtn.classList.add('text-slate-700', 'hover:bg-slate-200');
-                } else {
-                    torchBtn.disabled = true;
-                }
-            } catch (e) {
-                torchBtn.disabled = true;
-            }
-        }
-
-        async function toggleTorch(forceState = null) {
-            if (!isScanning || !html5QrCode) return;
-            try {
-                const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
-                const torch = capabilities.torchFeature();
-                if (!torch.isSupported()) return;
-
-                const nextState = forceState !== null ? forceState : !isTorchOn;
-                await torch.apply(nextState);
-                isTorchOn = nextState;
-
-                if (isTorchOn) {
-                    torchBtn.classList.remove('bg-slate-100', 'text-slate-700');
-                    torchBtn.classList.add('bg-amber-400', 'text-slate-900', 'border-amber-500');
-                } else {
-                    torchBtn.classList.remove('bg-amber-400', 'text-slate-900', 'border-amber-500');
-                    torchBtn.classList.add('bg-slate-100', 'text-slate-700');
-                }
-            } catch (err) {
-                console.warn('Ошибка переключения фонарика:', err);
-            }
-        }
-
-        toggleCameraBtn.addEventListener('click', () => {
-            unlockAudioEngine();
-            if (isScanning) {
-                stopScanner();
-            } else {
-                startScanner();
-            }
+        manualForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = manualInput.value.trim();
+            if (!val) return;
+            processScannedCode(val, '', true);
+            manualInput.value = '';
+            manualInput.blur();
         });
 
-        cameraSelect.addEventListener('change', async () => {
-            if (isScanning) {
-                await stopScanner();
-                await startScanner();
-            }
-        });
+        /**
+         * Глобальный перехватчик ввода аппаратного 2D-сканера ТСД (без фокуса в поле и без вызова экранной клавиатуры)
+         */
+        const hidBufferBadge = document.getElementById('hidBufferBadge');
+        let hidScanBuffer = '';
+        let hidLastKeyTime = 0;
+        let hidFlushTimer = null;
 
-        torchBtn.addEventListener('click', () => toggleTorch());
+        function resetHidBuffer() {
+            hidScanBuffer = '';
+            hidLastKeyTime = 0;
+            if (hidFlushTimer) {
+                clearTimeout(hidFlushTimer);
+                hidFlushTimer = null;
+            }
+            if (hidBufferBadge) {
+                hidBufferBadge.classList.add('hidden');
+            }
+        }
+
+        function commitHidBuffer() {
+            const payload = hidScanBuffer.trim();
+            resetHidBuffer();
+            if (payload.length >= 6) {
+                processScannedCode(payload, '', true);
+            }
+        }
 
         function isEditableElement(el) {
             if (!el) return false;
@@ -2005,75 +1714,55 @@
             return Boolean(el.isContentEditable);
         }
 
-        const summonKeyboardBtn = document.getElementById('summonKeyboardBtn');
-
-        function setManualInputNoKeyboard() {
-            if (!manualInput) return;
-            manualInput.setAttribute('inputmode', 'none');
-            if (summonKeyboardBtn) {
-                summonKeyboardBtn.classList.remove('bg-emerald-100', 'text-emerald-700');
-                summonKeyboardBtn.classList.add('text-slate-500');
+        document.addEventListener('keydown', (e) => {
+            if (isEditableElement(e.target) || isEditableElement(document.activeElement)) {
+                return;
             }
-        }
-
-        function keepScannerFieldFocused() {
-            if (!manualInput) return;
             if (!sendBridgeModal.classList.contains('hidden') || !confirmModal.classList.contains('hidden')) {
                 return;
             }
-            if (document.activeElement && document.activeElement !== manualInput && isEditableElement(document.activeElement)) {
+            if (e.ctrlKey || e.altKey || e.metaKey) {
                 return;
             }
-            setManualInputNoKeyboard();
-            try {
-                manualInput.focus({ preventScroll: true });
-            } catch (_) {
-                manualInput.focus();
+
+            const now = Date.now();
+            if (hidScanBuffer && (now - hidLastKeyTime) > 180) {
+                hidScanBuffer = '';
             }
-        }
+            hidLastKeyTime = now;
 
-        manualInput.addEventListener('pointerdown', () => {
-            setManualInputNoKeyboard();
-        });
-
-        manualInput.addEventListener('blur', () => {
-            setManualInputNoKeyboard();
-        });
-
-        if (summonKeyboardBtn) {
-            summonKeyboardBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                unlockAudioEngine();
-                manualInput.setAttribute('inputmode', 'text');
-                summonKeyboardBtn.classList.remove('text-slate-500');
-                summonKeyboardBtn.classList.add('bg-emerald-100', 'text-emerald-700');
-                manualInput.blur();
-                setTimeout(() => {
-                    manualInput.focus();
-                }, 40);
-            });
-        }
-
-        manualForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const val = manualInput.value.trim();
-            if (!val) return;
-            processScannedCode(val, '', true);
-            manualInput.value = '';
-            setManualInputNoKeyboard();
-            keepScannerFieldFocused();
-        });
-
-        // Держим поле ввода в фокусе при загрузке и возврате на страницу без вызова клавиатуры
-        window.addEventListener('load', () => {
-            setTimeout(keepScannerFieldFocused, 120);
-        });
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                setTimeout(keepScannerFieldFocused, 120);
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                if (hidScanBuffer.length >= 6) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    commitHidBuffer();
+                } else {
+                    resetHidBuffer();
+                }
+                return;
             }
-        });
+
+            if (e.key === 'GroupSeparator' || e.keyCode === 29) {
+                hidScanBuffer += ' ';
+            } else if (e.key && e.key.length === 1) {
+                hidScanBuffer += e.key;
+            } else {
+                return;
+            }
+
+            if (hidBufferBadge && hidScanBuffer.length >= 2) {
+                hidBufferBadge.classList.remove('hidden');
+            }
+
+            if (hidFlushTimer) clearTimeout(hidFlushTimer);
+            hidFlushTimer = setTimeout(() => {
+                if (hidScanBuffer.length >= 10) {
+                    commitHidBuffer();
+                } else {
+                    resetHidBuffer();
+                }
+            }, 220);
+        }, true);
 
         copyListBtn.addEventListener('click', () => {
             if (scannedItems.length === 0) {
