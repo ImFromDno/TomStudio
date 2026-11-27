@@ -2146,7 +2146,19 @@ function generateBoxMatrixViaBwip(ssccText) {
     }
 
     function formatFactoryCodeDisplay(rawLine, bytes, label, gtin, serial, isBox) {
-      if (isBox) return '';
+      if (isBox) {
+        let sscc = '';
+        if (bytes && bytes.length >= 20) {
+          sscc = bytesToAscii(bytes).slice(0, 20);
+        } else {
+          sscc = String(label || rawLine || '').trim();
+        }
+        const digits = sscc.replace(/\D+/g, '');
+        if (digits.length === 20 && digits.startsWith('00')) {
+          return digits.slice(2);
+        }
+        return digits || sscc;
+      }
       const cleanLine = String(rawLine || '').trim();
       const parenMatch = cleanLine.match(/^\(01\)(\d{14})\(21\)([^\(\x1d<]+)/);
       if (parenMatch) {
@@ -2196,7 +2208,14 @@ function generateBoxMatrixViaBwip(ssccText) {
           return {
             ...bwipAssembled,
             label: ssccPayload,
-            factoryCode: '',
+            factoryCode: formatFactoryCodeDisplay(
+              rawLine,
+              prepared.bytes,
+              ssccPayload,
+              '',
+              '',
+              true
+            ),
             isBox: true,
             gtin: '',
             serial: ''
@@ -2876,7 +2895,7 @@ function generateBoxMatrixViaBwip(ssccText) {
           const productTitle = showProductNameEl.checked
             ? (res.isBox ? '' : lookupProductNameByGtin(res.gtin))
             : '';
-          const factoryCodeText = showRawCodeEl.checked && !res.isBox
+          const factoryCodeText = (showRawCodeEl.checked || res.isBox)
             ? (res.factoryCode || res.label || '')
             : '';
 
@@ -3758,4 +3777,4 @@ function generateBoxMatrixViaBwip(ssccText) {
     loadPresetsFromDirectory(true, false);
   </script>
 </body>
-</html>
+	</html>
