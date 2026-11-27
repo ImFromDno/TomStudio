@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <title>Сканер маркировки ТСД — Честный ЗНАК / SSCC</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23059669'/><path fill='none' stroke='%23ffffff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' d='M16 22v-6h6M42 16h6v6M48 42v6h-6M22 48h-6v-6M24 32h16M32 24v16'/></svg>">
+    <!-- Tailwind CSS для адаптивного и чистого интерфейса -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Шрифт Inter и JetBrains Mono для кодов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Анимация вспышки при успешном сканировании */
+        @keyframes scanFlash {
+            0% { background-color: rgba(34, 197, 94, 0.45); }
+            100% { background-color: transparent; }
+        }
+        .flash-success {
+            animation: scanFlash 0.45s ease-out;
+        }
+        @keyframes scanWarn {
+            0% { background-color: rgba(245, 158, 11, 0.45); }
+            100% { background-color: transparent; }
+        }
+        .flash-warn {
+            animation: scanWarn 0.45s ease-out;
+        }
+        /* Скрытие полосы прокрутки в горизонтальных блоках */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col select-none">
+
+    <!-- Оверлей визуальной обратной связи на весь экран -->
+    <div id="flashOverlay" class="fixed inset-0 pointer-events-none z-50 transition-colors"></div>
+
+    <!-- Всплывающее уведомление (Toast) вместо alert() -->
+    <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none flex flex-col gap-2"></div>
+
+    <!-- Модальное окно подтверждения очистки -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
+            <div class="flex items-center gap-3 text-red-600 mb-3">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Очистить весь список?</h3>
+            </div>
+            <p class="text-sm text-slate-600 mb-6">
+                Будут удалены все отсканированные коды (<span id="modalCount" class="font-semibold text-slate-800">0</span> шт.). Это действие нельзя отменить.
+            </p>
+            <div class="flex gap-3">
+                <button id="cancelClearBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] transition">
+                    Отмена
+                </button>
+                <button id="confirmClearBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] transition shadow-sm">
+                    Удалить всё
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно отправки данных в Google Таблицу с вводом номера реализации -->
+    <div id="sendBridgeModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex items-center gap-3 text-emerald-700 mb-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Отправить данные в таблицу</h3>
+                    <p class="text-xs text-slate-500">Укажите номер реализации перед выгрузкой</p>
+                </div>
+            </div>
+
+            <form id="sendBridgeForm" class="flex flex-col gap-4 mt-4">
+                <div>
+                    <label for="modalShipmentInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Номер реализации / отправки
+                    </label>
+                    <input
+                        type="text"
+                        id="modalShipmentInput"
+                        required
+                        autocomplete="off"
+                        placeholder="Например: Реализация №14"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                    >
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-600 flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between">
+                        <span>К отправке в очередь:</span>
+                        <span id="modalPendingCount" class="font-bold text-slate-900">0 шт.</span>
+                    </div>
+                    <div id="modalBreakdownText" class="text-[11px] text-slate-500"></div>
+                </div>
+
+                <div id="sendProgressWrap" class="hidden flex-col gap-1.5">
+                    <div class="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span id="sendProgressLabel">Отправка...</span>
+                        <span id="sendProgressCounter">0 / 0</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="sendProgressBar" class="h-full bg-emerald-600 transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-1">
+                    <button type="button" id="cancelSendModalBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] transition">
+                        Отмена
+                    </button>
+                    <button type="submit" id="confirmSendModalBtn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition shadow-sm flex items-center justify-center gap-2">
+                        <span>Выгрузить</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Шапка приложения (компактная для узких экранов ТСД) -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-2xl mx-auto px-2.5 sm:px-4 py-1.5 sm:py-2.5 flex items-center justify-between gap-1.5">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-inner shrink-0">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-xs sm:text-sm font-bold leading-tight truncate">Сканер КИЗ • ТСД</h1>
+                    <p class="hidden sm:block text-[10px] text-slate-400 leading-tight truncate">Офлайн • Подбор и Агрегация</p>
+                </div>
+            </div>
+
+            <!-- Счётчики кодов -->
+            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                <div class="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700" title="Ожидают отправки в таблицу">
+                    <span class="text-[10px] sm:text-[11px] text-slate-400 whitespace-nowrap">Очередь:</span>
+                    <span id="unsentCounter" class="text-xs sm:text-sm font-bold text-amber-400 leading-none">0</span>
+                </div>
+                <div class="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700" title="Всего в списке">
+                    <span class="text-[10px] sm:text-[11px] text-slate-400 whitespace-nowrap">Всего:</span>
+                    <span id="totalCounter" class="text-xs sm:text-sm font-bold text-emerald-400 leading-none">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 flex flex-col gap-4">
+
+        <!-- Режим работы (Подбор / Агрегация) и кнопка отправки пачки -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200/70">
+                <button type="button" id="workModePickBtn" class="py-2.5 px-3 rounded-lg text-sm font-bold bg-emerald-600 text-white shadow-xs transition">
+                    Подбор (лист «Подбор»)
+                </button>
+                <button type="button" id="workModeAggBtn" class="py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
+                    Агрегация (КИЗ + Коробка)
+                </button>
+            </div>
+
+            <!-- Поле текущей коробки -->
+            <div id="boxControlBlock" class="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Текущая коробка для агрегации
+                </label>
+                <div class="flex items-center gap-1.5">
+                    <input
+                        type="text"
+                        id="activeBoxInput"
+                        readonly
+                        placeholder="Не задана — отсканируйте (00)..."
+                        class="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono-code text-slate-700 placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
+                    >
+                    <button type="button" id="clearBoxBtn" title="Сбросить коробку" class="px-3 py-2 rounded-xl bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 text-xs font-semibold transition shrink-0">
+                        Сброс
+                    </button>
+                </div>
+            </div>
+
+            <!-- Главная кнопка выгрузки накопленных данных -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                <div class="flex flex-col gap-0.5">
+                    <span id="bridgeStatusText" class="text-xs font-semibold text-slate-700">
+                        Режим офлайн-накопления: сканируйте без интернета
+                    </span>
+                    <span id="lastShipmentHint" class="text-[11px] text-slate-400">
+                        Номер реализации запрашивается при нажатии «Отправить данные»
+                    </span>
+                </div>
+
+                <button type="button" id="openSendModalBtn" class="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2 shrink-0">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <span>Отправить данные</span>
+                    <span id="sendBtnBadge" class="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Аппаратный 2D-сканер ТСД и ручной ввод -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between gap-2 text-[11px]">
+                <span class="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    2D-сканер ТСД активен в фоне (нажимать на поле не нужно)
+                </span>
+                <span id="hidBufferBadge" class="hidden font-mono-code text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Приём кода...
+                </span>
+            </div>
+
+            <form id="manualForm" class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="manualInput" 
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    placeholder="Ручной ввод (тап только если нужна клавиатура)..." 
+                    class="flex-1 min-w-0 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-mono-code text-slate-800 placeholder:font-sans placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                >
+                <button type="submit" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs sm:text-sm active:scale-[0.98] transition shrink-0">
+                    Добавить
+                </button>
+            </form>
+
+            <!-- Настройки формата, фильтров и звука -->
+            <div class="pt-2.5 border-t border-slate-100 flex flex-col gap-2.5 text-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Формат вывода:</span>
+                    <div class="grid grid-cols-2 gap-1.5 bg-slate-200/70 p-1 rounded-lg">
+                        <button type="button" id="modeShortBtn" class="py-1.5 px-2.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-xs transition">
+                            (01)...(21)...
+                        </button>
+                        <button type="button" id="modeFullBtn" class="py-1.5 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+                            Полный КИЗ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer py-1">
+                        <input type="checkbox" id="ssccBracketsToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-700 font-medium">SSCC со скобками <code class="text-xs bg-slate-100 px-1 rounded">(00)</code></span>
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer py-1">
+                        <input type="checkbox" id="filterRetailBarcodeToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-700 font-medium">Отсекать обычный ШК</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer py-1">
+                        <input type="checkbox" id="allowDuplicatesToggle" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span class="text-slate-700 font-medium">Дубликаты</span>
+                    </label>
+
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer py-1">
+                            <input type="checkbox" id="soundToggle" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                            <span class="text-slate-700 font-medium">Звук и вибро</span>
+                        </label>
+                        <button type="button" id="testBeepBtn" title="Проверить звук кассового сканера и вибрацию" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold active:scale-95 transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                            </svg>
+                            <span>Тест пика</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="audioStatusHint" class="text-[11px] text-slate-500 flex items-center justify-between bg-slate-50/80 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                    <span id="audioLockStatus">Нажмите «Тест пика» или коснитесь экрана для активации звука</span>
+                    <span id="vibrateSupportStatus" class="font-medium text-slate-400"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Кнопки экспорта для 1С и очистки -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <button id="copyListBtn" class="col-span-2 sm:col-span-1 py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                </svg>
+                <span>Копировать списком</span>
+            </button>
+
+            <button id="downloadCsvBtn" class="py-3.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Скачать CSV</span>
+            </button>
+
+            <button id="clearAllBtn" class="py-3.5 px-4 rounded-xl bg-white hover:bg-red-50 text-red-600 border border-red-200 font-semibold text-sm active:scale-[0.98] transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                <span>Очистить всё</span>
+            </button>
+        </section>
+
+        <!-- Список отсканированных кодов и сводка по GTIN -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex-1 flex flex-col">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <h2 id="listSectionTitle" class="text-sm font-bold text-slate-700">Накопленные коды</h2>
+                    <div class="inline-flex rounded-lg bg-slate-200/80 p-0.5">
+                        <button type="button" id="viewFlatListBtn" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-2xs transition">
+                            Список
+                        </button>
+                        <button type="button" id="viewByGtinBtn" class="px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+                            По товарам
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="button" id="toggleGtinCatalogBtn" class="text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
+                        Базы GTIN
+                    </button>
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
+                        <input type="checkbox" id="csvHeaderToggle" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        <span>Заголовок в CSV</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Настройка двух баз GTIN (CSV): Белсвет и Энергодар -->
+            <div id="gtinCatalogPanel" class="hidden px-4 py-3 bg-blue-50/50 border-b border-slate-200/80 flex flex-col gap-2.5">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-slate-700">Базы наименований по GTIN (CSV)</span>
+                    <span id="gtinCatalogMeta" class="text-[11px] text-slate-500">Не загружены</span>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-semibold text-slate-600">Белсвет (CSV)</label>
+                    <input
+                        type="url"
+                        id="belsvetCsvInput"
+                        placeholder="Ссылка на CSV листа Белсвет"
+                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-semibold text-slate-600">Энергодар (CSV)</label>
+                    <input
+                        type="url"
+                        id="energodarCsvInput"
+                        placeholder="Ссылка на CSV листа Энергодар"
+                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                <div class="flex items-center justify-between gap-2 pt-0.5">
+                    <span class="text-[11px] text-slate-500">
+                        Столбцы: <strong>A</strong> — GTIN, <strong>B</strong> — Полное наименование товара.
+                    </span>
+                    <button type="button" id="syncGtinCatalogBtn" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shrink-0 transition">
+                        Обновить обе
+                    </button>
+                </div>
+            </div>
+
+            <!-- Пустое состояние -->
+            <div id="emptyState" class="py-12 px-4 text-center text-slate-400">
+                <svg class="w-10 h-10 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p class="text-sm font-medium text-slate-500">Список пока пуст</p>
+                <p class="text-xs mt-1">Нажмите курок ТСД на коде DataMatrix или SSCC</p>
+            </div>
+
+            <!-- Таблица / Список строк -->
+            <div id="codesListContainer" class="divide-y divide-slate-100 max-h-[50vh] overflow-y-auto select-text">
+                <!-- Строки добавляются динамически -->
+            </div>
+
+            <!-- Сводка по GTIN с названиями из таблицы -->
+            <div id="gtinGroupedContainer" class="hidden divide-y divide-slate-100 max-h-[50vh] overflow-y-auto select-text">
+                <!-- Группы по GTIN добавляются динамически -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Подвал с обязательной подписью -->
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200/60 mt-auto">
+        Tom studio
+    </footer>
+
+    <script>
+        /**
+         * Состояние приложения и константы (версия ТСД на базе V8)
+         */
+        const STORAGE_KEY = 'chestny_znak_sscc_scans_v8_tsd';
+        const SETTINGS_KEY = 'chestny_znak_sscc_settings_v8_tsd';
+        const GTIN_CACHE_KEY = 'chestny_znak_gtin_catalog_v8_tsd';
+        const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxy0U15bAlmCoYqqj6N-51YWa6OEejevu8_qCx6gnoRaZYHpfgRjpLnV4p7YyXgTc0r/exec';
+        const DATABASES = {
+            belsvet: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=0&single=true&output=csv',
+            energodar: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTF_e2qsgUoRP_k6TZp0iP4Ybvy8yhVpr6JPHqmO0LpSFsvj0vIqLTLWdb8j_3dqWcdxdas0h8JhHMY/pub?gid=21252746&single=true&output=csv'
+        };
+
+        let scannedItems = [];
+        let outputMode = 'short'; // 'short' -> (01)...(21)... / (00)... | 'full' -> исходный КИЗ
+        let workMode = 'pick'; // 'pick' -> Подбор | 'aggregate' -> Агрегация
+        let listViewMode = 'flat'; // 'flat' -> обычный список | 'gtin' -> группировка по GTIN/названиям
+        let activeBoxCode = '';
+        let lastShipmentName = '';
+        let isSendingBatch = false;
+
+        let dbUrls = {
+            belsvet: DATABASES.belsvet,
+            energodar: DATABASES.energodar
+        };
+        let gtinNameMap = {};
+        let gtinCatalogUpdatedAt = 0;
+
+        let lastScanTime = 0;
+        let lastScannedNormalized = '';
+        let audioCtx = null;
+
+        // Элементы DOM
+        const workModePickBtn = document.getElementById('workModePickBtn');
+        const workModeAggBtn = document.getElementById('workModeAggBtn');
+        const boxControlBlock = document.getElementById('boxControlBlock');
+        const activeBoxInput = document.getElementById('activeBoxInput');
+        const clearBoxBtn = document.getElementById('clearBoxBtn');
+        const bridgeStatusText = document.getElementById('bridgeStatusText');
+        const lastShipmentHint = document.getElementById('lastShipmentHint');
+        const openSendModalBtn = document.getElementById('openSendModalBtn');
+        const sendBtnBadge = document.getElementById('sendBtnBadge');
+        const unsentCounter = document.getElementById('unsentCounter');
+
+        // Модалка отправки
+        const sendBridgeModal = document.getElementById('sendBridgeModal');
+        const sendBridgeForm = document.getElementById('sendBridgeForm');
+        const modalShipmentInput = document.getElementById('modalShipmentInput');
+        const modalPendingCount = document.getElementById('modalPendingCount');
+        const modalBreakdownText = document.getElementById('modalBreakdownText');
+        const sendProgressWrap = document.getElementById('sendProgressWrap');
+        const sendProgressLabel = document.getElementById('sendProgressLabel');
+        const sendProgressCounter = document.getElementById('sendProgressCounter');
+        const sendProgressBar = document.getElementById('sendProgressBar');
+        const cancelSendModalBtn = document.getElementById('cancelSendModalBtn');
+        const confirmSendModalBtn = document.getElementById('confirmSendModalBtn');
+
+        const modeShortBtn = document.getElementById('modeShortBtn');
+        const modeFullBtn = document.getElementById('modeFullBtn');
+        const ssccBracketsToggle = document.getElementById('ssccBracketsToggle');
+        const filterRetailBarcodeToggle = document.getElementById('filterRetailBarcodeToggle');
+        const csvHeaderToggle = document.getElementById('csvHeaderToggle');
+        const allowDuplicatesToggle = document.getElementById('allowDuplicatesToggle');
+        const soundToggle = document.getElementById('soundToggle');
+        const testBeepBtn = document.getElementById('testBeepBtn');
+        const audioLockStatus = document.getElementById('audioLockStatus');
+        const vibrateSupportStatus = document.getElementById('vibrateSupportStatus');
+        const manualForm = document.getElementById('manualForm');
+        const manualInput = document.getElementById('manualInput');
+        const totalCounter = document.getElementById('totalCounter');
+        const listSectionTitle = document.getElementById('listSectionTitle');
+        const viewFlatListBtn = document.getElementById('viewFlatListBtn');
+        const viewByGtinBtn = document.getElementById('viewByGtinBtn');
+        const toggleGtinCatalogBtn = document.getElementById('toggleGtinCatalogBtn');
+        const gtinCatalogPanel = document.getElementById('gtinCatalogPanel');
+        const gtinCatalogMeta = document.getElementById('gtinCatalogMeta');
+        const belsvetCsvInput = document.getElementById('belsvetCsvInput');
+        const energodarCsvInput = document.getElementById('energodarCsvInput');
+        const syncGtinCatalogBtn = document.getElementById('syncGtinCatalogBtn');
+        const codesListContainer = document.getElementById('codesListContainer');
+        const gtinGroupedContainer = document.getElementById('gtinGroupedContainer');
+        const emptyState = document.getElementById('emptyState');
+        const copyListBtn = document.getElementById('copyListBtn');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const confirmModal = document.getElementById('confirmModal');
+        const modalCount = document.getElementById('modalCount');
+        const cancelClearBtn = document.getElementById('cancelClearBtn');
+        const confirmClearBtn = document.getElementById('confirmClearBtn');
+        const flashOverlay = document.getElementById('flashOverlay');
+        const toastContainer = document.getElementById('toastContainer');
+
+        /**
+         * Инициализация при загрузке страницы
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            loadGtinCatalogCache();
+            updateWorkModeUI();
+            updateModeUI();
+            updateListViewUI();
+            updateActiveBoxUI();
+            updateHardwareFeedbackStatus();
+            renderList();
+            registerServiceWorker();
+            if ((dbUrls.belsvet || dbUrls.energodar) && (!gtinCatalogUpdatedAt || Date.now() - gtinCatalogUpdatedAt > 3600000)) {
+                syncGtinCatalog(true);
+            }
+        });
+
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch((err) => {
+                        console.warn('Service Worker не зарегистрирован:', err);
+                    });
+                });
+            }
+        }
+
+        function updateHardwareFeedbackStatus() {
+            const hasVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function';
+            if (hasVibrate) {
+                vibrateSupportStatus.textContent = 'Вибро: доступно';
+                vibrateSupportStatus.className = 'font-medium text-emerald-600 shrink-0';
+            } else {
+                vibrateSupportStatus.textContent = 'Вибро: не поддерживается ОС';
+                vibrateSupportStatus.className = 'font-medium text-amber-600 shrink-0';
+            }
+        }
+
+        function unlockAudioEngine() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+
+                if (!audioCtx) {
+                    audioCtx = new AudioContextClass();
+                }
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        updateAudioBadge();
+                    }).catch(() => {});
+                } else {
+                    updateAudioBadge();
+                }
+
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                if (source.start) {
+                    source.start(0);
+                }
+            } catch (e) {
+                console.warn('Ошибка инициализации AudioContext:', e);
+            }
+        }
+
+        function updateAudioBadge() {
+            if (!audioLockStatus) return;
+            if (audioCtx && audioCtx.state === 'running') {
+                audioLockStatus.innerHTML = '<span class="text-emerald-600 font-semibold">● Звук сканера активен</span> (проверьте громкость мультимедиа)';
+            } else {
+                audioLockStatus.textContent = 'Нажмите «Тест пика» или коснитесь экрана для активации звука';
+            }
+        }
+
+        ['touchstart', 'pointerdown', 'click'].forEach(evtName => {
+            document.addEventListener(evtName, unlockAudioEngine, { passive: true, once: false });
+        });
+
+        function playScannerTone(freq = 2720, durationSec = 0.082, delaySec = 0, volume = 0.55) {
+            if (!soundToggle || !soundToggle.checked) return;
+
+            try {
+                unlockAudioEngine();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime + delaySec;
+
+                const oscMain = audioCtx.createOscillator();
+                oscMain.type = 'triangle';
+                oscMain.frequency.setValueAtTime(freq, now);
+
+                const oscHarmonic = audioCtx.createOscillator();
+                oscHarmonic.type = 'sine';
+                oscHarmonic.frequency.setValueAtTime(freq * 2, now);
+
+                const gainMain = audioCtx.createGain();
+                const gainHarmonic = audioCtx.createGain();
+
+                gainMain.gain.setValueAtTime(0.0001, now);
+                gainMain.gain.linearRampToValueAtTime(volume, now + 0.003);
+                gainMain.gain.setValueAtTime(volume, now + durationSec - 0.012);
+                gainMain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+
+                gainHarmonic.gain.setValueAtTime(0.0001, now);
+                gainHarmonic.gain.linearRampToValueAtTime(volume * 0.22, now + 0.003);
+                gainHarmonic.gain.exponentialRampToValueAtTime(0.0001, now + durationSec * 0.85);
+
+                oscMain.connect(gainMain);
+                oscHarmonic.connect(gainHarmonic);
+                gainMain.connect(audioCtx.destination);
+                gainHarmonic.connect(audioCtx.destination);
+
+                oscMain.start(now);
+                oscHarmonic.start(now);
+                oscMain.stop(now + durationSec + 0.01);
+                oscHarmonic.stop(now + durationSec + 0.01);
+            } catch (e) {
+                console.warn('Не удалось воспроизвести звук:', e);
+            }
+        }
+
+        function playFeedbackSound(type = 'success') {
+            if (!soundToggle || !soundToggle.checked) return;
+
+            if (type === 'success') {
+                playScannerTone(2720, 0.085, 0, 0.6);
+            } else if (type === 'warning') {
+                playScannerTone(920, 0.075, 0, 0.5);
+                playScannerTone(740, 0.11, 0.105, 0.5);
+            }
+        }
+
+        function triggerVibration(pattern) {
+            if (!soundToggle || !soundToggle.checked) return;
+            try {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                    navigator.vibrate(pattern);
+                }
+            } catch (e) {}
+        }
+
+        function triggerFlash(type = 'success') {
+            if (!flashOverlay) return;
+            flashOverlay.classList.remove('flash-success', 'flash-warn');
+            void flashOverlay.offsetWidth;
+            flashOverlay.classList.add(type === 'warn' ? 'flash-warn' : 'flash-success');
+        }
+
+        function showToast(message, type = 'info') {
+            if (!toastContainer) return;
+
+            const styles = {
+                success: 'bg-emerald-600 text-white border-emerald-500',
+                warning: 'bg-amber-500 text-slate-950 border-amber-400 font-semibold',
+                error: 'bg-red-600 text-white border-red-500',
+                info: 'bg-slate-800 text-white border-slate-700'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2.5 rounded-xl shadow-lg border text-xs sm:text-sm text-center transition-all duration-300 transform translate-y-0 opacity-100 ${styles[type] || styles.info}`;
+            toast.textContent = message;
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2400);
+        }
+
+        testBeepBtn.addEventListener('click', () => {
+            unlockAudioEngine();
+            playFeedbackSound('success');
+            triggerVibration([70]);
+            triggerFlash('success');
+            showToast('Тест: звук кассового сканера и вибро', 'success');
+        });
+
+        function loadFromStorage() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    if (Array.isArray(parsed)) {
+                        scannedItems = parsed.map(item => ({
+                            ...item,
+                            syncStatus: item.syncStatus || 'pending',
+                            syncNote: item.syncNote || '',
+                            sentShipmentName: item.sentShipmentName || ''
+                        }));
+                    }
+                }
+                const savedSettings = localStorage.getItem(SETTINGS_KEY);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    outputMode = settings.outputMode === 'full' ? 'full' : 'short';
+                    workMode = settings.workMode === 'aggregate' ? 'aggregate' : 'pick';
+                    listViewMode = settings.listViewMode === 'gtin' ? 'gtin' : 'flat';
+                    activeBoxCode = String(settings.activeBoxCode || '').trim();
+                    lastShipmentName = String(settings.lastShipmentName || '').trim();
+                    if (settings.dbUrls && typeof settings.dbUrls === 'object') {
+                        if (typeof settings.dbUrls.belsvet === 'string' && settings.dbUrls.belsvet.trim()) {
+                            dbUrls.belsvet = settings.dbUrls.belsvet.trim();
+                        }
+                        if (typeof settings.dbUrls.energodar === 'string' && settings.dbUrls.energodar.trim()) {
+                            dbUrls.energodar = settings.dbUrls.energodar.trim();
+                        }
+                    }
+                    ssccBracketsToggle.checked = settings.ssccBrackets !== false;
+                    filterRetailBarcodeToggle.checked = settings.filterRetailBarcode !== false;
+                    csvHeaderToggle.checked = Boolean(settings.csvHeader);
+                    allowDuplicatesToggle.checked = Boolean(settings.allowDuplicates);
+                    soundToggle.checked = settings.sound !== false;
+                }
+            } catch (e) {
+                console.error('Ошибка чтения localStorage:', e);
+            }
+            if (belsvetCsvInput) belsvetCsvInput.value = dbUrls.belsvet;
+            if (energodarCsvInput) energodarCsvInput.value = dbUrls.energodar;
+            updateShipmentHint();
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(scannedItems));
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+                    outputMode,
+                    workMode,
+                    listViewMode,
+                    activeBoxCode,
+                    lastShipmentName,
+                    dbUrls,
+                    ssccBrackets: ssccBracketsToggle.checked,
+                    filterRetailBarcode: filterRetailBarcodeToggle.checked,
+                    csvHeader: csvHeaderToggle.checked,
+                    allowDuplicates: allowDuplicatesToggle.checked,
+                    sound: soundToggle.checked
+                }));
+            } catch (e) {
+                console.error('Ошибка записи в localStorage:', e);
+            }
+        }
+
+        function loadGtinCatalogCache() {
+            try {
+                const raw = localStorage.getItem(GTIN_CACHE_KEY);
+                if (!raw) {
+                    updateGtinCatalogMeta();
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.map && typeof parsed.map === 'object') {
+                    gtinNameMap = parsed.map;
+                    gtinCatalogUpdatedAt = Number(parsed.updatedAt) || 0;
+                }
+            } catch (e) {
+                console.warn('Ошибка чтения кэша GTIN:', e);
+            }
+            updateGtinCatalogMeta();
+        }
+
+        function saveGtinCatalogCache() {
+            try {
+                localStorage.setItem(GTIN_CACHE_KEY, JSON.stringify({
+                    map: gtinNameMap,
+                    updatedAt: gtinCatalogUpdatedAt
+                }));
+            } catch (e) {
+                console.warn('Ошибка сохранения кэша GTIN:', e);
+            }
+            updateGtinCatalogMeta();
+        }
+
+        function updateGtinCatalogMeta() {
+            if (!gtinCatalogMeta) return;
+            const count = Object.keys(gtinNameMap).length;
+            if (!count) {
+                gtinCatalogMeta.textContent = 'Справочник пуст';
+                return;
+            }
+            const timeStr = gtinCatalogUpdatedAt
+                ? new Date(gtinCatalogUpdatedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                : '';
+            gtinCatalogMeta.textContent = `Позиций: ${count}${timeStr ? ' • обн. ' + timeStr : ''}`;
+        }
+
+        function parseCsvRows(csvText) {
+            const cleanText = String(csvText || '').replace(/^\uFEFF/, '');
+            const rows = [];
+            let row = [];
+            let cell = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < cleanText.length; i++) {
+                const ch = cleanText[i];
+                const next = cleanText[i + 1];
+
+                if (inQuotes) {
+                    if (ch === '"' && next === '"') {
+                        cell += '"';
+                        i++;
+                    } else if (ch === '"') {
+                        inQuotes = false;
+                    } else {
+                        cell += ch;
+                    }
+                } else {
+                    if (ch === '"') {
+                        inQuotes = true;
+                    } else if (ch === ',' || ch === ';') {
+                        row.push(cell);
+                        cell = '';
+                    } else if (ch === '\n') {
+                        row.push(cell.replace(/\r$/, ''));
+                        rows.push(row);
+                        row = [];
+                        cell = '';
+                    } else {
+                        cell += ch;
+                    }
+                }
+            }
+            if (cell.length > 0 || row.length > 0) {
+                row.push(cell.replace(/\r$/, ''));
+                rows.push(row);
+            }
+            return rows;
+        }
+
+        function normalizeGtinKey(rawGtin) {
+            const m = String(rawGtin || '').trim().replace(/^['"]+|['"]+$/g, '').match(/^(?:\(?01\)?)?(\d{13,14})$/);
+            if (!m) return '';
+            return m[1].length === 13 ? '0' + m[1] : m[1];
+        }
+
+        function buildGtinMapFromCsv(csvText, sourceLabel) {
+            const rows = parseCsvRows(csvText);
+            const entries = {};
+
+            rows.forEach((cols) => {
+                if (!Array.isArray(cols) || cols.length < 2) return;
+                const col0 = String(cols[0] || '').trim().replace(/^['"]+|['"]+$/g, '');
+                const col1 = String(cols[1] || '').trim();
+
+                const gtinKey = normalizeGtinKey(col0);
+                if (gtinKey && col1) {
+                    entries[gtinKey] = {
+                        name: col1,
+                        source: sourceLabel
+                    };
+                }
+            });
+
+            return entries;
+        }
+
+        async function fetchSingleGtinSource(url, sourceLabel) {
+            if (!url) return {};
+            const resp = await fetch(url, { cache: 'no-store' });
+            if (!resp.ok) throw new Error(`${sourceLabel}: HTTP ${resp.status}`);
+            const csvText = await resp.text();
+            return buildGtinMapFromCsv(csvText, sourceLabel);
+        }
+
+        async function syncGtinCatalog(silent = false) {
+            dbUrls.belsvet = (belsvetCsvInput ? belsvetCsvInput.value : dbUrls.belsvet || '').trim();
+            dbUrls.energodar = (energodarCsvInput ? energodarCsvInput.value : dbUrls.energodar || '').trim();
+            saveToStorage();
+
+            if (!dbUrls.belsvet && !dbUrls.energodar) {
+                if (!silent) showToast('Укажите хотя бы одну CSV-ссылку базы GTIN', 'warning');
+                return;
+            }
+
+            if (syncGtinCatalogBtn) {
+                syncGtinCatalogBtn.disabled = true;
+                syncGtinCatalogBtn.textContent = '...';
+            }
+
+            try {
+                const [belsvetMap, energodarMap] = await Promise.all([
+                    fetchSingleGtinSource(dbUrls.belsvet, 'Белсвет').catch(err => {
+                        console.warn(err);
+                        return null;
+                    }),
+                    fetchSingleGtinSource(dbUrls.energodar, 'Энергодар').catch(err => {
+                        console.warn(err);
+                        return null;
+                    })
+                ]);
+
+                if (!belsvetMap && !energodarMap) {
+                    throw new Error('Не удалось загрузить ни одну из баз GTIN');
+                }
+
+                const mergedMap = {};
+                if (belsvetMap && typeof belsvetMap === 'object') {
+                    Object.assign(mergedMap, belsvetMap);
+                }
+                if (energodarMap && typeof energodarMap === 'object') {
+                    Object.assign(mergedMap, energodarMap);
+                }
+
+                const keysCount = Object.keys(mergedMap).length;
+                if (keysCount === 0) {
+                    throw new Error('В базах не найдены строки вида GTIN и название');
+                }
+
+                gtinNameMap = mergedMap;
+                gtinCatalogUpdatedAt = Date.now();
+                saveGtinCatalogCache();
+                if (listViewMode === 'gtin') {
+                    renderList();
+                }
+                if (!silent) {
+                    const loadedParts = [];
+                    if (belsvetMap) loadedParts.push(`Белсвет: ${Object.keys(belsvetMap).length}`);
+                    if (energodarMap) loadedParts.push(`Энергодар: ${Object.keys(energodarMap).length}`);
+                    showToast(`Базы обновлены (${loadedParts.join(', ')})`, 'success');
+                }
+            } catch (err) {
+                console.warn('Ошибка загрузки справочников GTIN:', err);
+                if (!silent) {
+                    showToast(`Ошибка обновления баз: ${err.message || 'ошибка'}`, 'error');
+                }
+            } finally {
+                if (syncGtinCatalogBtn) {
+                    syncGtinCatalogBtn.disabled = false;
+                    syncGtinCatalogBtn.textContent = 'Обновить обе';
+                }
+            }
+        }
+
+        function extractGtinFromItem(item) {
+            const candidates = [
+                item && item.formatted ? item.formatted : '',
+                item && item.raw ? item.raw : ''
+            ];
+            for (const c of candidates) {
+                const cleaned = String(c || '').replace(/^[\x1d\u001d]+/, '');
+                const m = cleaned.match(/\(?01\)?(\d{14})/);
+                if (m) return m[1];
+            }
+            return '';
+        }
+
+        function updateListViewUI() {
+            if (listViewMode === 'gtin') {
+                viewByGtinBtn.className = 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-2xs transition';
+                viewFlatListBtn.className = 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+                listSectionTitle.textContent = 'Сводка по товарам';
+                codesListContainer.classList.add('hidden');
+                gtinGroupedContainer.classList.remove('hidden');
+            } else {
+                viewFlatListBtn.className = 'px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-2xs transition';
+                viewByGtinBtn.className = 'px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+                listSectionTitle.textContent = 'Накопленные коды';
+                gtinGroupedContainer.classList.add('hidden');
+                codesListContainer.classList.remove('hidden');
+            }
+        }
+
+        viewFlatListBtn.addEventListener('click', () => {
+            listViewMode = 'flat';
+            updateListViewUI();
+            saveToStorage();
+            renderList();
+        });
+
+        viewByGtinBtn.addEventListener('click', () => {
+            listViewMode = 'gtin';
+            updateListViewUI();
+            saveToStorage();
+            renderList();
+        });
+
+        toggleGtinCatalogBtn.addEventListener('click', () => {
+            gtinCatalogPanel.classList.toggle('hidden');
+            if (!gtinCatalogPanel.classList.contains('hidden') && belsvetCsvInput) {
+                belsvetCsvInput.focus();
+            }
+        });
+
+        syncGtinCatalogBtn.addEventListener('click', () => syncGtinCatalog(false));
+
+        belsvetCsvInput.addEventListener('change', () => {
+            dbUrls.belsvet = belsvetCsvInput.value.trim();
+            saveToStorage();
+        });
+
+        energodarCsvInput.addEventListener('change', () => {
+            dbUrls.energodar = energodarCsvInput.value.trim();
+            saveToStorage();
+        });
+
+        function updateShipmentHint() {
+            if (!lastShipmentHint) return;
+            if (lastShipmentName) {
+                lastShipmentHint.textContent = `Последняя реализация: ${lastShipmentName}`;
+            } else {
+                lastShipmentHint.textContent = 'Номер реализации запрашивается при нажатии «Отправить данные»';
+            }
+        }
+
+        function updateWorkModeUI() {
+            if (workMode === 'pick') {
+                workModePickBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-bold bg-emerald-600 text-white shadow-xs transition';
+                workModeAggBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
+                boxControlBlock.classList.add('opacity-70');
+            } else {
+                workModeAggBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-bold bg-blue-600 text-white shadow-xs transition';
+                workModePickBtn.className = 'py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition';
+                boxControlBlock.classList.remove('opacity-70');
+            }
+        }
+
+        function updateActiveBoxUI() {
+            activeBoxInput.value = activeBoxCode || '';
+        }
+
+        workModePickBtn.addEventListener('click', () => {
+            workMode = 'pick';
+            updateWorkModeUI();
+            saveToStorage();
+            showToast('Режим: Подбор (лист «Подбор»)', 'info');
+        });
+
+        workModeAggBtn.addEventListener('click', () => {
+            workMode = 'aggregate';
+            updateWorkModeUI();
+            saveToStorage();
+            showToast('Режим: Агрегация (сначала коробка (00)..., затем КИЗы)', 'info');
+        });
+
+        clearBoxBtn.addEventListener('click', () => {
+            activeBoxCode = '';
+            updateActiveBoxUI();
+            saveToStorage();
+            showToast('Текущая коробка сброшена', 'info');
+        });
+
+        function updateModeUI() {
+            if (outputMode === 'short') {
+                modeShortBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-xs transition';
+                modeFullBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+            } else {
+                modeFullBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-xs transition';
+                modeShortBtn.className = 'py-1.5 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+            }
+        }
+
+        modeShortBtn.addEventListener('click', () => {
+            outputMode = 'short';
+            updateModeUI();
+            recalculateAllFormatted();
+            saveToStorage();
+            renderList();
+        });
+
+        modeFullBtn.addEventListener('click', () => {
+            outputMode = 'full';
+            updateModeUI();
+            recalculateAllFormatted();
+            saveToStorage();
+            renderList();
+        });
+
+        ssccBracketsToggle.addEventListener('change', () => {
+            if (activeBoxCode) {
+                const parsedBox = parseAndNormalizeCode(activeBoxCode, 'CODE_128');
+                if (parsedBox.type === 'SSCC') {
+                    activeBoxCode = parsedBox.shortCode;
+                    updateActiveBoxUI();
+                }
+            }
+            recalculateAllFormatted();
+            saveToStorage();
+            renderList();
+        });
+
+        filterRetailBarcodeToggle.addEventListener('change', saveToStorage);
+        csvHeaderToggle.addEventListener('change', saveToStorage);
+        allowDuplicatesToggle.addEventListener('change', saveToStorage);
+        soundToggle.addEventListener('change', saveToStorage);
+
+        function isRetailBarcode(cleaned, formatName = '') {
+            const upperFormat = (formatName || '').toUpperCase();
+            if (upperFormat.includes('EAN') || upperFormat.includes('UPC') || upperFormat.includes('EAN_13') || upperFormat.includes('EAN_8')) {
+                return true;
+            }
+            if (/^\d{8}$/.test(cleaned) || /^\d{12}$/.test(cleaned) || /^\d{13}$/.test(cleaned)) {
+                return true;
+            }
+            if (/^\d{14}$/.test(cleaned) && !cleaned.startsWith('00')) {
+                return true;
+            }
+            return false;
+        }
+
+        function parseAndNormalizeCode(rawInput, formatName = '') {
+            let cleaned = rawInput
+                .replace(/^(\]d2|\]C1|\]e0|\x1d+|\u001d+)/gi, '')
+                .replace(/[\r\n]+/g, '')
+                .trim();
+
+            const upperFormat = (formatName || '').toUpperCase();
+            const useSsccBrackets = ssccBracketsToggle ? ssccBracketsToggle.checked : true;
+
+            if (isRetailBarcode(cleaned, formatName)) {
+                return {
+                    type: 'ШК товара',
+                    shortCode: cleaned,
+                    fullCode: cleaned,
+                    activeCode: cleaned,
+                    isRetail: true
+                };
+            }
+
+            const ssccMatchWithAi = cleaned.match(/^\(?00\)?(\d{18})(?:\x1d.*)?$/);
+            if (ssccMatchWithAi) {
+                const sscc18 = ssccMatchWithAi[1];
+                const shortSscc = useSsccBrackets ? `(00)${sscc18}` : `00${sscc18}`;
+                return {
+                    type: 'SSCC',
+                    shortCode: shortSscc,
+                    fullCode: cleaned,
+                    activeCode: outputMode === 'short' ? shortSscc : cleaned,
+                    isRetail: false
+                };
+            }
+            if ((upperFormat.includes('CODE_128') || upperFormat.includes('128')) && /^\d{18}$/.test(cleaned)) {
+                const shortSscc = useSsccBrackets ? `(00)${cleaned}` : `00${cleaned}`;
+                return {
+                    type: 'SSCC',
+                    shortCode: shortSscc,
+                    fullCode: cleaned,
+                    activeCode: outputMode === 'short' ? shortSscc : cleaned,
+                    isRetail: false
+                };
+            }
+
+            const dmMatch = cleaned.match(/^\(?01\)?(\d{14})\(?21\)?([^\x1d]+)(?:\x1d(.*))?$/);
+            if (dmMatch) {
+                const gtin = dmMatch[1];
+                let serial = dmMatch[2];
+                const hasExplicitGs = typeof dmMatch[3] !== 'undefined';
+
+                if (!hasExplicitGs) {
+                    const fallbackTailMatch = serial.match(/^(.+?)(?:91[0-9A-Za-z]{4}92[0-9A-Za-z+/=]{16,}|93[0-9A-Za-z+/=]{4})$/);
+                    if (fallbackTailMatch && fallbackTailMatch[1].length >= 5) {
+                        serial = fallbackTailMatch[1];
+                    }
+                }
+
+                const shortDm = `(01)${gtin}(21)${serial}`;
+                return {
+                    type: 'DataMatrix',
+                    shortCode: shortDm,
+                    fullCode: cleaned,
+                    activeCode: outputMode === 'short' ? shortDm : cleaned,
+                    isRetail: false
+                };
+            }
+
+            return {
+                type: upperFormat.includes('QR') ? 'QR' : 'Другой',
+                shortCode: cleaned,
+                fullCode: cleaned,
+                activeCode: cleaned,
+                isRetail: false
+            };
+        }
+
+        function recalculateAllFormatted() {
+            scannedItems = scannedItems.map(item => {
+                const parsed = parseAndNormalizeCode(item.raw, item.formatName || '');
+                return {
+                    ...item,
+                    type: parsed.type,
+                    formatted: parsed.activeCode
+                };
+            });
+        }
+
+        function formatDisplayCode(codeStr) {
+            const escapeHtml = (str) => str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            const parts = codeStr.split('\x1d');
+            const escaped = parts.map(part => {
+                return escapeHtml(part)
+                    .replace(/^\(01\)(\d{14})\(21\)/, '<span class="text-emerald-700 font-bold">(01)</span><span class="text-slate-900 font-semibold">$1</span><span class="text-emerald-700 font-bold">(21)</span>')
+                    .replace(/^\(00\)(\d{18})$/, '<span class="text-blue-700 font-bold">(00)</span><span class="text-slate-900 font-semibold">$1</span>');
+            });
+
+            return escaped.join('<span class="inline-block mx-0.5 px-1 py-0.2 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-sans font-bold align-middle" title="Group Separator (ASCII 29)">GS</span>');
+        }
+
+        function processScannedCode(rawCode, formatName = '', isManual = false) {
+            if (!rawCode) return;
+
+            const parsed = parseAndNormalizeCode(rawCode, formatName);
+
+            if (parsed.isRetail && filterRetailBarcodeToggle && filterRetailBarcodeToggle.checked) {
+                playFeedbackSound('warning');
+                triggerFlash('warn');
+                triggerVibration([45, 50, 45]);
+                showToast(`Обычный ШК отклонён: ${parsed.shortCode}`, 'warning');
+                return;
+            }
+
+            const normalizedForCompare = `${workMode}:${parsed.shortCode}`;
+
+            const now = Date.now();
+            if (!isManual && normalizedForCompare === lastScannedNormalized && (now - lastScanTime) < 1500) {
+                return;
+            }
+            lastScannedNormalized = normalizedForCompare;
+            lastScanTime = now;
+
+            if (workMode === 'aggregate' && parsed.type === 'SSCC') {
+                const boxFormatted = parsed.shortCode.startsWith('(00)')
+                    ? parsed.shortCode
+                    : `(00)${parsed.shortCode.replace(/^00/, '')}`;
+                activeBoxCode = boxFormatted;
+                updateActiveBoxUI();
+                saveToStorage();
+
+                playFeedbackSound('success');
+                triggerFlash('success');
+                triggerVibration([70]);
+                showToast(`Коробка выбрана: ${activeBoxCode}`, 'success');
+                return;
+            }
+
+            if (workMode === 'aggregate' && !activeBoxCode) {
+                playFeedbackSound('warning');
+                triggerFlash('warn');
+                triggerVibration([45, 50, 45]);
+                showToast('Сначала отсканируйте код коробки (00)...', 'warning');
+                return;
+            }
+
+            const isDuplicate = scannedItems.some(item => {
+                if (item.workMode !== workMode) return false;
+                const existingShort = parseAndNormalizeCode(item.raw, item.formatName || '').shortCode;
+                return existingShort === parsed.shortCode;
+            });
+
+            if (isDuplicate && !allowDuplicatesToggle.checked) {
+                playFeedbackSound('warning');
+                triggerFlash('warn');
+                triggerVibration([45, 50, 45]);
+                showToast('Этот код уже есть в списке!', 'warning');
+                return;
+            }
+
+            const newItem = {
+                id: now + '_' + Math.random().toString(36).substring(2, 7),
+                raw: rawCode,
+                formatted: parsed.activeCode,
+                boxCode: workMode === 'aggregate' ? activeBoxCode : '',
+                workMode: workMode,
+                formatName: formatName,
+                type: parsed.type,
+                timestamp: now,
+                syncStatus: 'pending',
+                syncNote: '',
+                sentShipmentName: ''
+            };
+
+            scannedItems.unshift(newItem);
+            saveToStorage();
+            renderList();
+
+            playFeedbackSound('success');
+            triggerFlash('success');
+            triggerVibration([70]);
+
+            if (isDuplicate) {
+                showToast(`Добавлен дубликат (${parsed.type})`, 'info');
+            }
+        }
+
+        function getUnsentItems() {
+            return scannedItems.filter(item => item.syncStatus !== 'sent');
+        }
+
+        function openSendBridgeModal() {
+            const unsent = getUnsentItems();
+            if (unsent.length === 0) {
+                showToast('Нет неотправленных кодов для выгрузки', 'info');
+                return;
+            }
+
+            const pickCount = unsent.filter(i => i.workMode === 'pick').length;
+            const aggCount = unsent.filter(i => i.workMode === 'aggregate').length;
+
+            modalPendingCount.textContent = `${unsent.length} шт.`;
+            const parts = [];
+            if (pickCount > 0) parts.push(`Подбор: ${pickCount} шт.`);
+            if (aggCount > 0) parts.push(`Агрегация: ${aggCount} шт.`);
+            modalBreakdownText.textContent = parts.join(' • ');
+
+            modalShipmentInput.value = lastShipmentName;
+            sendProgressWrap.classList.add('hidden');
+            sendProgressWrap.classList.remove('flex');
+            sendProgressBar.style.width = '0%';
+            confirmSendModalBtn.disabled = false;
+            cancelSendModalBtn.disabled = false;
+            modalShipmentInput.disabled = false;
+
+            sendBridgeModal.classList.remove('hidden');
+            sendBridgeModal.classList.add('flex');
+
+            setTimeout(() => {
+                modalShipmentInput.focus();
+                modalShipmentInput.select();
+            }, 50);
+        }
+
+        function closeSendBridgeModal() {
+            if (isSendingBatch) return;
+            sendBridgeModal.classList.add('hidden');
+            sendBridgeModal.classList.remove('flex');
+        }
+
+        openSendModalBtn.addEventListener('click', openSendBridgeModal);
+        cancelSendModalBtn.addEventListener('click', closeSendBridgeModal);
+
+        sendBridgeModal.addEventListener('click', (e) => {
+            if (e.target === sendBridgeModal) {
+                closeSendBridgeModal();
+            }
+        });
+
+        async function sendBatchToBridge(queueItems, shipmentName) {
+            const batchPayload = {
+                mode: 'batch',
+                shipmentName: shipmentName,
+                deviceId: 'web-tsd',
+                items: queueItems.map(item => ({
+                    id: item.id,
+                    mode: item.workMode === 'aggregate' ? 'aggregate' : 'pick',
+                    code: item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode,
+                    itemCode: item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode,
+                    boxCode: item.boxCode || ''
+                }))
+            };
+
+            const response = await fetch(BRIDGE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(batchPayload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const text = await response.text();
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (_) {
+                throw new Error('Некорректный ответ скрипта');
+            }
+
+            return data;
+        }
+
+        sendBridgeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isSendingBatch) return;
+
+            const shipmentName = modalShipmentInput.value.trim();
+            if (!shipmentName) {
+                showToast('Введите номер реализации', 'warning');
+                modalShipmentInput.focus();
+                return;
+            }
+
+            const queue = [...getUnsentItems()].reverse();
+            if (queue.length === 0) {
+                closeSendBridgeModal();
+                return;
+            }
+
+            lastShipmentName = shipmentName;
+            saveToStorage();
+            updateShipmentHint();
+
+            isSendingBatch = true;
+            confirmSendModalBtn.disabled = true;
+            cancelSendModalBtn.disabled = true;
+            modalShipmentInput.disabled = true;
+
+            sendProgressWrap.classList.remove('hidden');
+            sendProgressWrap.classList.add('flex');
+            sendProgressLabel.textContent = 'Отправка пачки в Google Таблицу...';
+            sendProgressCounter.textContent = `0 / ${queue.length}`;
+            sendProgressBar.style.width = '45%';
+            bridgeStatusText.textContent = `Идёт пакетная выгрузка (${queue.length} шт.)...`;
+            bridgeStatusText.className = 'text-xs font-semibold text-blue-700';
+
+            let sentOk = 0;
+            let duplicatesCount = 0;
+            let errorsCount = 0;
+
+            try {
+                const data = await sendBatchToBridge(queue, shipmentName);
+                sendProgressBar.style.width = '100%';
+
+                if (!data || data.ok === false) {
+                    throw new Error((data && data.message) || 'Ошибка обработки пачки скриптом');
+                }
+
+                const resultsMap = new Map();
+                if (Array.isArray(data.results)) {
+                    data.results.forEach(res => {
+                        if (res && res.id) {
+                            resultsMap.set(String(res.id), res);
+                        }
+                    });
+                }
+
+                queue.forEach((targetItem, idx) => {
+                    const storeIdx = scannedItems.findIndex(x => x.id === targetItem.id);
+                    if (storeIdx === -1) return;
+
+                    const res = resultsMap.get(String(targetItem.id)) || (Array.isArray(data.results) ? data.results[idx] : null);
+                    if (res && res.ok === false) {
+                        const isDup = res.code && String(res.code).startsWith('DUPLICATE');
+                        scannedItems[storeIdx].syncStatus = isDup ? 'duplicate' : 'error';
+                        scannedItems[storeIdx].syncNote = res.message || res.code || 'Ошибка записи';
+                        if (isDup) duplicatesCount++;
+                        else errorsCount++;
+                    } else {
+                        scannedItems[storeIdx].syncStatus = 'sent';
+                        scannedItems[storeIdx].syncNote = '';
+                        scannedItems[storeIdx].sentShipmentName = shipmentName;
+                        sentOk++;
+                    }
+                });
+
+                sendProgressCounter.textContent = `${queue.length} / ${queue.length}`;
+                saveToStorage();
+            } catch (err) {
+                console.warn('Ошибка пакетной отправки в таблицу:', err);
+                queue.forEach(targetItem => {
+                    const storeIdx = scannedItems.findIndex(x => x.id === targetItem.id);
+                    if (storeIdx !== -1 && scannedItems[storeIdx].syncStatus !== 'sent') {
+                        scannedItems[storeIdx].syncStatus = 'error';
+                        scannedItems[storeIdx].syncNote = err && err.message ? err.message : 'Нет связи с таблицей (проверьте интернет / VPN)';
+                    }
+                });
+                errorsCount = queue.length;
+                saveToStorage();
+            }
+
+            isSendingBatch = false;
+            confirmSendModalBtn.disabled = false;
+            cancelSendModalBtn.disabled = false;
+            modalShipmentInput.disabled = false;
+            renderList();
+
+            if (errorsCount === 0 && duplicatesCount === 0) {
+                bridgeStatusText.textContent = `Выгружено пачкой: ${sentOk} шт. (${shipmentName})`;
+                bridgeStatusText.className = 'text-xs font-semibold text-emerald-700';
+                playFeedbackSound('success');
+                showToast(`Успешно выгружено: ${sentOk} шт.`, 'success');
+                closeSendBridgeModal();
+            } else if (errorsCount === 0 && duplicatesCount > 0) {
+                bridgeStatusText.textContent = `Выгружено: ${sentOk} шт., дублей в таблице: ${duplicatesCount}`;
+                bridgeStatusText.className = 'text-xs font-semibold text-amber-700';
+                playFeedbackSound('warning');
+                showToast(`Отправлено: ${sentOk}, дубликатов: ${duplicatesCount}`, 'warning');
+                closeSendBridgeModal();
+            } else {
+                bridgeStatusText.textContent = `Ошибка выгрузки (отправлено ${sentOk} из ${queue.length}). Проверьте связь / VPN и повторите`;
+                bridgeStatusText.className = 'text-xs font-semibold text-red-600';
+                playFeedbackSound('warning');
+                showToast('Ошибка при пакетной отправке. Проверьте Wi-Fi / VPN и нажмите «Выгрузить» снова', 'error');
+                modalPendingCount.textContent = `${getUnsentItems().length} шт.`;
+            }
+        });
+
+        function renderList() {
+            const unsentCount = getUnsentItems().length;
+            totalCounter.textContent = scannedItems.length;
+            unsentCounter.textContent = unsentCount;
+            sendBtnBadge.textContent = unsentCount;
+
+            if (unsentCount === 0) {
+                openSendModalBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                openSendModalBtn.classList.add('bg-slate-400', 'hover:bg-slate-500');
+            } else {
+                openSendModalBtn.classList.remove('bg-slate-400', 'hover:bg-slate-500');
+                openSendModalBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+            }
+
+            if (scannedItems.length === 0) {
+                emptyState.classList.remove('hidden');
+                codesListContainer.innerHTML = '';
+                gtinGroupedContainer.innerHTML = '';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            if (listViewMode === 'gtin') {
+                const groupsMap = new Map();
+                let otherCount = 0;
+
+                scannedItems.forEach(item => {
+                    const gtin = extractGtinFromItem(item);
+                    if (!gtin) {
+                        otherCount++;
+                        return;
+                    }
+                    const entry = gtinNameMap[gtin];
+                    const resolvedName = typeof entry === 'string' ? entry : (entry && entry.name ? entry.name : '');
+                    const resolvedSource = entry && entry.source ? entry.source : '';
+
+                    if (!groupsMap.has(gtin)) {
+                        groupsMap.set(gtin, {
+                            gtin,
+                            name: resolvedName,
+                            source: resolvedSource,
+                            total: 0,
+                            pending: 0,
+                            sent: 0
+                        });
+                    }
+                    const g = groupsMap.get(gtin);
+                    if (!g.name && resolvedName) {
+                        g.name = resolvedName;
+                        g.source = resolvedSource;
+                    }
+                    g.total++;
+                    if (item.syncStatus === 'sent') g.sent++;
+                    else g.pending++;
+                });
+
+                const groups = Array.from(groupsMap.values()).sort((a, b) => b.total - a.total);
+                let html = groups.map((g, index) => {
+                    const primaryLabel = g.name
+                        ? g.name.replace(/</g, '&lt;')
+                        : `<span class="font-mono-code text-slate-800">${g.gtin}</span> <span class="text-xs font-normal text-amber-700">(нет в базах)</span>`;
+                    return `
+                        <div class="p-3.5 sm:px-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                                    ${index + 1}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-bold text-slate-900 break-words">
+                                        ${primaryLabel}
+                                    </div>
+                                    <div class="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                        ${g.source ? `<span class="bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-medium">${g.source.replace(/</g, '&lt;')}</span>` : ''}
+                                        ${g.pending > 0 ? `<span class="text-amber-700 font-medium">В очереди: ${g.pending}</span>` : ''}
+                                        ${g.sent > 0 ? `<span class="text-emerald-700 font-medium">Отправлено: ${g.sent}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-sm">
+                                    ${g.total} шт.
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (otherCount > 0) {
+                    html += `
+                        <div class="p-3 sm:px-4 bg-slate-50/80 flex items-center justify-between text-xs text-slate-500">
+                            <span>Прочие коды без GTIN (например, SSCC)</span>
+                            <span class="font-semibold text-slate-700">${otherCount} шт.</span>
+                        </div>
+                    `;
+                }
+
+                gtinGroupedContainer.innerHTML = html || `
+                    <div class="p-6 text-center text-xs text-slate-400">
+                        В накопленных кодах пока нет позиций с GTIN
+                    </div>
+                `;
+                return;
+            }
+
+            const total = scannedItems.length;
+
+            codesListContainer.innerHTML = scannedItems.map((item, idx) => {
+                const itemNumber = total - idx;
+                const displayValue = item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+                const itemModeLabel = item.workMode === 'aggregate' ? 'Агрегация' : 'Подбор';
+
+                let badgeStyle = 'bg-slate-100 text-slate-700 border-slate-200';
+                if (item.type === 'DataMatrix') {
+                    badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                } else if (item.type === 'SSCC') {
+                    badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+                }
+
+                let syncBadgeHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">В очереди</span>';
+                if (item.syncStatus === 'sent') {
+                    syncBadgeHtml = `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Отправлено${item.sentShipmentName ? ': ' + item.sentShipmentName.replace(/</g, '&lt;') : ''}</span>`;
+                } else if (item.syncStatus === 'duplicate') {
+                    syncBadgeHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">Дубль в таблице</span>';
+                } else if (item.syncStatus === 'error') {
+                    syncBadgeHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">Ошибка отправки</span>';
+                }
+
+                return `
+                    <div class="p-3 sm:px-4 flex items-center gap-3 hover:bg-slate-50 transition group ${item.syncStatus === 'sent' ? 'bg-slate-50/60' : ''}">
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0">
+                            ${itemNumber}
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeStyle}">
+                                    ${item.type}
+                                </span>
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    ${itemModeLabel}
+                                </span>
+                                ${syncBadgeHtml}
+                                <span class="text-[11px] text-slate-400">
+                                    ${new Date(item.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </span>
+                            </div>
+                            <div class="font-mono-code text-xs sm:text-sm text-slate-800 break-all leading-relaxed">
+                                ${formatDisplayCode(displayValue)}
+                            </div>
+                            ${item.boxCode ? `<div class="mt-0.5 font-mono-code text-[11px] text-blue-700">Коробка: ${item.boxCode.replace(/</g, '&lt;')}</div>` : ''}
+                            ${item.syncNote ? `<div class="mt-0.5 text-[11px] text-red-600">${item.syncNote.replace(/</g, '&lt;')}</div>` : ''}
+                        </div>
+
+                        <button 
+                            onclick="deleteItem('${item.id}')" 
+                            title="Удалить строку"
+                            class="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition shrink-0 active:scale-95"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.deleteItem = function(id) {
+            scannedItems = scannedItems.filter(item => item.id !== id);
+            saveToStorage();
+            renderList();
+        };
+
+        manualForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = manualInput.value.trim();
+            if (!val) return;
+            processScannedCode(val, '', true);
+            manualInput.value = '';
+            manualInput.blur();
+        });
+
+        /**
+         * Глобальный перехватчик ввода аппаратного 2D-сканера ТСД (без фокуса в поле и без вызова экранной клавиатуры)
+         */
+        const hidBufferBadge = document.getElementById('hidBufferBadge');
+        let hidScanBuffer = '';
+        let hidLastKeyTime = 0;
+        let hidFlushTimer = null;
+
+        function resetHidBuffer() {
+            hidScanBuffer = '';
+            hidLastKeyTime = 0;
+            if (hidFlushTimer) {
+                clearTimeout(hidFlushTimer);
+                hidFlushTimer = null;
+            }
+            if (hidBufferBadge) {
+                hidBufferBadge.classList.add('hidden');
+            }
+        }
+
+        function commitHidBuffer() {
+            const payload = hidScanBuffer.trim();
+            resetHidBuffer();
+            if (payload.length >= 6) {
+                processScannedCode(payload, '', true);
+            }
+        }
+
+        function isEditableElement(el) {
+            if (!el) return false;
+            const tag = (el.tagName || '').toUpperCase();
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+            return Boolean(el.isContentEditable);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (isEditableElement(e.target) || isEditableElement(document.activeElement)) {
+                return;
+            }
+            if (!sendBridgeModal.classList.contains('hidden') || !confirmModal.classList.contains('hidden')) {
+                return;
+            }
+            if (e.ctrlKey || e.altKey || e.metaKey) {
+                return;
+            }
+
+            const now = Date.now();
+            if (hidScanBuffer && (now - hidLastKeyTime) > 180) {
+                hidScanBuffer = '';
+            }
+            hidLastKeyTime = now;
+
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                if (hidScanBuffer.length >= 6) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    commitHidBuffer();
+                } else {
+                    resetHidBuffer();
+                }
+                return;
+            }
+
+            if (e.key === 'GroupSeparator' || e.keyCode === 29) {
+                hidScanBuffer += ' ';
+            } else if (e.key && e.key.length === 1) {
+                hidScanBuffer += e.key;
+            } else {
+                return;
+            }
+
+            if (hidBufferBadge && hidScanBuffer.length >= 2) {
+                hidBufferBadge.classList.remove('hidden');
+            }
+
+            if (hidFlushTimer) clearTimeout(hidFlushTimer);
+            hidFlushTimer = setTimeout(() => {
+                if (hidScanBuffer.length >= 10) {
+                    commitHidBuffer();
+                } else {
+                    resetHidBuffer();
+                }
+            }, 220);
+        }, true);
+
+        copyListBtn.addEventListener('click', () => {
+            if (scannedItems.length === 0) {
+                showToast('Список пуст — нечего копировать', 'warning');
+                return;
+            }
+
+            const orderedCodes = [...scannedItems].reverse().map(item => {
+                return item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+            });
+            const textToCopy = orderedCodes.join('\n');
+
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = textToCopy;
+            tempTextarea.style.position = 'fixed';
+            tempTextarea.style.left = '-9999px';
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast(`Скопировано кодов: ${orderedCodes.length} шт.`, 'success');
+                } else {
+                    showToast('Не удалось скопировать список', 'error');
+                }
+            } catch (err) {
+                console.error('Ошибка копирования:', err);
+                showToast('Ошибка доступа к буферу обмена', 'error');
+            } finally {
+                document.body.removeChild(tempTextarea);
+            }
+        });
+
+        downloadCsvBtn.addEventListener('click', () => {
+            if (scannedItems.length === 0) {
+                showToast('Список пуст — нечего выгружать', 'warning');
+                return;
+            }
+
+            const orderedCodes = [...scannedItems].reverse().map(item => {
+                return item.formatted || parseAndNormalizeCode(item.raw, item.formatName || '').activeCode;
+            });
+
+            const csvLines = orderedCodes.map(code => `"${code.replace(/"/g, '""')}"`);
+            if (csvHeaderToggle.checked) {
+                csvLines.unshift('"КодМаркировки"');
+            }
+
+            const csvContent = '\uFEFF' + csvLines.join('\r\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10);
+            const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
+            const filename = `codes_${dateStr}_${timeStr}.csv`;
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast(`Файл ${filename} скачан`, 'success');
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            if (scannedItems.length === 0) {
+                showToast('Список уже пуст', 'info');
+                return;
+            }
+            modalCount.textContent = scannedItems.length;
+            confirmModal.classList.remove('hidden');
+            confirmModal.classList.add('flex');
+        });
+
+        cancelClearBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+        });
+
+        confirmClearBtn.addEventListener('click', () => {
+            scannedItems = [];
+            lastScannedNormalized = '';
+            saveToStorage();
+            renderList();
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+            showToast('Список полностью очищен', 'info');
+        });
+
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) {
+                confirmModal.classList.add('hidden');
+                confirmModal.classList.remove('flex');
+            }
+        });
+    </script>
+</body>
+</html>
