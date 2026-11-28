@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light dark" />
   <link rel="icon" type="image/svg+xml" href="../assets/icons/matrix.svg">
-  <title>Tom Studio — Project Matrix · v11.10-bwip-box</title>
+  <title>Tom Studio — Project Matrix · v12.1</title>
 
   <!-- Библиотеки для локальной распаковки ZIP, чтения таблиц (.xlsx, .xls, .csv) и генерации коробов через bwip-js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -227,8 +227,8 @@
       padding: 12px 12px;
       text-align: center;
       cursor: pointer;
-      min-height: 78px;
-      flex-shrink: 0;
+      min-height: 120px;
+      flex: 1 1 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -529,18 +529,6 @@
       color: var(--muted);
     }
 
-    .compact-preview-box {
-      margin-top: 10px;
-      padding: 12px;
-      border-radius: 10px;
-      background: var(--card-2);
-      border: 1px solid var(--border);
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-    }
-
     .compact-preview-head {
       display: flex;
       flex-wrap: wrap;
@@ -551,16 +539,11 @@
       flex-shrink: 0;
     }
 
-    .compact-preview-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
     .compact-preview-controls {
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-left: auto;
     }
 
     .compact-preview-controls select {
@@ -573,11 +556,11 @@
 
     .compact-preview-stage {
       flex: 1 1 auto;
-      min-height: 200px;
-      padding: 12px;
-      border-radius: 8px;
+      min-height: 280px;
+      padding: 14px;
+      border-radius: 10px;
       border: 1px dashed var(--border);
-      background: var(--card);
+      background: var(--card-2);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -820,6 +803,7 @@
     }
 
     .raw-code {
+      white-space: pre-line;
       margin-top: 6px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 11px;
@@ -982,7 +966,7 @@
         line-height: 1.14 !important;
         letter-spacing: -0.02em !important;
         color: #000000 !important;
-        white-space: normal !important;
+        white-space: pre-line !important;
         overflow-wrap: anywhere !important;
         word-break: break-all !important;
         overflow: hidden !important;
@@ -1020,118 +1004,182 @@
     .print-raw {
       display: none;
     }
+
+    .admin-mode-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(250, 204, 21, 0.22);
+      color: #fde047;
+      border: 1px solid rgba(253, 224, 71, 0.5);
+    }
+
+    body:not(.is-admin) .admin-mode-pill {
+      display: none !important;
+    }
+
+    #versionTrigger {
+      cursor: default;
+      user-select: none;
+    }
+
+    body:not(.is-admin) .admin-only,
+    body:not(.is-admin) .checkbox-sub,
+    body:not(.is-admin) .dropzone-sub,
+    body:not(.is-admin) .info-banner {
+      display: none !important;
+    }
+
+    body.is-admin .admin-only.fine-offset-box {
+      display: block;
+    }
+
+    body.is-admin .admin-only.settings-grid-3 {
+      display: grid;
+    }
+
+    body.is-admin .admin-only.field-label {
+      display: block;
+    }
+
+    body.is-admin .admin-only.preset-box {
+      display: block;
+    }
+    body.is-admin button.action-btn.admin-only {
+      display: inline-block;
+    }
+
+    .basic-settings-box {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .basic-settings-heading {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .basic-setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 2px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .basic-setting-item:last-child {
+      border-bottom: none;
+      padding-bottom: 2px;
+    }
+
+    .basic-check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .basic-check-label input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+      margin: 0;
+    }
+
+    .basic-mode-select {
+      margin-top: 0 !important;
+      padding: 5px 8px !important;
+      font-size: 12.5px !important;
+      width: auto !important;
+      min-width: 148px;
+      max-width: 195px;
+      flex-shrink: 0;
+    }
+
+    .preset-box.compact-preset-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+    }
+
+    .preset-box.compact-preset-box .preset-top {
+      margin-bottom: 6px;
+    }
+
+    .preset-box.compact-preset-box .preset-controls {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    body.is-admin .preset-box.compact-preset-box .preset-controls {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
   </style>
 </head>
 <body>
   <header class="page-header">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.10-bwip-box">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v12.1">
       <span class="ts-brand">Tom Studio</span>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v11.10-bwip-box</span>
+      <span class="ts-project" id="versionTrigger" title="Нажмите 5 раз для входа в режим администратора">Project Matrix · v12.1</span>
+      <span class="admin-mode-pill" id="adminModeBadge">ADMIN</span>
     </div>
   </header>
 
   <div class="two-col">
-    <div class="card">
-      <div class="panel-title">Загрузка архива и таблиц</div>
+    <div class="card" id="settingsCard">
+
       <div
         id="dropZone"
         class="dropzone"
         role="button"
         tabindex="0"
         aria-label="Перетащите ZIP-архив с таблицами или выберите файл"
+        style="margin-bottom: 10px;"
       >
         <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" hidden />
         <input type="file" id="tablesInput" accept=".xlsx,.xls,.csv,.txt,.tsv" multiple hidden />
 
-        <div class="dropzone-main">Перетащите ZIP-архив сюда или нажмите для выбора</div>
+        <div class="dropzone-main">Перетащите ZIP или таблицы сюда</div>
         <div class="dropzone-sub">Локальная обработка в браузере · Штучные коды и транспортная упаковка (00 / SSCC через bwip-js)</div>
         <div class="dropzone-actions">
-          <button type="button" class="link-btn" id="pickSingleTablesBtn">Или выбрать таблицы (.xlsx / .xls / .csv) напрямую</button>
+          <button type="button" class="link-btn" id="pickSingleTablesBtn">Выбрать таблицы (.xlsx / .xls / .csv)</button>
         </div>
       </div>
 
-      <label class="field-label" style="margin-top: 8px;">Справочник названий по GTIN (из таблиц ЧЗ)</label>
-      <div class="settings-grid-2">
-        <div class="mini-field">
-          <span>Источник базы</span>
-          <select id="gtinSourceSelect">
-            <option value="both" selected>Обе базы (Belsvet + Energodar)</option>
-            <option value="belsvet">Только Belsvet</option>
-            <option value="energodar">Только Energodar</option>
-            <option value="none">Не подтягивать названия</option>
-          </select>
-        </div>
-        <div class="mini-field">
-          <span>Статус справочника</span>
-          <div style="display:flex; gap:6px; align-items:center; height:32px;">
-            <button type="button" class="action-btn small" id="refreshGtinBtn">Обновить из Google Таблиц</button>
-          </div>
-        </div>
-      </div>
-      <div class="db-status-row">
-        <span id="gtinDbStatus">Справочник GTIN не загружен</span>
+      <div class="info-banner" id="bannerInfo" style="margin-top: 0; margin-bottom: 10px;">
+        Поддерживаются ZIP-архивы с таблицами, таблицы Excel (.xlsx / .xls) и CSV/TXT.
       </div>
 
-      <div class="info-banner" id="bannerInfo">
-        Поддерживаются ZIP-архивы с таблицами, таблицы Excel (.xlsx / .xls) и CSV/TXT. Короба (SSCC) строятся через bwip-js.
-      </div>
-
-      <div class="compact-preview-box" aria-label="Предпросмотр этикетки">
-        <div class="compact-preview-head">
-          <span class="compact-preview-title">Предпросмотр этикетки</span>
-          <div class="compact-preview-controls">
-            <select id="previewIndexSelect" disabled title="Выбор этикетки">
-              <option value="0">—</option>
-            </select>
-            <select id="previewScaleSelect" title="Масштаб предпросмотра">
-              <option value="fit" selected>Авто (крупно)</option>
-              <option value="4.5">450%</option>
-              <option value="6">600%</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="compact-preview-stage" id="previewStage">
-          <div class="live-label-sheet" id="liveLabelSheet">
-            <canvas id="livePreviewCanvas" class="live-label-canvas"></canvas>
-          </div>
-        </div>
-
-        <div class="compact-preview-foot">
-          <span id="previewDimsInfo">25×43 мм · матрица 20.0 мм</span>
-          <span id="previewOffsetsInfo">dx/dy: 0</span>
-        </div>
-      </div>
-
-      <div class="preset-box" aria-label="Пресеты из TXT-файла">
-        <div class="preset-top">
-          <span class="preset-title" id="presetStatusLabel">Пресеты (.txt) · встроенный №1</span>
-          <button type="button" class="action-btn small preset-reload-icon" id="reloadPresetsBtn" title="Перечитать presets.txt из директории" aria-label="Перечитать presets.txt из директории">↻</button>
-          <input type="file" id="presetsTxtInput" accept=".txt,text/plain" hidden />
-        </div>
-        <div class="preset-controls">
-          <select id="presetSelect" title="Выбор пресета из загруженного TXT">
-            <option value="0">25x43 Матрица 20 (dy DM -1, код +3.2, название +2)</option>
-          </select>
-          <button type="button" class="action-btn small" id="loadPresetsBtn" title="Загрузить локальный .txt файл">Загрузить</button>
-          <button type="button" class="action-btn small" id="exportPresetBtn" title="Сохранить текущие настройки в .txt">Сохранить</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="panel-title">Настройка режима и печати (1 ряд)</div>
-      <label class="field-label" for="inputMode">Режим обработки строк</label>
-      <select id="inputMode">
+      <label class="field-label admin-only" for="inputMode">Режим обработки строк</label>
+      <select id="inputMode" class="admin-only">
         <option value="auto" selected>Авто (Base64 с GS / (01)... / 00 SSCC)</option>
         <option value="base64">Base64 из 1С (0x1D = GS → FNC1)</option>
         <option value="gs1_brackets">Строка со скобками (01)...(21)... / (00)...</option>
         <option value="raw">Буквальная строка без FNC1</option>
       </select>
 
-      <label class="field-label">Размер этикетки (мм) и сдвиг печати</label>
-      <div class="settings-grid-3">
+      <label class="field-label admin-only">Размер этикетки (мм) и сдвиг печати</label>
+      <div class="settings-grid-3 admin-only">
         <div class="mini-field">
           <span>Ширина ленты (мм)</span>
           <input type="number" id="labelWidthMm" value="25" min="15" max="150" step="0.5" />
@@ -1146,7 +1194,7 @@
         </div>
       </div>
 
-      <div class="settings-grid-3">
+      <div class="settings-grid-3 admin-only">
         <div class="mini-field">
           <span>Сдвиг X (мм)</span>
           <input type="number" id="offsetXMm" value="0" min="-20" max="20" step="0.2" />
@@ -1161,7 +1209,7 @@
         </div>
       </div>
 
-      <div class="fine-offset-box" aria-label="Тонкое смещение надписей относительно текущей позиции">
+      <div class="fine-offset-box admin-only" aria-label="Тонкое смещение надписей относительно текущей позиции">
         <div class="fine-offset-header">
           <span class="fine-offset-title">Тонкое смещение надписей (мм)</span>
           <button type="button" class="action-btn small" id="resetCaptionOffsetsBtn">Сбросить (0)</button>
@@ -1216,7 +1264,7 @@
         </div>
       </div>
 
-      <label class="checkbox-row" for="skipEmptyCheck">
+      <label class="checkbox-row admin-only" for="skipEmptyCheck">
         <input type="checkbox" id="skipEmptyCheck" checked />
         <div>
           <span class="checkbox-text">Пропускать пустые и невалидные строки</span>
@@ -1224,37 +1272,100 @@
         </div>
       </label>
 
-      <label class="checkbox-row" for="showMarkersCheck">
-        <input type="checkbox" id="showMarkersCheck" checked />
-        <div>
-          <span class="checkbox-text">Показывать нумерацию на этикетках и карточках</span>
-          <span class="checkbox-sub">Поддерживает групповую нумерацию по коробам и обычную порядковую</span>
-        </div>
-      </label>
+      <div class="basic-settings-box" aria-label="Настройки печати">
+        <div class="basic-settings-heading">Настройки</div>
 
-      <div class="mini-field" style="margin-top: 8px;">
-        <span>Режим нумерации</span>
-        <select id="numberingModeSelect">
-          <option value="box_group" selected>По коробам («1/1», «2/1»... и «Коробка 1»)</option>
-          <option value="sequential">Обычная порядковая («1», «2», «3»... и «Коробка N»)</option>
-        </select>
+        <div class="basic-setting-item">
+          <label class="basic-check-label" for="showMarkersCheck">
+            <input type="checkbox" id="showMarkersCheck" checked />
+            <span>Нумерация этикеток</span>
+          </label>
+          <select id="numberingModeSelect" class="basic-mode-select" aria-label="Режим нумерации">
+            <option value="box_group" selected>По коробам</option>
+            <option value="sequential">Порядковая</option>
+          </select>
+        </div>
+
+        <div class="basic-setting-item">
+          <label class="basic-check-label" for="showProductNameCheck">
+            <input type="checkbox" id="showProductNameCheck" checked />
+            <span>Название товара</span>
+          </label>
+        </div>
+
+        <div class="basic-setting-item">
+          <label class="basic-check-label" for="showRawCodeCheck">
+            <input type="checkbox" id="showRawCodeCheck" checked />
+            <span>КИЗ</span>
+          </label>
+        </div>
       </div>
 
-      <label class="checkbox-row" for="showProductNameCheck">
-        <input type="checkbox" id="showProductNameCheck" checked />
-        <div>
-          <span class="checkbox-text">Подставлять наименование по GTIN на этикетке</span>
-          <span class="checkbox-sub">Берётся из справочника Google Таблиц (ЧЗ); при отсутствии выводится GTIN</span>
+      <div class="admin-only" style="margin-top: 8px;">
+        <label class="field-label">Справочник названий по GTIN</label>
+        <div class="settings-grid-2">
+          <div class="mini-field">
+            <span>Источник базы</span>
+            <select id="gtinSourceSelect">
+              <option value="both" selected>Обе базы (Belsvet + Energodar)</option>
+              <option value="belsvet">Только Belsvet</option>
+              <option value="energodar">Только Energodar</option>
+              <option value="none">Не подтягивать названия</option>
+            </select>
+          </div>
+          <div class="mini-field">
+            <span>Обновление</span>
+            <div style="display:flex; gap:6px; align-items:center; height:32px;">
+              <button type="button" class="action-btn small" id="refreshGtinBtn">Обновить</button>
+            </div>
+          </div>
         </div>
-      </label>
+        <div class="db-status-row">
+          <span id="gtinDbStatus">Справочник GTIN не загружен</span>
+        </div>
+      </div>
 
-      <label class="checkbox-row" for="showRawCodeCheck">
-        <input type="checkbox" id="showRawCodeCheck" />
-        <div>
-          <span class="checkbox-text">Печатать GTIN и серийный номер (01)...(21)...</span>
-          <span class="checkbox-sub">Формат в скобках до 3 строк под матрицей (работает независимо от названия)</span>
+      <div class="preset-box compact-preset-box" aria-label="Пресеты из TXT-файла">
+        <div class="preset-top admin-only">
+          <span class="preset-title" id="presetStatusLabel">Пресеты (.txt) · встроенный №1</span>
+          <input type="file" id="presetsTxtInput" accept=".txt,text/plain" hidden />
         </div>
-      </label>
+        <div class="preset-controls">
+          <select id="presetSelect" title="Выбор пресета из загруженного TXT">
+            <option value="0">25×43 · матр. 20</option>
+          </select>
+          <button type="button" class="action-btn small preset-reload-icon" id="reloadPresetsBtn" title="Перечитать presets.txt из директории" aria-label="Перечитать presets.txt из директории">↻</button>
+          <button type="button" class="action-btn small admin-only" id="loadPresetsBtn" title="Загрузить локальный .txt файл">Загрузить</button>
+          <button type="button" class="action-btn small admin-only" id="exportPresetBtn" title="Сохранить текущие настройки в .txt">Сохранить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="previewCard" aria-label="Предпросмотр">
+      <div class="compact-preview-head">
+        <div class="panel-title" style="margin: 0;">Предпросмотр</div>
+        <div class="compact-preview-controls">
+          <select id="previewIndexSelect" disabled title="Выбор этикетки">
+            <option value="0">—</option>
+          </select>
+          <select id="previewScaleSelect" title="Масштаб предпросмотра">
+            <option value="fit" selected>Авто (крупно)</option>
+            <option value="4.5">450%</option>
+            <option value="6">600%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="compact-preview-stage" id="previewStage">
+        <div class="live-label-sheet" id="liveLabelSheet">
+          <canvas id="livePreviewCanvas" class="live-label-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="compact-preview-foot">
+        <span id="previewDimsInfo">25×43 мм · матрица 20.0 мм</span>
+        <span id="previewOffsetsInfo" class="admin-only">dx/dy: 0</span>
+      </div>
     </div>
   </div>
 
@@ -1300,11 +1411,11 @@
   <div class="grid" id="outputGrid"></div>
 
   <footer class="page-footer">
-    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v11.10-bwip-box">
+    <div class="ts-bar" aria-label="Tom Studio — Project Matrix · v12.1">
       <span class="ts-brand">Tom Studio</span>
       <button type="button" class="bulb-btn" id="bulbToggle" aria-label="Переключить тему" title="Переключить тему">💡</button>
       <span class="ts-divider" aria-hidden="true"></span>
-      <span class="ts-project">Project Matrix · v11.10-bwip-box</span>
+      <span class="ts-project">Project Matrix · v12.1</span>
     </div>
   </footer>
 
@@ -1317,7 +1428,7 @@
     const GTIN_CACHE_KEY = 'tom_studio_matrix_gtin_cache_v1';
     const PRESETS_FILE_URL = './presets.txt';
 
-    const DEFAULT_PRESETS_TXT = `[25x43 Матрица 20 (dy DM -1, код +3.2, название +2)]
+    const DEFAULT_PRESETS_TXT = `[25×43 · матр. 20]
 inputMode=auto
 labelWidthMm=25
 labelHeightMm=43
@@ -1484,12 +1595,12 @@ showRawCodeCheck=true
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'matrix_preset_v11.10-bwip-box.txt';
+      a.download = 'matrix_preset_v12.1.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setBanner('Сохранён файл пресета matrix_preset_v11.10-bwip-box.txt — можете скопировать секцию [...] в общий файл.', 'success');
+      setBanner('Сохранён файл пресета matrix_preset_v12.1.txt — можете скопировать секцию [...] в общий файл.', 'success');
     }
 
     async function handlePresetsTxtFile(file) {
@@ -2576,6 +2687,36 @@ function generateBoxMatrixViaBwip(ssccText) {
       }
     }
 
+    let samplePreviewItemCache = null;
+    function getSamplePreviewItem() {
+      const showMarkers = document.getElementById('showMarkersCheck')?.checked;
+      const numberingMode = document.getElementById('numberingModeSelect')?.value || 'box_group';
+      const showName = document.getElementById('showProductNameCheck')?.checked;
+      const showRaw = document.getElementById('showRawCodeCheck')?.checked;
+
+      const sampleRawLine = '010460700000001421aBcD1234567890';
+      if (!samplePreviewItemCache) {
+        try {
+          const res = generateMatrixForLine(sampleRawLine, 'auto');
+          samplePreviewItemCache = {
+            res,
+            sampleProductName: 'Светильник светодиодный ДПО-18Вт',
+            sampleRawCode: '(01)04607000000014(21)aBcD1234567890'
+          };
+        } catch (_) {
+          return null;
+        }
+      }
+
+      return {
+        res: samplePreviewItemCache.res,
+        markerText: showMarkers ? (numberingMode === 'sequential' ? '1' : '1/1') : '',
+        productTitle: showName ? samplePreviewItemCache.sampleProductName : '',
+        rawText: showRaw ? splitKizForDisplay(samplePreviewItemCache.sampleRawCode) : '',
+        isSample: true
+      };
+    }
+
     function renderLivePreview() {
       const selectEl = document.getElementById('previewIndexSelect');
       const scaleEl = document.getElementById('previewScaleSelect');
@@ -2621,8 +2762,9 @@ function generateBoxMatrixViaBwip(ssccText) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, cssW, cssH);
 
-      const idx = Math.max(0, Math.min(lastRenderedCardsData.length - 1, Number(selectEl.value) || 0));
-      const item = lastRenderedCardsData[idx];
+      const hasRealItems = lastRenderedCardsData.length > 0;
+      const idx = hasRealItems ? Math.max(0, Math.min(lastRenderedCardsData.length - 1, Number(selectEl.value) || 0)) : 0;
+      const item = hasRealItems ? lastRenderedCardsData[idx] : getSamplePreviewItem();
 
       if (!item) {
         ctx.fillStyle = '#64748b';
@@ -2753,14 +2895,17 @@ function generateBoxMatrixViaBwip(ssccText) {
           }
         } else {
           ctx.font = `${bold ? '700' : '600'} ${chosenFontPx.toFixed(2)}px ${fontFamily}`;
-          let displayText = String(text).trim();
-          if (ctx.measureText(displayText).width > maxW) {
-            while (displayText.length > 1 && ctx.measureText(displayText + '…').width > maxW) {
-              displayText = displayText.slice(0, -1);
+          const rawParts = String(text).split('\n').map(p => p.trim()).filter(Boolean);
+          lines = rawParts.map(part => {
+            let t = part;
+            if (ctx.measureText(t).width > maxW) {
+              while (t.length > 1 && ctx.measureText(t + '…').width > maxW) {
+                t = t.slice(0, -1);
+              }
+              t += '…';
             }
-            displayText += '…';
-          }
-          lines = [displayText];
+            return t;
+          });
         }
 
         ctx.font = `${bold ? '700' : '600'} ${chosenFontPx.toFixed(2)}px ${fontFamily}`;
@@ -2908,9 +3053,12 @@ function generateBoxMatrixViaBwip(ssccText) {
           const productTitle = showProductNameEl.checked
             ? resolvedGtinName
             : '';
-          const factoryCodeText = (showRawCodeEl.checked || res.isBox)
+          const rawFactoryCode = (showRawCodeEl.checked || res.isBox)
             ? (res.factoryCode || res.label || '')
             : '';
+          const factoryCodeText = (!res.isBox && rawFactoryCode)
+            ? splitKizForDisplay(rawFactoryCode)
+            : rawFactoryCode;
 
           const card = document.createElement('div');
           card.className = res.isBox ? 'dm-card is-box' : 'dm-card';
@@ -3043,9 +3191,34 @@ function generateBoxMatrixViaBwip(ssccText) {
       return out;
     }
 
+    function splitKizForDisplay(codeText) {
+      const s = String(codeText || '').trim();
+      if (!s) return '';
+      const idx21 = s.indexOf('(21)');
+      if (idx21 > 0) {
+        const prefixAndTag = s.slice(0, idx21 + 4).trim();
+        const serialTail = s.slice(idx21 + 4).trim();
+        if (prefixAndTag && serialTail) {
+          return `${prefixAndTag}\n${serialTail}`;
+        }
+      }
+      return s;
+    }
+
     function wrapTextToLines(ctx, text, maxPx, maxLines = 2) {
-      const clean = String(text || '').trim().replace(/\s+/g, ' ');
-      if (!clean) return [];
+      const rawStr = String(text || '').replace(/\r\n?/g, '\n').trim();
+      if (!rawStr) return [];
+      if (rawStr.includes('\n')) {
+        const explicitParts = rawStr.split('\n').map(p => p.trim().replace(/\s+/g, ' ')).filter(Boolean);
+        const out = [];
+        for (const part of explicitParts) {
+          if (out.length >= maxLines) break;
+          const subLines = wrapTextToLines(ctx, part, maxPx, maxLines - out.length);
+          out.push(...subLines);
+        }
+        return out.slice(0, maxLines);
+      }
+      const clean = rawStr.replace(/\s+/g, ' ');
       if (ctx.measureText(clean).width <= maxPx) {
         return [clean];
       }
@@ -3403,7 +3576,7 @@ function generateBoxMatrixViaBwip(ssccText) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `matrix_labels_${wMm}x${hMm}mm_v11.10-bwip-box.pdf`;
+      a.download = `matrix_labels_${wMm}x${hMm}mm_v12.1.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3800,10 +3973,38 @@ function generateBoxMatrixViaBwip(ssccText) {
       applyPresetObject(loadedPresets[0]);
     }
 
+    let isAdminMode = new URLSearchParams(window.location.search).has('admin');
+    function applyAdminModeState(nextState) {
+      isAdminMode = Boolean(nextState);
+      document.body.classList.toggle('is-admin', isAdminMode);
+      renderLivePreview();
+    }
+    applyAdminModeState(isAdminMode);
+
+    (function setupFiveTapAdminTrigger() {
+      const triggerEl = document.getElementById('versionTrigger');
+      if (!triggerEl) return;
+      let tapCount = 0;
+      let tapTimer = null;
+      triggerEl.addEventListener('click', () => {
+        tapCount += 1;
+        if (tapTimer) clearTimeout(tapTimer);
+        if (tapCount >= 5) {
+          tapCount = 0;
+          applyAdminModeState(!isAdminMode);
+          setBanner(isAdminMode ? 'Режим администратора включён (v12.1).' : 'Режим администратора выключён (v12.1).', 'success');
+          return;
+        }
+        tapTimer = setTimeout(() => {
+          tapCount = 0;
+        }, 2500);
+      });
+    })();
+
     loadGtinCache();
     fetchGtinDatabases(false);
     renderAll();
     loadPresetsFromDirectory(true, false);
   </script>
 </body>
-	</html>
+</html>
